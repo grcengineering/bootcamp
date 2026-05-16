@@ -1,8 +1,8 @@
 # The GRC Engineering Curriculum
 
-*A progressive, mindset-first program to take a whole team from zero technical fluency to the full GRC Engineering canon — built for Justin's team at Vanta.*
+*A progressive, mindset-first program to take a whole team from zero technical fluency to the full GRC Engineering canon — built for Justin Pagano's team at Vanta.*
 
-> **Disambiguation:** the grc.engineering manifesto is co-authored by nine practitioners, one of whom is named *Justin Pagano*. That is **not** the Justin this curriculum is for. Different person; manifesto author only.
+> **Provenance:** authored by **Justin Pagano** (GRC Engineering @ Vanta), a co-author of the [grc.engineering](https://grc.engineering) manifesto this curriculum operationalizes. *(Corrects an earlier draft note that incorrectly treated the author and the manifesto co-author as different people.)*
 
 ---
 
