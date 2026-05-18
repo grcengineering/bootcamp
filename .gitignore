@@ -1,3 +1,6 @@
 # Scraped LinkedIn job-market corpus — LOCAL ONLY.
 # Scraped third-party platform data: never committed, never pushed (exfiltration boundary).
 research/job-market/
+
+# OS noise
+.DS_Store
