@@ -68,11 +68,11 @@ Settings such as "the screen locks after inactivity" are configured by policy an
 
 ### 4.5 The Security event log — the failed-logon claim (events as evidence)
 
-Windows writes security-relevant happenings as structured records into the **Security event log**, queried with `Get-WinEvent`. Each record is an object with an `Id` (the event type — a failed sign-in has its own well-known event ID), a `TimeCreated`, and a message. The control question "are there signs of unauthorized access attempts" becomes: pull the recent failed-logon events and look at how many there are and when. The key reframe from Module 01 carries over here — *the log is just structured data you query*, except now the records arrive as objects with typed fields instead of lines of text, so you filter by `Id` and read `TimeCreated` directly rather than grepping a file. A handful of failures is normal human typo noise; a burst is a signal, and a control can be written to flag when the count crosses a threshold.
+Windows writes security-relevant happenings as structured records into the **Security event log**, queried with `Get-WinEvent`. Each record is an object with an `Id` (the event type — a failed sign-in has its own well-known event ID), a `TimeCreated`, and a message. The control question "are there signs of unauthorized access attempts" becomes: pull the recent failed-logon events and look at how many there are and when. The key reframe from Module 01 carries over here — *the log is just structured data you query*, except now the records arrive as objects with typed fields instead of lines of text, so you filter by `Id` and read `TimeCreated` directly rather than grepping a file. A handful of failures is normal human typo noise; a burst is a signal, and a control can be written to flag when the count crosses a threshold. (Note: `(Get-WinEvent ...).Count` is reliable on the pinned Windows 10/11 lab — PowerShell 5.1+ — where a collection always exposes `.Count`; on legacy PowerShell a single returned event can lack `.Count` and read oddly, so confirm you are on the pinned version.)
 
 ### 4.6 Local administrators — the standing-privilege claim
 
-The claim "local-admin rights are limited to who should have them" is read from the local account database with `Get-LocalGroupMember -Group Administrators`, which returns one object per member of the local Administrators group. The control isn't satisfied by a count; it's satisfied by the *membership matching an approved list*. This is the cleanest example of why evidence and evaluation are different loop stages: the endpoint can only tell you *who is in the group* (LOCATE/QUERY); deciding whether that membership is *correct* requires comparing it to an authoritative approved list (EVALUATE) — which is why the collector's job is to faithfully record the membership, and the policy layer's job is to judge it.
+The claim "local-admin rights are limited to who should have them" (SOC 2 CC6.3 — restriction of privileged access to those who need it) is read from the local account database with `Get-LocalGroupMember -Group Administrators`, which returns one object per member of the local Administrators group. The control isn't satisfied by a count; it's satisfied by the *membership matching an approved list*. This is the cleanest example of why evidence and evaluation are different loop stages: the endpoint can only tell you *who is in the group* (LOCATE/QUERY); deciding whether that membership is *correct* requires comparing it to an authoritative approved list (EVALUATE) — which is why the collector's job is to faithfully record the membership, and the policy layer's job is to judge it.
 
 ### 4.7 Active Directory vs Entra ID — drawing the seam honestly
 
@@ -139,19 +139,23 @@ The point of collection is a record that an auditor can read without knowing Pow
 
 ```powershell
 PS C:\> [pscustomobject]@{
-          Control_CC6_1_Encryption   = (Get-BitLockerVolume -MountPoint C:).VolumeStatus
-          Control_CC6_8_Defender     = (Get-MpComputerStatus).AntivirusEnabled
-          Control_CC6_1_FailedLogons = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+          Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus
+          Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled
+          Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut
+          Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+          Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name
         } | ConvertTo-Json
 
 {
   "Control_CC6_1_Encryption": "FullyEncrypted",
-  "Control_CC6_8_Defender": true,
-  "Control_CC6_1_FailedLogons": 3
+  "Control_CC6_8_DefenderEnabled": true,
+  "Control_CC6_1_ScreenLockTimeoutSeconds": 600,
+  "Control_CC6_1_FailedLogonCount": 3,
+  "Control_CC6_3_LocalAdmins": ["WIN-LAB04\\Administrator"]
 }
 ```
 
-Each field is named for the SOC 2 CC6 control it supports, and `ConvertTo-Json` turns the object into a portable, machine-readable artifact — the exact shape a downstream evidence pipeline (or this module's happy-path test) can parse and evaluate without re-running anything on the endpoint. Notice every command was a `Get-`: the collector observed and changed nothing.
+Each field is named for the SOC 2 CC6 control it supports, and `ConvertTo-Json` turns the object into a portable, machine-readable artifact — the exact shape a downstream evidence pipeline (or this module's happy-path test) can parse and evaluate without re-running anything on the endpoint. This one record models the full five-control deliverable the §6 lab and §7 assessment require: encryption (CC6.1), endpoint protection (CC6.8), the effective screen-lock timeout (CC6.1), the failed-logon count (CC6.1), and local-administrator membership (CC6.3). Notice every command was a `Get-`: the collector observed and changed nothing.
 
 ---
 

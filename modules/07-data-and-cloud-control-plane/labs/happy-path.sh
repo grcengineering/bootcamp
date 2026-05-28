@@ -5,7 +5,7 @@
 #   1. STATE  : parse posture-findings.json and assert the encryption control evaluates PASS.
 #   2. EVENTS : parse audit-events.json and assert the out-of-hours privilege grant is a violation.
 #   3. METRIC : compute the SQL-equivalent per-control failure rate from evidence.csv and assert it.
-#   4. IDEMPOTENCE: run the evaluation twice and assert byte-identical output (monitoring precondition).
+#   4. DETERMINISM: run the evaluation twice and assert byte-identical output (monitoring precondition).
 # The real §6 lab may pull these from a live cloud; the happy path proves the EVALUATION LOGIC.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -75,7 +75,7 @@ ACC_PCT="$(fail_pct_for access)"
 test "$ENC_PCT" = "33.3" || { echo "FAIL: encryption fail_pct expected 33.3, got '$ENC_PCT'"; exit 1; }
 test "$ACC_PCT" = "50.0" || { echo "FAIL: access fail_pct expected 50.0, got '$ACC_PCT'"; exit 1; }
 
-# --- 4. IDEMPOTENCE: wrap the evaluation; run twice; assert byte-identical output ---------------
+# --- 4. DETERMINISM: wrap the evaluation; run twice; assert byte-identical output ---------------
 cat > control-evidence.sh <<SCRIPT
 #!/usr/bin/env bash
 set -euo pipefail
@@ -85,6 +85,6 @@ SCRIPT
 chmod +x control-evidence.sh
 A="$(./control-evidence.sh)"
 B="$(./control-evidence.sh)"
-test "$A" = "$B" || { echo "FAIL: evaluation not idempotent (output differed across two runs)"; exit 1; }
+test "$A" = "$B" || { echo "FAIL: evaluation not deterministic (output differed across two runs)"; exit 1; }
 
-echo "PASS: Module 07 lab reproduces (encryption=$ENC, access_violations=$VIOL, fail_pct enc=$ENC_PCT acc=$ACC_PCT, idempotent across two runs)"
+echo "PASS: Module 07 lab reproduces (encryption=$ENC, access_violations=$VIOL, fail_pct enc=$ENC_PCT acc=$ACC_PCT, deterministic across two runs)"

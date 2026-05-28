@@ -13,6 +13,11 @@
 #   4. The append-only ledger gains exactly one history row per run (the 30-day-history
 #      substrate the dashboard tile reads).
 #   5. The check is reproducible: the same snapshot yields the same verdict twice.
+#   6. A PRETTY-PRINTED (multi-line) drifted snapshot — the shape real `aws ... --output json`,
+#      `jq .`, and AWS Config exports actually emit — is CAUGHT as noncompliant (FAIL, exit 1),
+#      not silently passed. (Regression guard for the fail-open multi-line parsing bug.)
+#   7. An EMPTY / zero-resource snapshot FAILS CLOSED: the check refuses to emit a green verdict
+#      when it evaluated nothing (non-zero exit, no PASS), and the loop raises a drift alert.
 #
 # This proves the MONITOR stage's evaluation core. The real §6 lab wires these same
 # functions to a scheduler and a live cloud snapshot; here we feed them committed fixtures.
@@ -31,8 +36,12 @@ EVDIR="$LAB/evidence"
 
 COMPLIANT="$HERE/fixtures/state-compliant.json"
 DRIFTED="$HERE/fixtures/state-drifted.json"
-test -f "$COMPLIANT" || { echo "FAIL: missing fixture state-compliant.json"; exit 1; }
-test -f "$DRIFTED"   || { echo "FAIL: missing fixture state-drifted.json"; exit 1; }
+DRIFTED_PRETTY="$HERE/fixtures/state-drifted-pretty.json"
+EMPTY="$HERE/fixtures/state-empty.json"
+test -f "$COMPLIANT"       || { echo "FAIL: missing fixture state-compliant.json"; exit 1; }
+test -f "$DRIFTED"         || { echo "FAIL: missing fixture state-drifted.json"; exit 1; }
+test -f "$DRIFTED_PRETTY"  || { echo "FAIL: missing fixture state-drifted-pretty.json"; exit 1; }
+test -f "$EMPTY"           || { echo "FAIL: missing fixture state-empty.json"; exit 1; }
 
 # --- Assertion 1: COMPLIANT state -> PASS (exit 0), evidence record emitted, NO alert. ---
 if emit_evidence "$COMPLIANT" "$EVDIR"; then RC_OK=0; else RC_OK=$?; fi
@@ -64,4 +73,33 @@ if V1="$(evaluate_control "$DRIFTED" | head -1)"; then :; fi
 if V2="$(evaluate_control "$DRIFTED" | head -1)"; then :; fi
 test "$V1" = "$V2" || { echo "FAIL: check not reproducible (V1='$V1' V2='$V2')"; exit 1; }
 
-echo "PASS: Module 13 CCM loop reproduces (compliant=PASS+evidence+no-alert, drift=FAIL+evidence+alert, ledger=2 rows, deterministic)"
+# --- Assertion 6: a PRETTY-PRINTED (multi-line) drifted snapshot is CAUGHT, not silently passed. ---
+# This is the regression guard for the fail-open bug: real `aws ... --output json`, `jq .`, and AWS
+# Config exports are multi-line, with the bucket name and its flags on DIFFERENT physical lines. A
+# parser that needs them on the same line evaluates 0 buckets and green-lights a public bucket.
+PRETTY_OUT="$(evaluate_control "$DRIFTED_PRETTY")" && RC_PRETTY=0 || RC_PRETTY=$?
+test "$RC_PRETTY" -eq 1 || { echo "FAIL: pretty-printed drifted snapshot must FAIL/exit 1 (got exit $RC_PRETTY) — fail-open regression"; exit 1; }
+printf '%s\n' "$PRETTY_OUT" | grep -q "^FAIL " || { echo "FAIL: pretty-printed drift did not print a FAIL verdict"; exit 1; }
+printf '%s\n' "$PRETTY_OUT" | grep -q "evaluated=3" || { echo "FAIL: pretty-printed drift parsed the wrong bucket count (expected evaluated=3): $PRETTY_OUT"; exit 1; }
+printf '%s\n' "$PRETTY_OUT" | grep -q "^NONCOMPLIANT acme-public-website$" || { echo "FAIL: pretty-printed drift did not name the public bucket as noncompliant"; exit 1; }
+# And the full loop must raise an alert naming the drifted resource (drift, not silent health).
+EVDIR2="$LAB/evidence-pretty"
+if emit_evidence "$DRIFTED_PRETTY" "$EVDIR2"; then echo "FAIL: emit_evidence passed a pretty-printed public bucket"; exit 1; fi
+ALERT_PRETTY="$(ls "$EVDIR2"/alert-*.txt 2>/dev/null | head -1)"
+test -n "$ALERT_PRETTY" || { echo "FAIL: pretty-printed drift did not fire an alert"; exit 1; }
+grep -q "acme-public-website" "$ALERT_PRETTY" || { echo "FAIL: pretty-printed alert does not name the drifted resource"; exit 1; }
+
+# --- Assertion 7: an EMPTY / zero-resource snapshot FAILS CLOSED (no green verdict, no exit 0). ---
+EMPTY_OUT="$(evaluate_control "$EMPTY" 2>/dev/null)" && RC_EMPTY=0 || RC_EMPTY=$?
+test "$RC_EMPTY" -ne 0 || { echo "FAIL: empty snapshot must NOT exit 0 — fail-open on zero resources"; exit 1; }
+printf '%s\n' "$EMPTY_OUT" | grep -q "^PASS " && { echo "FAIL: empty snapshot emitted a PASS verdict — must fail closed"; exit 1; }
+printf '%s\n' "$EMPTY_OUT" | grep -q "evaluated=0" || { echo "FAIL: empty snapshot verdict should report evaluated=0: $EMPTY_OUT"; exit 1; }
+# The loop must treat fail-closed as a drift the responder sees, not as healthy silence.
+EVDIR3="$LAB/evidence-empty"
+if emit_evidence "$EMPTY" "$EVDIR3"; then echo "FAIL: emit_evidence returned success (exit 0) on a zero-resource snapshot"; exit 1; fi
+ALERT_EMPTY="$(ls "$EVDIR3"/alert-*.txt 2>/dev/null | head -1)"
+test -n "$ALERT_EMPTY" || { echo "FAIL: zero-resource fail-closed did not fire an alert"; exit 1; }
+ls "$EVDIR3"/run-*.evidence >/dev/null 2>&1 || { echo "FAIL: zero-resource run emitted no evidence record"; exit 1; }
+grep -q "exit_code=0" "$EVDIR3"/run-*.evidence && { echo "FAIL: zero-resource evidence record shows exit_code=0 — must fail closed"; exit 1; }
+
+echo "PASS: Module 13 CCM loop reproduces (compliant=PASS+evidence+no-alert, drift=FAIL+evidence+alert, ledger=2 rows, deterministic, pretty-printed drift CAUGHT, empty input FAILS CLOSED)"

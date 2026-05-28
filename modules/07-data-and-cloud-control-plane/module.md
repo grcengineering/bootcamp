@@ -33,7 +33,7 @@ Start with the question that every cloud vendor's marketing tries to stop you fr
 
 **Part two: the resource policy.** The identity boundary decides what an identity *may* do, but each resource also carries its own rules about what may be done *to* it — and crucially, *how it must be configured*. A storage bucket has a setting that says "encrypt everything written here." A database has a setting that says "do not allow connections from the public internet." These settings are the resource's policy: the declared, intended configuration of the thing itself. An encryption control is almost always a claim about a resource policy — "this resource is configured to encrypt at rest." The boundary governs *reach*; the resource policy governs *shape*. You need both, because a perfectly locked-down identity boundary on a bucket that stores plaintext is still a failed encryption control.
 
-**Part three: the audit log.** The boundary and the resource policy describe *intended* state — what should be allowed, how things should be configured. But intent is not history. Someone with permission can still do something alarming, and a control often cares not about "could this happen" but "did this happen, when, and by whom." The audit log is the cloud's tamper-evident diary: every meaningful action — every API call, every permission change, every resource created or destroyed — written down as a timestamped, attributed record. This is the single most underused source of GRC truth, because it answers the questions a configuration snapshot never can: *who granted that role? when did this become public? has anyone disabled logging?* In AWS the audit log is **CloudTrail**. Azure calls it **Activity Log** (with Entra sign-in logs alongside); Google Cloud calls it **Cloud Audit Logs**. Same diary, three names.
+**Part three: the audit log.** The boundary and the resource policy describe *intended* state — what should be allowed, how things should be configured. But intent is not history. Someone with permission can still do something alarming, and a control often cares not about "could this happen" but "did this happen, when, and by whom." The audit log is the cloud's diary: every meaningful action — every API call, every permission change, every resource created or destroyed — written down as a timestamped, attributed record. (Treat its tamper-*evidence* as a property you must turn on, not a default: it holds only when log-file integrity validation is enabled — e.g. CloudTrail's log-file validation — so that altered or deleted records can be detected; without it the diary is merely a log, not a tamper-evident one.) This is the single most underused source of GRC truth, because it answers the questions a configuration snapshot never can: *who granted that role? when did this become public? has anyone disabled logging?* In AWS the audit log is **CloudTrail**. Azure calls it **Activity Log** (with Entra sign-in logs alongside); Google Cloud calls it **Cloud Audit Logs**. Same diary, three names.
 
 **Part four: the posture service.** You could, in principle, evaluate every control yourself by reading the identity boundary, every resource policy, and the whole audit log. At scale, you cannot — there are too many resources and the rules are too intricate. So every serious cloud now ships a service whose entire job is to *continuously evaluate the other three parts against rules and emit verdicts*. It watches the resources, checks them against a ruleset ("is this bucket encrypted? is this database public?"), and produces a stream of **findings** — structured records that each say, in effect, "resource X, rule Y, status PASS or FAIL." This is the cloud doing the EVALUATE stage of our loop for you, on a schedule, and handing you the result as data. In AWS this is **Config** (records and evaluates configuration) feeding **Security Hub** (aggregates findings against standards). Azure calls its version **Defender for Cloud** with **Azure Policy**; Google Cloud calls it **Security Command Center**. Same evaluator, three names.
 
@@ -95,7 +95,7 @@ A CloudTrail event (and its Azure/GCP equivalents) is a JSON object recording on
   "requestParameters": { "policyArn": "arn:...:policy/AdministratorAccess" } }
 ```
 
-Read it as a sentence: at 2:14 a.m., `contractor-7` was granted `AdministratorAccess`. The control "privileged access is granted only through approved channels during business hours" is evaluated by *filtering* these events — keep the privilege-granting actions, check the time, attribute the actor. The log is a table you query; this module's lab does exactly that filtering against committed sample events.
+Read it as a sentence: at 2:14 a.m., `contractor-7` was granted `AdministratorAccess`. The control "privileged access is granted only through approved channels during business hours" is evaluated by *filtering* these events — keep the privilege-granting actions, check the time, attribute the actor. The log is a table you query; this module's lab does exactly that filtering against committed sample events. (One distinction worth noting: a permission change like `AttachUserPolicy` is a **control-plane** event — it alters the configuration of the cloud — whereas an action like `GetObject`, which reads data without changing config, is a **data-plane** event. Both can be logged, but they often live in separate streams and the data-plane stream is frequently off by default; know which plane your control cares about before you go looking for its events. The lab fixture includes a `GetObject` row precisely so the filter has to *ignore* a data-plane event and keep only the privilege grants.)
 
 ### 4.5 SQL is the grammar of evidence
 
@@ -109,22 +109,22 @@ That single number is the control result and a risk input at the same time. Push
 
 ```sql
 SELECT control,
-       ROUND(100.0 * SUM(status = 'FAIL') / COUNT(*), 1) AS fail_pct
+       ROUND(100.0 * SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) / COUNT(*), 1) AS fail_pct
 FROM evidence GROUP BY control;
 ```
 
-The `GROUP BY` produces one row per control; the expression turns raw counts into a percentage. No spreadsheet, no manual tally — the metric is the query, and the query is reproducible against next quarter's evidence table without changing a character.
+The `GROUP BY` produces one row per control; the expression turns raw counts into a percentage. The `CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END` is the portable way to count matching rows — it runs unchanged on PostgreSQL, SQL Server, Oracle, SQLite, and MySQL. (PostgreSQL also offers `COUNT(*) FILTER (WHERE status = 'FAIL')` for the same result.) Avoid the tempting shorthand `SUM(status = 'FAIL')`: it works on SQLite and MySQL, where a boolean coerces to 1/0, but is a type error on PostgreSQL, SQL Server, and Oracle — and portability is the whole point. No spreadsheet, no manual tally — the metric is the query, and the query is reproducible against next quarter's evidence table without changing a character.
 
-### 4.6 Idempotent evidence — same input, same verdict, every time
+### 4.6 Deterministic evidence — same input, same verdict, every time
 
-A check is only useful for MONITOR if running it twice on identical input yields identical output. That property has a name: **idempotence**. It sounds obvious and is constantly violated — by checks that embed today's date in the verdict, depend on the order rows come back, or call a live API whose answer drifts between runs. The discipline: separate *collection* (which is allowed to vary — the cloud changes) from *evaluation* (which must not — the same evidence must always produce the same verdict). Inline example of the failure mode and the fix:
+A check is only useful for MONITOR if running it twice on identical input yields identical output. That property has a name: the evaluation is **deterministic** — more precisely, it is a *referentially transparent* (pure) function of its input, with no hidden dependence on the clock, the environment, or row order. It sounds obvious and is constantly violated — by checks that embed today's date in the verdict, depend on the order rows come back, or call a live API whose answer drifts between runs. The discipline: separate *collection* (which is allowed to vary — the cloud changes) from *evaluation* (which must not — the same evidence must always produce the same verdict). Inline example of the failure mode and the fix:
 
 ```
-NOT idempotent:  verdict = "PASS as of " + now()      # output changes every run
-Idempotent:      verdict = evaluate(evidence_file)    # output is a pure function of the input
+NOT deterministic:  verdict = "PASS as of " + now()      # output changes every run
+Deterministic:      verdict = evaluate(evidence_file)    # output is a pure function of the input
 ```
 
-This is why the lab's happy path can re-run a script against a committed fixture and assert a fixed answer: the evaluation logic is deterministic. If your check isn't, a monitoring alert can't tell drift in the *world* from noise in your *code*.
+This is why the lab's happy path can re-run a script against a committed fixture and assert a fixed answer: the evaluation logic is a pure function of its input. If your check isn't, a monitoring alert can't tell drift in the *world* from noise in your *code*.
 
 ### 4.7 Why a query beats an export
 
@@ -157,7 +157,7 @@ Claim to verify: *"no privileged role was granted outside business hours."* This
   { "eventTime": "2026-05-20T02:14:00Z", "eventName": "AttachUserPolicy", "actor": "contractor-7", "policy": "AdministratorAccess" } ]
 ```
 
-Evaluation in words: keep events whose name grants privilege, extract the hour from `eventTime`, flag any outside 09:00–18:00 UTC. The first grant (14:02) is in-hours — fine. The second (02:14) is a 2 a.m. grant of `AdministratorAccess` to a contractor — a **FAIL**, and a finding no configuration snapshot could ever surface, because by the time you snapshot the config the grant is just "contractor-7 has admin," with the suspicious *timing* erased. The control result is "1 violation," and the evidence is the offending event, kept whole, with its timestamp and actor intact for the auditor.
+Evaluation in words: keep events whose name grants privilege, extract the hour from `eventTime`, flag any outside business hours — defined here as the half-open window `[09:00, 18:00)` UTC, so 09:00 is in-hours and 18:00 is the first out-of-hours hour (the lab's filter is exactly `hour < 9 || hour >= 18`). The first grant (14:02) is in-hours — fine. The second (02:14) is a 2 a.m. grant of `AdministratorAccess` to a contractor — a **FAIL**, and a finding no configuration snapshot could ever surface, because by the time you snapshot the config the grant is just "contractor-7 has admin," with the suspicious *timing* erased. The control result is "1 violation," and the evidence is the offending event, kept whole, with its timestamp and actor intact for the auditor.
 
 ### 5.3 Turning two evidence files into one risk number with SQL
 
@@ -177,9 +177,9 @@ The risk metric an executive asked for — "what percentage of our cloud control
 
 ```sql
 SELECT control,
-       SUM(status = 'FAIL')              AS failing,
-       COUNT(*)                          AS total,
-       ROUND(100.0 * SUM(status='FAIL') / COUNT(*), 1) AS fail_pct
+       SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END)              AS failing,
+       COUNT(*)                                                      AS total,
+       ROUND(100.0 * SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) / COUNT(*), 1) AS fail_pct
 FROM evidence
 GROUP BY control;
 ```
@@ -208,7 +208,7 @@ encryption: PASS=2 FAIL=1
 access:     PASS=1 FAIL=1
 ```
 
-Byte-for-byte identical, because the evaluation is a pure function of its input (§4.6). *That* is what makes a monitoring schedule meaningful: when the output changes, it changed because the *cloud* changed — drift — not because your code is flaky. A non-idempotent check can't tell you that, and a monitoring alert you can't trust is worse than no alert at all.
+Byte-for-byte identical, because the evaluation is a pure function of its input (§4.6). *That* is what makes a monitoring schedule meaningful: when the output changes, it changed because the *cloud* changed — drift — not because your code is flaky. A non-deterministic check can't tell you that, and a monitoring alert you can't trust is worse than no alert at all.
 
 ---
 
@@ -227,7 +227,7 @@ Byte-for-byte identical, because the evaluation is a pure function of its input 
 3. Open `audit-events.json`, classify the access control question as *state* or *event*, and explain in one sentence why a posture snapshot could not answer it. *(Objectives 1, 6)*
 4. Evaluate the access control: keep only privilege-granting events, extract the hour, and flag any grant outside 09:00–18:00 UTC. Record the count of violations and keep each offending event whole. *(Objectives 3, 4)*
 5. Load the evidence table `evidence.csv` and write a SQL query (via `bun:sqlite`, `sqlite3`, or an equivalent) that produces a per-control failure percentage. Confirm the number matches a hand count of the rows. *(Objective 2)*
-6. Wrap tasks 2, 4, and 5 into a single script `control-evidence.sh` that reads the fixtures and prints a verdict block plus the risk metric. Run it **twice**; confirm the output is byte-for-byte identical and explain, in one sentence, why that idempotence is the precondition for monitoring. *(Objectives 5, 6)*
+6. Wrap tasks 2, 4, and 5 into a single script `control-evidence.sh` that reads the fixtures and prints a verdict block plus the risk metric. Run it **twice**; confirm the output is byte-for-byte identical and explain, in one sentence, why that determinism is the precondition for monitoring. *(Objectives 5, 6)*
 7. Write a 4–6 sentence report mapping each verdict to its control, naming the cloud part each piece of evidence came from, and stating how you'd swap the `setup.sh` fixtures for real authenticated pulls without changing the evaluation logic. *(Objectives 1, 4, 6)*
 
 **Deliverables:** the two evidence verdicts (encryption PASS/FAIL; access violation count) with the source records kept verbatim, the SQL risk-metric query and its output, the re-runnable `control-evidence.sh`, and the written report. The happy-path script (`labs/happy-path.sh`) is the CI proof that your evaluation logic reproduces from clean — run it to check your own work.
@@ -238,9 +238,9 @@ Byte-for-byte identical, because the evaluation is a pure function of its input 
 
 **Competency artifact (not a quiz).** From a *fresh, unseen* set of control-plane records provided at assessment time — a posture-findings file and an audit-events file with different resources and a different offending event, plus an evidence table whose answer differs — the learner must, unaided and within 45 minutes, deliver:
 
-- A re-runnable script that evaluates **one encryption control from a posture finding (state)** and **one access control from audit events (event)**, emitting a machine-readable verdict for each, with the source records preserved verbatim as evidence, and that is **idempotent** (two runs, byte-identical output).
+- A re-runnable script that evaluates **one encryption control from a posture finding (state)** and **one access control from audit events (event)**, emitting a machine-readable verdict for each, with the source records preserved verbatim as evidence, and whose evaluation is **deterministic** (two runs, byte-identical output).
 - A **SQL query** that produces a per-control risk metric (a failure rate, not just a count) from the supplied evidence table, with the result reconciled against a hand count.
-- A short written or spoken walkthrough that correctly: maps each control to its cloud part using the four-part model; classifies each question as *state* or *event* and justifies the source chosen; explains why the query is stronger evidence than an export; and states why idempotence is required for monitoring.
+- A short written or spoken walkthrough that correctly: maps each control to its cloud part using the four-part model; classifies each question as *state* or *event* and justifies the source chosen; explains why the query is stronger evidence than an export; and states why deterministic evaluation is required for monitoring.
 
 **Rubric:** see `assessment/rubric.md`. Every row must be **Pass**. A single **Not-yet** routes the learner back to the specific concept section named in the rubric — not the whole module. Per-criterion pass-rates are the telemetry that flags this module for revision (maintenance Loop 3) when any objective falls below `assessment_passrate_threshold` (0.80) in `meta.yaml`.
 
@@ -250,7 +250,7 @@ Byte-for-byte identical, because the evaluation is a pure function of its input 
 | Risk metric in SQL | O2 | Writes a query producing a per-control failure rate; reconciles it to a hand count |
 | Reading the record | O3 | Reads the verdict from a structured finding/event, not a console screenshot |
 | Two-source report | O4 | Combines a posture finding and an audit query into one evidence report |
-| Idempotent verdict | O5 | Script gives byte-identical output across two runs; explains why that enables monitoring |
+| Deterministic verdict | O5 | Script gives byte-identical output across two runs; explains why that enables monitoring |
 | State vs. events | O6 | Classifies each question correctly and justifies query-over-export to an auditor |
 
 ---

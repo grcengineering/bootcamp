@@ -12,15 +12,15 @@
      finding verbatim as evidence; and
    - one **access control from audit events (EVENTS)** — keep only privilege-granting actions,
      extract the hour, flag any grant outside business hours, keep each offending event whole.
-   Each control emits a **machine-readable verdict**, and the script is **idempotent** — two runs
-   produce byte-identical output.
+   Each control emits a **machine-readable verdict**, and the script's evaluation is
+   **deterministic** — two runs produce byte-identical output.
 2. A **SQL query** that produces a **per-control risk metric** (a failure *rate*, not just a count)
    from the supplied evidence table, with the result reconciled against a hand count of the rows.
 3. A **spoken or written walkthrough** that correctly: maps each control to its cloud part using
    the four-part model (identity boundary / resource policy / audit log / posture service);
    classifies each control question as *state* or *event* and justifies the source chosen;
-   explains why a query is stronger evidence than an export; and states why idempotence is the
-   precondition for continuous monitoring.
+   explains why a query is stronger evidence than an export; and states why deterministic
+   evaluation is the precondition for continuous monitoring.
 
 ## Fresh records (assessor setup)
 

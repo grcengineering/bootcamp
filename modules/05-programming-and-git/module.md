@@ -196,7 +196,8 @@ def validate_dir(path):
     for name in sorted(os.listdir(path)):
         full = os.path.join(path, name)
         try:
-            record = json.loads(open(full).read())
+            with open(full) as f:
+                record = json.loads(f.read())
         except (OSError, json.JSONDecodeError) as e:
             errors.append({"file": name, "error": str(e)})   # a finding, not a crash
             continue
@@ -212,12 +213,12 @@ $ python -c "import json,validator; print(json.dumps(validator.validate_dir('evi
     {"file": "lt-02.json", "verdict": "FAIL"}
   ],
   "errors": [
-    {"file": "lt-03.json", "error": "Expecting value: line 1 column 1 (char 0)"}
+    {"file": "lt-05.json", "error": "Expecting value: line 1 column 32 (char 31)"}
   ]
 }
 ```
 
-The malformed `lt-03.json` did **not** abort the run; it became a recorded error while the other two were still judged. The report carries both the verdicts *and* an honest list of what couldn't be evaluated. That second list is the difference between a script and a defensible evidence tool — an auditor can see exactly which inputs were judged and which were skipped, and why.
+The malformed `lt-05.json` did **not** abort the run; it became a recorded error while the two good files were still judged. The report carries both the verdicts *and* an honest list of what couldn't be evaluated. That second list is the difference between a script and a defensible evidence tool — an auditor can see exactly which inputs were judged and which were skipped, and why.
 
 ### 5.3 The change as a reviewed branch — the control's audit trail
 
@@ -262,7 +263,7 @@ E       AssertionError: assert 'PASS' == 'FAIL'
 1 failed, 2 passed in 0.02s
 ```
 
-This failure is *your logic*, not bad input: `evaluate` returned `PASS` for a record with no `encrypted` field, which means the function treats "missing" as "fine." The test caught a real defect in the control's judgment — exactly its job. Contrast that with the run in 5.2, where `lt-03.json` produced an *error entry* in the report and the program kept going: that was the program *correctly reporting malformed input*, not a bug. Same word, "error," two different worlds — a failing assertion means *fix the code*; a recorded error in the report means *the code worked and the input was bad*. A GRC engineer who confuses the two either ships a broken control or chases ghosts. Read the message: a `pytest` failure points at your assertion; a report error points at the input.
+This failure is *your logic*, not bad input: `evaluate` returned `PASS` for a record with no `encrypted` field, which means the function treats "missing" as "fine." The test caught a real defect in the control's judgment — exactly its job. Contrast that with the run in 5.2, where `lt-05.json` produced an *error entry* in the report and the program kept going: that was the program *correctly reporting malformed input*, not a bug. Same word, "error," two different worlds — a failing assertion means *fix the code*; a recorded error in the report means *the code worked and the input was bad*. A GRC engineer who confuses the two either ships a broken control or chases ghosts. Read the message: a `pytest` failure points at your assertion; a report error points at the input.
 
 ---
 

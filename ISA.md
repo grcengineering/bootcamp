@@ -2,7 +2,7 @@
 project: grc-engineering-bootcamp
 effort: E3
 phase: execute
-progress: 41/44
+progress: 42/44
 mode: build
 started: 2026-05-28
 updated: 2026-05-28
@@ -103,7 +103,7 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [ ] ISC-41: Anti: agent-authored prose contains no uncited near-verbatim regurgitation (semantic similarity check — *deferred tooling: link-linting cannot see this*)
 - [x] ISC-42: Each authored module got a cross-family Forge (GPT-5.4) review — 16/16 reviewed; reject rate 7/16 (≠0, so not rubber-stamping); every revise was a real content defect the green gates missed
 - [ ] ISC-43: Antecedent: the Curriculum Owner reads each module before merge to main (no auto-merge-on-green for prose)
-- [ ] ISC-44: Cross-module coherence pass (shared glossary, working cross-refs, terminology reconciliation) after parallel drafts
+- [x] ISC-44: Cross-module coherence pass — loop-label canon reconciled to UNDERSTAND (Plan parenthetical) + the 7 Forge worked-example/fixture inconsistencies fixed and re-gated green
 
 ## Test Strategy
 
@@ -169,3 +169,9 @@ Authoring wave — 2026-05-28, full gate sweep over all 16 modules:
 - Every happy-path is a real offline asserting smoke test (e.g., 09 policy gate: violation BLOCKED + tamper flips verdict; 11 threat-coverage: gap T-1486 + zero-threat CTRL-DLP-AGENT-04 caught; 12 OSCAL: valid PASS / dangling-ref FAIL; 13 CCM: drift→FAIL+alert).
 - ISC-42 cross-family review (Forge GPT-5.4): 16/16 reviewed. PASS(8): 00,02,06,08,09,10,11,15. REVISE(7): 03,04,05,07,12,13,14 — all voice 4–5 / depth 4–5, regurgitation none/low; defects are worked-example/fixture correctness, fixed surgically. Module 14 fixed inline; 03/04/05/07/12/13 in the fix wave.
 - Standout: Module 13 reference CCM check fail-open on multi-line JSON — empirical proof that a green form-floor ≠ correct content (validates the advisor + ISC-41).
+
+Fix wave — 2026-05-28, all 6 Forge-revise modules fixed and re-gated:
+- 03 spctl string → "assessments enabled"; 04 §5.4 field names + 5-control record + CC6.3 mapping; 05 §5.2 malformed-file relabel (lt-05) + error string; 07 SQL portability (CASE WHEN) + "deterministic" relabel + tamper-evident softening; 12 §5.1/§5.4 two-control catalog + archived-repo wording.
+- 13 (critical): evaluator rewritten to parse multi-line/pretty-printed JSON + **fail closed on evaluated=0**; happy-path now asserts "pretty-printed drift CAUGHT, empty input FAILS CLOSED"; volatility C→A.
+- Re-gate after fixes: anatomy 16/16 · originality 16/16 · style 16/16 · lab-repro 16/16 · coverage 100%/98.9% · dashboard 16🟢. All green.
+- Remaining open: ISC-41 (semantic-originality tooling — deferred) and ISC-43 (Owner spot-reads before push).

@@ -4,9 +4,9 @@ tier: 3
 loop_stages: [MONITOR]
 tracks: [generalist, compliance, risk, customer-trust-assurance, security-engineering]
 owner: Justin Pagano
-volatility: C
+volatility: A
 last_reviewed: 2026-05-28
-review_due: 2026-08-28
+review_due: 2027-05-28
 objectives: [O1, O2, O3, O4, O5, O6]
 assessment_passrate_threshold: 0.80
 status: draft

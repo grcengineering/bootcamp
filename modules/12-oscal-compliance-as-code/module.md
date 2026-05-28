@@ -89,7 +89,7 @@ Two facts make this module Tier-C volatile, and naming them is part of the skill
 
 ### 5.1 The crosswalk row, promoted to a catalog control
 
-In Module 10 your spine held an access-review control as a crosswalk target: the bare ID `AC-2`. As an OSCAL catalog control, that same idea carries the structure a machine needs to reference it:
+In Module 10 your spine held an access-review control as a crosswalk target: the bare ID `AC-2`. As an OSCAL catalog control, that same idea carries the structure a machine needs to reference it. A real spine holds more than one control, so the catalog below carries two — `ac-2` and `sc-28`:
 
 ```json
 {
@@ -108,13 +108,21 @@ In Module 10 your spine held an access-review control as a crosswalk target: the
           { "name": "statement",
             "prose": "The organization manages information system accounts, including periodic review of who holds access." }
         ]
+      },
+      {
+        "id": "sc-28",
+        "title": "Protection of Information at Rest",
+        "parts": [
+          { "name": "statement",
+            "prose": "The organization protects the confidentiality and integrity of information at rest." }
+        ]
       }
     ]
   }
 }
 ```
 
-Read it against §4.2: a document UUID identifies *this catalog*; `metadata` names and versions it; the one `control` has a stable `id` (`ac-2`) a profile and an implementation can later point at. The Module-10 crosswalk's lonely cell `AC-2` is now an addressable object. Nothing here is decoration — strip the `id` and a validator rejects the whole catalog, because every later link depends on that handle.
+Read it against §4.2: a document UUID identifies *this catalog*; `metadata` names and versions it; each `control` has a stable `id` (`ac-2`, `sc-28`) a profile and an implementation can later point at. The Module-10 crosswalk's lonely cell `AC-2` is now an addressable object. Nothing here is decoration — strip the `id` and a validator rejects the whole catalog, because every later link depends on that handle.
 
 ### 5.2 The framework profile, as a selection over the catalog
 
@@ -198,11 +206,11 @@ You want a verdict a CI gate can act on, not prose a human reads. Run the §6 va
 
 ```
 $ bun validate-oscal.ts acme-catalog.json acme-profile.json acme-component.json
-catalog: "Acme Internal Control Spine" | controls: 1 (ac-2)
+catalog: "Acme Internal Control Spine" | controls: 2 (ac-2, sc-28)
 profile: imports acme-catalog.json | in-scope: 1 (ac-2) | dangling: 0
 component: implemented-requirements: 1 | policy-linked: 1
   ac-2 -> policy "ac-2-account-management"  [link resolves]
-PASS: required fields present, profile references resolve, ac-2 is implemented and policy-linked
+PASS: required fields present, profile references resolve, control is implemented and policy-linked
 exit: 0
 ```
 
@@ -263,7 +271,7 @@ Exit code `1`, the defect named, the downstream blast radius stated — no human
 - **Compliance-to-Policy / C2P (oscal-compass)** — the bridge from §4.6 that links OSCAL control IDs to policy-as-code. https://github.com/oscal-compass/compliance-to-policy — *use to see the OSCAL↔policy mapping that closes the Module 09 → Module 12 loop in real tooling.*
 - **Comply (strongDM)** — an open-source SOC 2 compliance toolkit that treats policy and evidence as code. https://github.com/strongdm/comply — *use for an alternative, lighter-weight take on compliance-as-code than the full OSCAL stack.*
 - **OpenControl / Compliance Masonry** — an earlier compliance-as-code data model and tooling, instructive as the conceptual predecessor to OSCAL's catalog/component split. https://github.com/opencontrol/compliance-masonry — *use to see the lineage of the §4.4 component-definition idea; note it predates OSCAL and is less actively maintained.*
-- **FedRAMP (program home)** — the authoritative source for the FedRAMP OSCAL direction §4.8 tracks (the approaching machine-readable-package mandate). https://www.fedramp.gov/ — *use to follow current FedRAMP automation guidance. ⚠️ Provenance caveat: FedRAMP's old OSCAL templates lived in the `GSA/fedramp-automation` GitHub repository, which went archived read-only in mid-2025 and is no longer resolvable — its templates were authoritative but must be located via current FedRAMP guidance, not the dead repo path. This is the §4.8 lesson made literal: a tool's current home is part of its correctness.*
+- **FedRAMP (program home)** — the authoritative source for the FedRAMP OSCAL direction §4.8 tracks (the approaching machine-readable-package mandate). https://www.fedramp.gov/ — *use to follow current FedRAMP automation guidance. ⚠️ Provenance caveat: FedRAMP's old OSCAL templates lived in the `GSA/fedramp-automation` GitHub repository, which went archived/read-only in mid-2025 — still browsable, but frozen and no longer maintained. Its templates were authoritative but must be located via current FedRAMP guidance, not the archived/read-only repo. This is the §4.8 lesson made literal: a tool's current home is part of its correctness.*
 
 *(Links are CI-link-checked. A dead link here is a build failure that opens a maintenance task — it does not silently rot. The `usnistgov/trestle` and archived-`fedramp-automation` caveats above are themselves the lesson: a tool's current status is part of its correctness.)*
 

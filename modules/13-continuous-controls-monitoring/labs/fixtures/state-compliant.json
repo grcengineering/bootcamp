@@ -5,6 +5,6 @@
   "buckets": [
     { "name": "acme-evidence-store",   "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true },
     { "name": "acme-audit-logs",        "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true },
-    { "name": "acme-terraform-state",   "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true }
+    { "name": "acme-public-website",    "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true }
   ]
 }

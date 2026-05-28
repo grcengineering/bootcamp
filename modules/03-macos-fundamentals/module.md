@@ -81,7 +81,7 @@ Gatekeeper enforces that only software from identified, Apple-checked sources ru
 
 ```
 $ spctl --status
-assess, enabled
+assessments enabled
 ```
 
 `assessments enabled` (the exact phrasing has varied across releases, hence Tier-B treatment in examples) is the pass. When assessments are disabled, the machine will launch unsigned, un-notarized code without complaint — the execution-control claim is false. Note the *related* concept of **notarization**: Apple scans and stamps developer software so Gatekeeper can verify it; you don't query notarization per-machine, but you should be able to explain in one sentence why Gatekeeper is the enforcement point and notarization is the supply-side check.

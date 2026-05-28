@@ -18,7 +18,7 @@
 | 🟢 | 10-standards-spine | Justin Pagano | B | draft | 2026-05-28 | 2026-11-28 | ok 183d |
 | 🟢 | 11-threat-informed-grc | Justin Pagano | B | draft | 2026-05-28 | 2026-11-28 | ok 183d |
 | 🟢 | 12-oscal-compliance-as-code | Justin Pagano | C | draft | 2026-05-28 | 2026-08-28 | ok 91d |
-| 🟢 | 13-continuous-controls-monitoring | Justin Pagano | C | draft | 2026-05-28 | 2026-08-28 | ok 91d |
+| 🟢 | 13-continuous-controls-monitoring | Justin Pagano | A | draft | 2026-05-28 | 2027-05-28 | ok 364d |
 | 🟢 | 14-product-ownership-build-vs-buy | Justin Pagano | B | draft | 2026-05-28 | 2026-11-28 | ok 183d |
 | 🟢 | 15-capstone-ship-one-control | Justin Pagano | A | draft | 2026-05-28 | 2027-05-28 | ok 364d |
 

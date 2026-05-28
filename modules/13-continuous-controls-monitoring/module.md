@@ -98,7 +98,7 @@ The control area is storage exposure. The binary claim: *"every S3 bucket has al
   "buckets": [
     { "name": "acme-evidence-store", "block_public_acls": true, "block_public_policy": true, "ignore_public_acls": true, "restrict_public_buckets": true },
     { "name": "acme-audit-logs",     "block_public_acls": true, "block_public_policy": true, "ignore_public_acls": true, "restrict_public_buckets": true },
-    { "name": "acme-terraform-state","block_public_acls": true, "block_public_policy": true, "ignore_public_acls": true, "restrict_public_buckets": true }
+    { "name": "acme-public-website", "block_public_acls": true, "block_public_policy": true, "ignore_public_acls": true, "restrict_public_buckets": true }
   ]
 }
 ```
@@ -176,7 +176,7 @@ The single red square is the whole point: a bare status light would have shown o
 
 **Scenario.** You own one control: *every S3 bucket has all four public-access-block flags enabled.* You will stand up the five-part CCM loop around it — an automated check that returns a verdict by exit code, an evidence record on every run, an append-only history ledger, a dashboard tile reading that ledger, and a drift alert — then induce a drift and watch the loop catch it.
 
-**Setup.** Run `bash labs/setup.sh ./ccm-lab`. This generates `ccm-check.sh` (the check function library — pure bash + awk, vendor-neutral) and an empty `evidence/` store. The committed fixtures `labs/fixtures/state-compliant.json` and `labs/fixtures/state-drifted.json` are your two captured-state snapshots (compliant first, then a drifted version where `acme-public-website` has all four flags off). No scanner, cloud, or network is needed for the offline core; the optional steps marked *(real environment)* require your own tooling.
+**Setup.** Run `bash labs/setup.sh ./ccm-lab`. This generates `ccm-check.sh` (the check function library — pure bash + awk, with a `bun`-based JSON parse where available, vendor-neutral) and an empty `evidence/` store. The committed fixtures `labs/fixtures/state-compliant.json` and `labs/fixtures/state-drifted.json` are your two captured-state snapshots (compliant first, then a drifted version where `acme-public-website` has all four flags off). Two further fixtures harden the check against the failure modes that make a monitor lie: `state-drifted-pretty.json` is the *same* drift expressed in **pretty-printed, multi-line JSON** — the shape real cloud exports and `jq` actually emit — and must still be caught, not silently passed; `state-empty.json` carries **zero buckets** and must make the check **fail closed** (refuse to emit a green verdict when it evaluated nothing) rather than report a vacuous pass. No scanner, cloud, or network is needed for the offline core; the optional steps marked *(real environment)* require your own tooling.
 
 **Tasks.**
 
