@@ -1,0 +1,10 @@
+# The team's OWNED top-threat list for a SaaS environment (Module 11 lab fixture).
+# One stable threat identifier per line. These are the LEFT column of the coverage map —
+# the handful of techniques the team decided it actually faces (§4.2). Comments and blank
+# lines are ignored by the validator. Identifiers are illustrative, modeled on a public
+# adversary-technique taxonomy; a real list cites the official current numbering.
+T-1566
+T-1078
+T-1530
+T-1486
+T-1110

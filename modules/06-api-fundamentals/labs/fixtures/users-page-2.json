@@ -1,0 +1,13 @@
+{
+  "data": [
+    { "id": "u_006", "email": "frank@acme.example", "mfa_enabled": false, "status": "active" },
+    { "id": "u_007", "email": "grace@acme.example", "mfa_enabled": true,  "status": "active" },
+    { "id": "u_008", "email": "heidi@acme.example", "mfa_enabled": false, "status": "active" }
+  ],
+  "pagination": {
+    "page": 2,
+    "per_page": 5,
+    "total": 8,
+    "next_cursor": null
+  }
+}

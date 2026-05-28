@@ -1,0 +1,53 @@
+{
+  "component-definition": {
+    "uuid": "33333333-3333-4333-8333-333333333333",
+    "metadata": {
+      "title": "Acme IAM Service - Control Implementation",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "last-modified": "2026-05-28T00:00:00Z"
+    },
+    "components": [
+      {
+        "uuid": "44444444-4444-4444-8444-444444444444",
+        "type": "service",
+        "title": "IAM Service",
+        "description": "The identity and access management service that enforces account-management controls.",
+        "control-implementations": [
+          {
+            "uuid": "55555555-5555-4555-8555-555555555555",
+            "source": "acme-profile.json",
+            "description": "Implementation of the SOC 2 - Acme profile by the IAM service.",
+            "implemented-requirements": [
+              {
+                "uuid": "66666666-6666-4666-8666-666666666666",
+                "control-id": "ac-2",
+                "description": "Account management is enforced in CI: any change granting the legacy-admin role is denied by policy, and a structured evidence record is emitted on every run.",
+                "links": [
+                  {
+                    "rel": "policy",
+                    "href": "#policy-ac-2-account-management"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "77777777-7777-4777-8777-777777777777",
+          "title": "Policy: ac-2-account-management (Module 09 policy-as-code)",
+          "props": [
+            {
+              "name": "policy-id",
+              "value": "ac-2-account-management"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

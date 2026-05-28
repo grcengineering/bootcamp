@@ -1,0 +1,14 @@
+module: 04-windows-fundamentals
+title: Windows Fundamentals
+tier: 1
+loop_stages: [LOCATE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B                      # §1-4,7 stable; §5-6 (cmdlet output, consoles) shift
+sections_tiering: "1-4=A, 5-6=B, 7=A, 8=C"
+last_reviewed: 2026-05-28
+review_due: 2026-11-28              # Tier-B cadence: 6 months
+objectives: [O1, O2, O3, O4, O5, O6, O7]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [powershell-major-version, windows-console-redesign, supplemental-link-dead]

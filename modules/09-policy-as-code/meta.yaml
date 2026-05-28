@@ -1,0 +1,12 @@
+module: 09-policy-as-code
+title: Policy as Code
+tier: 2
+loop_stages: [EVALUATE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: C
+last_reviewed: 2026-05-28
+review_due: 2026-08-28
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80
+status: draft

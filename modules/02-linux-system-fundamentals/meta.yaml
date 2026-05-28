@@ -1,0 +1,12 @@
+module: 02-linux-system-fundamentals
+title: Linux System Fundamentals
+tier: 1
+loop_stages: [LOCATE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: A
+last_reviewed: 2026-05-28
+review_due: 2027-05-28
+objectives: [O1, O2, O3, O4, O5, O6, O7]
+assessment_passrate_threshold: 0.80
+status: draft

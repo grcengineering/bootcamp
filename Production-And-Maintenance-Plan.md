@@ -63,7 +63,7 @@ Every module is the same shape so authors have a spec, reviewers have a checklis
 | # | Section | What it is | Rot tier |
 |---|---|---|---|
 | 1 | **Learning Objectives** | 3–7 measurable, Bloom-aligned outcomes ("By the end you can *configure*… *explain*… *produce*…") | A (stable) |
-| 2 | **Why this matters for GRC** | 1 short para tying the skill to the irreducible loop (control→locate→query→evaluate→evidence→monitor→own) | A |
+| 2 | **Why this matters for GRC** | 1 short para tying the skill to the irreducible loop (understand→locate→query→evaluate→evidence→monitor→own) | A |
 | 3 | **The Mental Model** | Original first-principles narrative — the *idea* before the syntax | A |
 | 4 | **Concepts** | Original explanation, concept by concept, each with a tiny inline example | A/B |
 | 5 | **Worked Examples** | 2–4 original, GRC-framed end-to-end examples | B |

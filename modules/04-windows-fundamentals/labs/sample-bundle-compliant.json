@@ -1,0 +1,10 @@
+{
+  "Hostname": "WIN-LAB04-COMPLIANT",
+  "CollectedUtc": "2026-05-28T00:00:00Z",
+  "Control_CC6_1_Encryption": "FullyEncrypted",
+  "Control_CC6_8_DefenderEnabled": true,
+  "Control_CC6_8_DefenderSignatureAgeDays": 1,
+  "Control_CC6_1_ScreenLockTimeoutSeconds": 600,
+  "Control_CC6_1_FailedLogonCount": 2,
+  "Control_CC6_3_LocalAdmins": ["WIN-LAB04\\Administrator"]
+}

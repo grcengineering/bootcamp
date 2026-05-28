@@ -1,0 +1,12 @@
+module: 10-standards-spine
+title: The Standards Spine
+tier: 2
+loop_stages: [MODEL]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B
+last_reviewed: 2026-05-28
+review_due: 2026-11-28
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80
+status: draft

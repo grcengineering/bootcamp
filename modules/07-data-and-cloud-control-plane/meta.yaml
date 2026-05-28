@@ -1,0 +1,13 @@
+module: 07-data-and-cloud-control-plane
+title: Data & Cloud Control Plane
+tier: 2
+loop_stages: [QUERY-at-scale, EVALUATE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B                      # §3-4 portable model is stable; §5-6 cloud specifics drift
+last_reviewed: 2026-05-28
+review_due: 2026-11-28              # Tier-B cadence: 6 months
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [cloud-console-redesign, posture-service-schema-change, supplemental-link-dead]

@@ -1,0 +1,10 @@
+{
+  "control_id": "CC6.1-s3-public-access-block",
+  "captured_at": "2026-05-21T09:00:00Z",
+  "source": "aws-config-snapshot",
+  "buckets": [
+    { "name": "acme-evidence-store",   "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true },
+    { "name": "acme-audit-logs",        "block_public_acls": true,  "block_public_policy": true,  "ignore_public_acls": true,  "restrict_public_buckets": true },
+    { "name": "acme-public-website",    "block_public_acls": false, "block_public_policy": false, "ignore_public_acls": false, "restrict_public_buckets": false }
+  ]
+}

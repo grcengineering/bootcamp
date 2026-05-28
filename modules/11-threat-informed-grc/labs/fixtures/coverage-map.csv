@@ -1,0 +1,7 @@
+threat_id,threat_name,control_id,mitigation
+T-1566,Phishing for credentials,CTRL-MFA-01,partial
+T-1078,Abuse of valid accounts,CTRL-MFA-01,partial
+T-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects
+T-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial
+T-1486,Data encrypted for ransom,,
+T-1110,Brute-force of credentials,CTRL-MFA-01,prevents

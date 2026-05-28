@@ -1,0 +1,12 @@
+module: 00-what-grc-engineering-is
+title: What GRC Engineering Is
+tier: 0
+loop_stages: [UNDERSTAND, LOCATE, QUERY, EVALUATE, EVIDENCE, MONITOR, OWN]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: A
+last_reviewed: 2026-05-28
+review_due: 2027-05-28
+objectives: [O1, O2, O3, O4]
+assessment_passrate_threshold: 0.80
+status: draft

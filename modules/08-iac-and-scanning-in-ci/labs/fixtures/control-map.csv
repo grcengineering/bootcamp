@@ -1,0 +1,5 @@
+check_id,control_id,control_title,fail_severity_floor
+CKV_AWS_18,AU-9,Protection of Audit Information,HIGH
+CKV_AWS_19,SC-28,Protection of Information at Rest,HIGH
+CKV_AWS_20,AC-3,Access Enforcement,HIGH
+CKV_AWS_21,CP-9,System Backup,HIGH

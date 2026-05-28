@@ -2,7 +2,7 @@
 project: grc-engineering-bootcamp
 effort: E3
 phase: execute
-progress: 20/44
+progress: 41/44
 mode: build
 started: 2026-05-28
 updated: 2026-05-28
@@ -76,32 +76,32 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [x] ISC-20: `ISA.md` exists at repo root with E3+ sections populated
 
 ### Per-module anatomy & originality contract (applies to every authored module)
-- [ ] ISC-21: Every module §1 objectives are Bloom-measurable (no banned verbs)
-- [ ] ISC-22: Every module §1–7 is original prose (originality-lint clean)
-- [ ] ISC-23: Every module's third-party links are quarantined to §8
-- [ ] ISC-24: Every module ships `labs/happy-path.sh` that reproduces in CI
-- [ ] ISC-25: Every module ships `assessment/` (artifact spec + rubric, not a quiz)
-- [ ] ISC-26: Every module `meta.yaml` has owner + volatility + review_due
-- [ ] ISC-27: Anti: no module objective uses unmeasurable verbs (understand/know/be familiar with/learn about)
-- [ ] ISC-28: Anti: no module presents paraphrased third-party framing as original (no-laundering)
+- [x] ISC-21: Every module §1 objectives are Bloom-measurable (style-lint 16/16)
+- [x] ISC-22: Every module §1–7 is original prose (originality-lint 16/16)
+- [x] ISC-23: Every module's third-party links are quarantined to §8 (originality-lint 16/16)
+- [x] ISC-24: Every module ships `labs/happy-path.sh` that reproduces in CI (lab-repro 16/16)
+- [x] ISC-25: Every module ships `assessment/` (artifact spec + rubric, not a quiz)
+- [x] ISC-26: Every module `meta.yaml` has owner + volatility + review_due (anatomy-lint 16/16)
+- [x] ISC-27: Anti: no module objective uses unmeasurable verbs (style-lint 16/16)
+- [x] ISC-28: Anti: no module presents paraphrased third-party framing as original — Forge cross-family review: regurgitation_risk none/low across all 16
 
 ### Authoring waves (pending — pipelined via workflow)
-- [ ] ISC-29: Part I (What GRC Engineering Is) authored as original content
-- [ ] ISC-30: Module 02 — Linux system fundamentals authored
-- [ ] ISC-31: Module 03 — macOS fundamentals authored (role-split)
-- [ ] ISC-32: Module 04 — Windows fundamentals authored (role-split)
-- [ ] ISC-33: Module 05 — Programming + Git authored (centerpiece)
-- [ ] ISC-34: Module 06 — APIs authored (Tier-1 capstone)
-- [ ] ISC-35: Modules 07–11 (Tier 2 — Engineering) authored
-- [ ] ISC-36: Modules 12–13 (Tier 3 — GRC-as-Code) authored
-- [ ] ISC-37: Modules 14–15 (Tier 4 — Product + Capstone) authored
-- [ ] ISC-38: 5 role-track definitions wired to the coverage matrix (D/W/A per module)
-- [ ] ISC-39: Each of 5 tracks has a defined Role Capstone deliverable
-- [ ] ISC-40: Antecedent: each authored module passes all CI gates before merge
+- [x] ISC-29: Part I (What GRC Engineering Is) authored as original content (module 00, gates green, Forge pass)
+- [x] ISC-30: Module 02 — Linux system fundamentals authored (gates green, Forge pass)
+- [x] ISC-31: Module 03 — macOS fundamentals authored (gates green, Forge revise: §4.3 spctl string)
+- [x] ISC-32: Module 04 — Windows fundamentals authored (gates green, Forge revise: §5.4 field names)
+- [x] ISC-33: Module 05 — Programming + Git authored (gates green, Forge revise: §5.2 fixture role)
+- [x] ISC-34: Module 06 — APIs authored (gates green, Forge pass)
+- [x] ISC-35: Modules 07–11 (Tier 2 — Engineering) authored (gates green; 07 revise SQL portability, 08/11 pass, 09 pass, 10 pass)
+- [x] ISC-36: Modules 12–13 (Tier 3 — GRC-as-Code) authored (gates green; 12 revise fixture-drift, 13 revise fail-open)
+- [x] ISC-37: Modules 14–15 (Tier 4 — Product + Capstone) authored (15 pass; 14 revise fixed)
+- [x] ISC-38: 5 role-track definitions wired to the coverage matrix (D/W/A per module)
+- [x] ISC-39: Each of 5 tracks has a defined Role Capstone deliverable (track files + Module 15 synthesis capstone)
+- [x] ISC-40: Antecedent: each authored module passes all CI gates (16/16 anatomy+originality+style+lab-repro green)
 
 ### Authoring quality (added 2026-05-28 from commitment-boundary advisor — CI is a form-floor, not a quality oracle)
 - [ ] ISC-41: Anti: agent-authored prose contains no uncited near-verbatim regurgitation (semantic similarity check — *deferred tooling: link-linting cannot see this*)
-- [ ] ISC-42: Each authored module gets a cross-family adversarial review (reviewer model family ≠ author's); reject rate tracked (≈0 ⇒ rubber-stamping)
+- [x] ISC-42: Each authored module got a cross-family Forge (GPT-5.4) review — 16/16 reviewed; reject rate 7/16 (≠0, so not rubber-stamping); every revise was a real content defect the green gates missed
 - [ ] ISC-43: Antecedent: the Curriculum Owner reads each module before merge to main (no auto-merge-on-green for prose)
 - [ ] ISC-44: Cross-module coherence pass (shared glossary, working cross-refs, terminology reconciliation) after parallel drafts
 
@@ -140,10 +140,15 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - 2026-05-28: **Local commits only.** Per [[explicit_deploy_confirmation]], push to origin / publication needs explicit "yes push". Build commits stay local.
 - 2026-05-28: **Module authoring delegated** to a background workflow (one author + one adversarial reviewer per module), conforming to the anatomy + originality contract + Module 01 exemplar.
 - 2026-05-28: refined: **Advisor (commitment-boundary) reframed CI as a *form-floor*, not a quality backstop** — gates are syntactic; the real authoring risks (correctness, uncited regurgitation, off-voice, section-stuffing, cross-module incoherence) are semantic and slip through. Adopted: (a) **canary one module end-to-end** before any fan-out; (b) **cross-family** adversarial review (author ≠ reviewer family) with tracked reject rate; (c) **human (Owner) read gates merge** to main — no auto-merge-on-green for prose; (d) **cross-module coherence pass** after drafts; (e) **semantic-originality** similarity check (uncited regurgitation is invisible to link-linting). Fan-out of Modules 03–15 **HELD** pending the canary + Owner read. New ISCs 41–44.
+- 2026-05-28: Owner chose **full fan-out** (over canary-first), accepting the flagged risk with cross-family review + spot-reads as the gate. Two authoring waves run.
+- 2026-05-28: **Workflow gotcha** — file-producing author agents under a required `StructuredOutput` schema reliably WRITE the files but skip the final schema call (12/15 "failed" in wave 1; all files were on disk and passed gates). Fix: omit the schema on file-producing author stages; verify via gates/disk. Kept the schema only on the review stage (Forge called it reliably). Reusable for future authoring workflows.
+- 2026-05-28: **Loop-label canon reconciled to UNDERSTAND** (ISC-44 partial) — Curriculum + 4 modules used UNDERSTAND; only the Production Plan §3 parenthetical said "control→…"; aligned the Plan to UNDERSTAND.
+- 2026-05-28: **Fix wave launched** for the 6 Forge-revise modules (03,04,05,07,12,13). Module 14's two findings already applied (distribution disclosure in §4.5; loop-label via Plan).
 
 ## Changelog
 
 - 2026-05-28 — conjectured: the CI gates (anatomy/originality/style/lab-repro/link) are a sufficient backstop to let parallel agents author modules safely. refuted_by: commitment-boundary advisor — gates are syntactic; quality/originality/correctness risks are semantic and pass straight through. learned: CI is a form-floor, not a quality oracle; canary + cross-family review + human merge-gate + semantic-originality check are required before trusting agent-authored content. criterion_now: ISC-41–44 added; fan-out gated on canary + Owner read.
+- 2026-05-28 — conjectured: with the form-floor green, the modules are publishable. refuted_by: empirical proof — all 16 modules passed every deterministic gate (16/16 anatomy+originality+style+lab-repro) YET cross-family Forge review found 7 real content defects the gates are structurally blind to — most sharply Module 13's CCM reference check, which is *fail-open* (passes a public bucket on real multi-line JSON), the exact failure the module teaches against. learned: the advisor's "green CI certifies what you didn't need certified and stays silent on what matters" is now demonstrated, not theoretical; cross-family review is load-bearing, not optional, and a semantic/correctness oracle (ISC-41) is the missing gate. criterion_now: ISC-42 satisfied (16/16 reviewed); fix wave addresses the 7; ISC-41 remains the durable tooling gap.
 
 ## Verification
 
@@ -158,3 +163,9 @@ Foundation wave — 2026-05-28, all gates run locally (evidence quoted):
 - ISC-15 coverage: `bun test --coverage` → 96.00% funcs / 98.90% lines (≥ 0.95), 33 pass / 0 fail (EXIT 0). Uncovered 27–28 = defensive `statSync` catch (intentionally unchased per 95%-not-100% rule).
 - ISC-16: `git status --short | grep research/job-market` → empty (corpus gitignored).
 - ISC-17: no `git push` executed; `origin` untouched.
+
+Authoring wave — 2026-05-28, full gate sweep over all 16 modules:
+- anatomy-lint **16/16** ✓ · originality-lint **16/16** ✓ · style-lint **16/16** ✓ · lab-repro **16/16** ✓ · dashboard **16 🟢**.
+- Every happy-path is a real offline asserting smoke test (e.g., 09 policy gate: violation BLOCKED + tamper flips verdict; 11 threat-coverage: gap T-1486 + zero-threat CTRL-DLP-AGENT-04 caught; 12 OSCAL: valid PASS / dangling-ref FAIL; 13 CCM: drift→FAIL+alert).
+- ISC-42 cross-family review (Forge GPT-5.4): 16/16 reviewed. PASS(8): 00,02,06,08,09,10,11,15. REVISE(7): 03,04,05,07,12,13,14 — all voice 4–5 / depth 4–5, regurgitation none/low; defects are worked-example/fixture correctness, fixed surgically. Module 14 fixed inline; 03/04/05/07/12/13 in the fix wave.
+- Standout: Module 13 reference CCM check fail-open on multi-line JSON — empirical proof that a green form-floor ≠ correct content (validates the advisor + ISC-41).
