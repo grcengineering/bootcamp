@@ -1,0 +1,28 @@
+# Loop-2 triggered-review list (Production & Maintenance Plan §5).
+# A weekly job opens a review task against the affected module(s) when any of these fire,
+# regardless of the scheduled cadence. `affects: [ANY]` means all modules.
+triggers:
+  - id: nist-800-53-revision
+    description: "NIST SP 800-53 publishes a new revision (e.g., Rev 6)"
+    affects: [10-standards-spine, 12-oscal-compliance-as-code]
+  - id: framework-revision
+    description: "SOC 2 TSC / ISO 27001 / NIST CSF / FedRAMP / PCI-DSS revision"
+    affects: [10-standards-spine, 12-oscal-compliance-as-code, 13-continuous-controls-monitoring]
+  - id: tool-major-version
+    description: "Major version of a tool we teach (Checkov, Trivy, Prowler, OPA, Cedar, Trestle)"
+    affects: [08-iac-scanning-in-ci, 09-policy-as-code, 12-oscal-compliance-as-code]
+  - id: cloud-console-redesign
+    description: "AWS/GCP/Azure console redesign affecting a worked example"
+    affects: [07-data-and-cloud-control-plane]
+  - id: shell-default-change
+    description: "Default shell behavior change on macOS/Linux"
+    affects: [01-terminal-and-command-line-basics, 02-linux-system-fundamentals]
+  - id: supplemental-link-dead
+    description: "Any §8 supplemental link fails the CI link-checker"
+    affects: [ANY]
+  - id: oscal-fedramp-mandate
+    description: "FedRAMP OSCAL submission mandate (~Sept 2026) status change"
+    affects: [12-oscal-compliance-as-code]
+  - id: ai-governance-shift
+    description: "NIST AI RMF / ISO 42001 material update (emerging universal thread)"
+    affects: [ANY]

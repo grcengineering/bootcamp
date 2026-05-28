@@ -1,0 +1,11 @@
+# Test + coverage config for the curriculum's TypeScript tooling (.ci/ + dashboard/).
+# The CONTENT (module.md, tracks, style guides) is markdown, not code — coverage applies
+# only to the executable tooling. Pure logic lives in .ci/lib.ts and is tested to the floor;
+# the thin CLI entry wrappers (anatomy-lint.ts, originality-lint.ts, …) are structurally
+# untestable orchestration (argv parsing + process.exit) and are not loaded by the test suite,
+# so they do not appear in the coverage denominator.
+[test]
+coverage = true
+coverageThreshold = 0.95
+coverageReporter = ["text"]
+coverageSkipTestFiles = true

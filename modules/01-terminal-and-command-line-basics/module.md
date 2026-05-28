@@ -217,21 +217,3 @@ A "Not-yet" on any row routes the learner back to the specific concept section, 
 
 ---
 
-## 9. Maintenance metadata (`meta.yaml`)
-
-```yaml
-module: 01-terminal-and-command-line-basics
-owner: TBD-at-approval            # single accountable SME author
-volatility: A                     # fundamentals; §1-4,7 barely change
-sections_tiering: { "1-4": A, "5-6": B, "7": A, "8": C }
-last_reviewed: 2026-05-16
-review_due: 2027-05-16            # Tier-A cadence: 12 months
-triggers:                         # auto-open a review if any fire
-  - "major shell behavior change (bash/zsh default change on macOS/Linux)"
-  - "any §8 supplemental link dead (from CI link-checker)"
-objectives: [O1, O2, O3, O4, O5, O6]
-assessment_passrate_threshold: 0.80   # below this on any objective → revise (Loop 3)
-status: PROOF-DRAFT               # demonstrates the model; full pipeline review pending approval
-changelog:
-  - 2026-05-16: initial original draft, authored as the production-model proof module
-```

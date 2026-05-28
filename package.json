@@ -1,0 +1,19 @@
+{
+  "name": "grc-engineering-bootcamp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Curriculum-as-code: 100% original GRC Engineering training material, itself GRC-engineered.",
+  "scripts": {
+    "lint": "bun .ci/anatomy-lint.ts && bun .ci/originality-lint.ts && bun .ci/style-lint.ts",
+    "lint:anatomy": "bun .ci/anatomy-lint.ts",
+    "lint:originality": "bun .ci/originality-lint.ts",
+    "lint:style": "bun .ci/style-lint.ts",
+    "linkcheck": "bun .ci/link-check.ts",
+    "labs": "bash .ci/lab-repro.sh",
+    "dashboard": "bun dashboard/generate.ts",
+    "test": "bun test",
+    "test:cov": "bun test --coverage",
+    "ci": "bun run lint && bash .ci/lab-repro.sh && bun .ci/link-check.ts && bun dashboard/generate.ts"
+  }
+}

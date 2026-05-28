@@ -1,0 +1,32 @@
+name: curriculum-ci
+
+# Green CI is the curriculum's evidence. The build status is the assurance artifact.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 7 * * 1" # nightly-ish weekly sweep (Mon 07:00 UTC) — catches link rot on main
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Anatomy lint (9-section anatomy + meta.yaml)
+        run: bun .ci/anatomy-lint.ts
+      - name: Originality lint (third-party links quarantined to §8)
+        run: bun .ci/originality-lint.ts
+      - name: Style lint (measurable Bloom objectives)
+        run: bun .ci/style-lint.ts
+      - name: Lab reproduction smoke test
+        run: bash .ci/lab-repro.sh
+      - name: Tooling tests + coverage (95% floor on .ci/lib.ts)
+        run: bun test --coverage
+      - name: Link check (§8 supplemental URLs)
+        run: bun .ci/link-check.ts
+      - name: Regenerate rot dashboard
+        run: bun dashboard/generate.ts

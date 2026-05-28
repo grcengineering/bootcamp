@@ -1,0 +1,11 @@
+# Unmeasurable objective verbs, banned in §1 Learning Objectives (Bloom discipline).
+# One entry per line. '#' lines are comments. Multiword phrases are scanned as substrings;
+# single words are checked as the bold lead verb of each numbered objective.
+# Enforced by .ci/style-lint.ts.
+understand
+know
+be familiar with
+learn about
+be aware of
+appreciate
+grasp

@@ -1,0 +1,14 @@
+module: 01-terminal-and-command-line-basics
+title: Terminal & Command Line Basics
+tier: 1
+loop_stages: [QUERY]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: A                      # fundamentals; §1-4,7 barely change
+sections_tiering: "1-4=A, 5-6=B, 7=A, 8=C"
+last_reviewed: 2026-05-28
+review_due: 2027-05-28              # Tier-A cadence: 12 months
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: published
+triggers: [shell-default-change, supplemental-link-dead]
