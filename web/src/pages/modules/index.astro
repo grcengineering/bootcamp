@@ -53,7 +53,7 @@ const num = (id: string) => id.split("-")[0];
                   {(m.data.loop_stages ?? []).map((s) => (
                     <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue/10 text-blue-bright border border-blue/20">{s}</span>
                   ))}
-                  {m.data.status && <span class="text-[11px] px-1.5 py-0.5 rounded bg-white/5 text-ink-dim">{m.data.status}</span>}
+                  {m.data.status && <span class="text-[11px] px-1.5 py-0.5 rounded bg-[color:var(--tint)] text-ink-dim">{m.data.status}</span>}
                 </div>
               </a>
             );

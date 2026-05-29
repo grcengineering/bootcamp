@@ -39,7 +39,7 @@ export default function ProgressSummary({ modules }: { modules: Mod[] }) {
           {done}/{modules.length} done · {pct}%
         </span>
       </div>
-      <div className="h-2.5 rounded-full bg-white/10 overflow-hidden" role="img" aria-label={`${pct}% complete`}>
+      <div className="h-2.5 rounded-full bg-[color:var(--tint-strong)] overflow-hidden" role="img" aria-label={`${pct}% complete`}>
         <div className="h-full bg-gradient-brand transition-all" style={{ width: `${pct}%` }} />
       </div>
       <div className="text-xs text-ink-dim mt-3">

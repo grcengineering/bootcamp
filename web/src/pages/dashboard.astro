@@ -56,7 +56,7 @@ const num = (id: string) => id.split("-")[0];
     <div class="glass rounded-xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-white/5 text-ink-dim">
+          <thead class="bg-[color:var(--tint)] text-ink-dim">
             <tr>
               <th class="text-left font-medium px-3 py-2.5 w-10">State</th>
               <th class="text-left font-medium px-3 py-2.5">Module</th>
@@ -69,7 +69,7 @@ const num = (id: string) => id.split("-")[0];
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr class="border-t border-white/5 hover:bg-white/[0.03]">
+              <tr class="border-t border-[color:var(--hairline-soft)] hover:bg-[color:var(--tint)]">
                 <td class="px-3 py-2.5"><Icon name={r.rot.icon} class={`w-5 h-5 ${ROT_COLOR[r.rot.level]}`} title={r.rot.label} /></td>
                 <td class="px-3 py-2.5">
                   <a href={withBase(`/modules/${r.id}`)} class="text-ink hover:text-orange no-underline">

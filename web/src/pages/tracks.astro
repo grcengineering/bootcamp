@@ -30,7 +30,7 @@ const Cov = coverage ? (await render(coverage)).Content : null;
       const C = r.Content;
       return (
         <details class="glass rounded-xl overflow-hidden group">
-          <summary class="cursor-pointer px-5 py-3.5 font-semibold text-ink flex items-center gap-2 list-none hover:bg-white/5">
+          <summary class="cursor-pointer px-5 py-3.5 font-semibold text-ink flex items-center gap-2 list-none hover:bg-[color:var(--tint)]">
             <Icon name="heroicons:chevron-right" class="w-4 h-4 text-orange transition-transform group-open:rotate-90" />
             {r.title}
           </summary>

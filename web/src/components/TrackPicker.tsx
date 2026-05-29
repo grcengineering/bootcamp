@@ -31,7 +31,7 @@ export default function TrackPicker({ tracks }: { tracks: T[] }) {
                 "px-3 py-1.5 rounded-lg text-sm border transition " +
                 (active
                   ? "bg-gradient-brand text-white border-transparent shadow-lg shadow-blue/20"
-                  : "bg-white/5 text-ink-soft border-white/10 hover:border-orange/40")
+                  : "bg-[color:var(--tint)] text-ink-soft border-[color:var(--hairline)] hover:border-orange/40")
               }
             >
               {t.title}

@@ -1,0 +1,55 @@
+---
+import { Icon } from "astro-icon/components";
+const opts = [
+  { v: "light", icon: "heroicons:sun", label: "Light" },
+  { v: "system", icon: "heroicons:computer-desktop", label: "System" },
+  { v: "dark", icon: "heroicons:moon", label: "Dark" },
+];
+---
+
+<div class="inline-flex items-center gap-0.5 rounded-xl p-0.5 glass" role="group" aria-label="Color theme">
+  {
+    opts.map((o) => (
+      <button
+        type="button"
+        data-theme-set={o.v}
+        aria-label={`${o.label} theme`}
+        title={`${o.label} theme`}
+        class="theme-opt grid place-items-center w-7 h-7 rounded-lg"
+      >
+        <Icon name={o.icon} class="w-4 h-4" />
+      </button>
+    ))
+  }
+</div>
+
+<script>
+  const KEY = "grc-bootcamp:theme";
+  const root = document.documentElement;
+  const mql = window.matchMedia("(prefers-color-scheme: dark)");
+  const getPref = (): string => localStorage.getItem(KEY) || "system";
+  const resolve = (p: string): string =>
+    p === "dark" || (p === "system" && mql.matches) ? "dark" : "light";
+  const apply = (p: string) => root.setAttribute("data-theme", resolve(p));
+  const mark = (p: string) =>
+    document.querySelectorAll<HTMLElement>(".theme-opt").forEach((b) => {
+      const on = b.getAttribute("data-theme-set") === p;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+  const setPref = (p: string) => {
+    localStorage.setItem(KEY, p);
+    apply(p);
+    mark(p);
+  };
+  document.querySelectorAll<HTMLElement>("[data-theme-set]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const v = b.getAttribute("data-theme-set");
+      if (v) setPref(v);
+    })
+  );
+  mql.addEventListener("change", () => {
+    if (getPref() === "system") apply("system");
+  });
+  mark(getPref());
+</script>

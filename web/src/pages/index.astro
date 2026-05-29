@@ -25,11 +25,15 @@ const tracks = [
 ---
 
 <Layout title="GRC Engineering Bootcamp">
-  <section class="py-10">
-    <div class="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs font-mono text-ink-soft mb-6">
-      <span class="w-1.5 h-1.5 rounded-full bg-gradient-brand"></span> GRC ENGINEERING BOOTCAMP
+  <section class="py-12 sm:py-16">
+    <div class="rise inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs font-mono text-ink-soft mb-6">
+      <span class="relative flex w-2 h-2">
+        <span class="absolute inline-flex w-full h-full rounded-full bg-gradient-brand opacity-70 animate-ping"></span>
+        <span class="relative inline-flex w-2 h-2 rounded-full bg-gradient-brand"></span>
+      </span>
+      GRC ENGINEERING BOOTCAMP
     </div>
-    <h1 class="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.03] text-ink">
+    <h1 class="rise text-5xl sm:text-7xl font-bold tracking-tight leading-[1.02] text-ink" style="animation-delay:.05s">
       Engineer controls.<br /><span class="text-gradient">Don't check boxes.</span>
     </h1>
     <p class="mt-6 text-lg text-ink-soft max-w-2xl leading-relaxed">
@@ -47,7 +51,7 @@ const tracks = [
     </div>
   </section>
 
-  <section class="py-10 border-t border-white/10">
+  <section class="py-10 border-t border-[color:var(--hairline)]">
     <h2 class="text-sm font-mono text-ink-dim mb-5">THE IRREDUCIBLE LOOP — every module maps to a stage</h2>
     <div class="flex flex-wrap items-center gap-2 font-mono text-sm">
       {loop.map((s, i) => (
@@ -63,13 +67,13 @@ const tracks = [
     </p>
   </section>
 
-  <section class="py-10 border-t border-white/10">
+  <section class="py-10 border-t border-[color:var(--hairline)]">
     <h2 class="text-2xl font-bold text-ink mb-6">Four tiers</h2>
     <div class="grid sm:grid-cols-2 gap-4">
       {tiers.map((t) => (
         <div class="glass-card p-5">
           <div class="flex items-center gap-3 mb-2">
-            <span class="grid place-items-center w-9 h-9 rounded-lg bg-gradient-brand-soft border border-white/10">
+            <span class="grid place-items-center w-9 h-9 rounded-lg bg-gradient-brand-soft border border-[color:var(--hairline)]">
               <Icon name={t.icon} class="w-5 h-5 text-orange" />
             </span>
             <div>
@@ -83,7 +87,7 @@ const tracks = [
     </div>
   </section>
 
-  <section class="py-10 border-t border-white/10">
+  <section class="py-10 border-t border-[color:var(--hairline)]">
     <h2 class="text-2xl font-bold text-ink mb-2">Five role tracks</h2>
     <p class="text-ink-soft mb-6 max-w-2xl">Everyone shares a placement-gated Common Core, then specializes by <em>the object they engineer</em>, then reconverges at a shared capstone showcase.</p>
     <div class="grid sm:grid-cols-2 gap-3">

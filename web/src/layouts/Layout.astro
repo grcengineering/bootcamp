@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { Icon } from "astro-icon/components";
+import ThemeToggle from "../components/ThemeToggle.astro";
 
 interface Props {
   title: string;
@@ -16,17 +17,27 @@ const nav = [
   { href: withBase("/dashboard"), label: "Dashboard" },
 ];
 const path = Astro.url.pathname;
-const isActive = (href: string, label: string) =>
-  href === path || (label !== "Home" && path.startsWith(href));
+const isActive = (href: string, label: string) => href === path || (label !== "Home" && path.startsWith(href));
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem("grc-bootcamp:theme") || "system";
+          var d = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.setAttribute("data-theme", d ? "dark" : "light");
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#0b0b1a" />
+    <meta name="theme-color" content="#0a0a18" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -35,9 +46,9 @@ const isActive = (href: string, label: string) =>
     <title>{title}</title>
   </head>
   <body class="min-h-screen flex flex-col">
-    <header class="glass-strong border-b border-white/10 sticky top-0 z-20">
-      <div class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
-        <a href={withBase("/")} class="group flex items-center gap-2.5 no-underline">
+    <header class="glass-strong border-b border-[color:var(--hairline)] sticky top-0 z-20">
+      <div class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between gap-4">
+        <a href={withBase("/")} class="group flex items-center gap-2.5 no-underline shrink-0">
           <span class="grid place-items-center w-8 h-8 rounded-lg bg-gradient-brand text-white shadow-lg shadow-blue/20">
             <Icon name="heroicons:command-line-solid" class="w-[18px] h-[18px]" />
           </span>
@@ -45,23 +56,26 @@ const isActive = (href: string, label: string) =>
             grcEngineering<span class="text-gradient font-semibold">(bootcamp)</span>
           </span>
         </a>
-        <nav class="flex items-center gap-1 text-sm">
-          {
-            nav.map((n) => (
-              <a
-                href={n.href}
-                class:list={[
-                  "px-3 py-1.5 rounded-lg no-underline transition",
-                  isActive(n.href, n.label)
-                    ? "text-ink bg-white/10"
-                    : "text-ink-dim hover:text-ink hover:bg-white/5",
-                ]}
-              >
-                {n.label}
-              </a>
-            ))
-          }
-        </nav>
+        <div class="flex items-center gap-1.5">
+          <nav class="hidden sm:flex items-center gap-1 text-sm">
+            {
+              nav.map((n) => (
+                <a
+                  href={n.href}
+                  class:list={[
+                    "px-3 py-1.5 rounded-lg no-underline transition",
+                    isActive(n.href, n.label)
+                      ? "text-ink bg-[color:var(--tint-strong)]"
+                      : "text-ink-dim hover:text-ink hover:bg-[color:var(--tint)]",
+                  ]}
+                >
+                  {n.label}
+                </a>
+              ))
+            }
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
 
@@ -69,7 +83,7 @@ const isActive = (href: string, label: string) =>
       <slot />
     </main>
 
-    <footer class="mt-20 border-t border-white/10">
+    <footer class="mt-20 border-t border-[color:var(--hairline)]">
       <div class="mx-auto max-w-6xl px-5 py-8 text-sm text-ink-dim flex flex-col sm:flex-row gap-2 sm:justify-between">
         <span>The curriculum is itself GRC-engineered — versioned, PR-reviewed, CI-tested, rot-monitored.</span>
         <span>Progress stays in your browser. <a href="https://grc.engineering">grc.engineering</a></span>

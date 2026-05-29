@@ -30,7 +30,7 @@ const TIER_LABEL: Record<number, string> = {
     <Icon name="heroicons:arrow-left" class="w-4 h-4" /> All modules
   </a>
 
-  <header class="mt-4 pb-6 border-b border-white/10">
+  <header class="mt-4 pb-6 border-b border-[color:var(--hairline)]">
     <div class="font-mono text-xs text-gradient inline-block">{(TIER_LABEL[d.tier ?? 0] ?? "")} · Module {num}</div>
     <h1 class="text-3xl sm:text-4xl font-bold text-ink mt-1.5 tracking-tight">{d.title}</h1>
     <div class="flex flex-wrap gap-2 mt-4 text-xs">
@@ -52,7 +52,7 @@ const TIER_LABEL: Record<number, string> = {
     <Content />
   </article>
 
-  <nav class="mt-12 pt-6 border-t border-white/10 flex justify-between gap-4 text-sm">
+  <nav class="mt-12 pt-6 border-t border-[color:var(--hairline)] flex justify-between gap-4 text-sm">
     {prev ? (
       <a href={withBase(`/modules/${prev.id}`)} class="inline-flex items-center gap-1.5 text-ink-dim hover:text-orange no-underline">
         <Icon name="heroicons:arrow-left" class="w-4 h-4 shrink-0" /> {prev.data.title}
