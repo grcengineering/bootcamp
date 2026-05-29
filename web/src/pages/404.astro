@@ -10,7 +10,7 @@ const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
     <p class="font-mono text-7xl font-extrabold text-gradient">404</p>
     <h1 class="text-3xl font-bold text-ink mt-3">That page isn't here.</h1>
     <p class="text-ink-soft mt-2">The link may be stale, or a module moved.</p>
-    <a href={withBase("/modules")} class="group inline-flex items-center gap-2 mt-8 px-5 py-2.5 rounded-xl bg-gradient-brand text-white font-medium no-underline shadow-lg shadow-blue/20 hover:opacity-95">
+    <a href={withBase("/modules")} class="btn btn-primary group mt-8">
       Browse the modules
       <Icon name="heroicons:arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
     </a>

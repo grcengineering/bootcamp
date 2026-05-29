@@ -39,13 +39,11 @@ const tracks = [
       control behavior, and let reality drive policy.
     </p>
     <div class="mt-8 flex flex-wrap gap-3">
-      <a href={withBase("/modules")} class="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-brand text-white font-medium no-underline shadow-lg shadow-blue/20 hover:opacity-95">
+      <a href={withBase("/modules")} class="btn btn-primary group">
         Start the {count} modules
         <Icon name="heroicons:arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
       </a>
-      <a href={withBase("/tracks")} class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass text-ink no-underline hover:border-orange/40">
-        Pick your track
-      </a>
+      <a href={withBase("/tracks")} class="btn btn-ghost">Pick your track</a>
     </div>
   </section>
 
