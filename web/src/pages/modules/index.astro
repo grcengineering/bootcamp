@@ -15,9 +15,9 @@ const TIER_LABEL: Record<number, string> = {
   4: "Tier 4 · GRC-as-Product",
 };
 const VOL: Record<string, { label: string; cls: string }> = {
-  A: { label: "A · stable", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  B: { label: "B · semi-stable", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-  C: { label: "C · volatile", cls: "bg-rose-50 text-rose-700 border-rose-200" },
+  A: { label: "A · stable", cls: "bg-emerald-400/10 text-emerald-300 border-emerald-400/25" },
+  B: { label: "B · semi-stable", cls: "bg-amber-400/10 text-amber-300 border-amber-400/25" },
+  C: { label: "C · volatile", cls: "bg-rose-400/10 text-rose-300 border-rose-400/25" },
 };
 
 const tiers = [0, 1, 2, 3, 4];
@@ -26,34 +26,34 @@ const num = (id: string) => id.split("-")[0];
 ---
 
 <Layout title="Modules — GRC Engineering Bootcamp">
-  <h1 class="text-3xl font-bold text-ink">Modules</h1>
-  <p class="text-ink-soft mt-2 max-w-2xl">
+  <h1 class="text-3xl font-bold text-ink tracking-tight">Modules</h1>
+  <p class="text-ink-soft mt-3 max-w-2xl leading-relaxed">
     {mods.length} modules. Each one's competency artifact is also its placement test — if you can
-    produce it unaided, mark it <strong>placed out</strong> and move on. Nobody re-learns the shell;
-    nobody skips the mindset.
+    produce it unaided, mark it <strong class="text-ink">placed out</strong> and move on. Nobody
+    re-learns the shell; nobody skips the mindset.
   </p>
 
   {tiers.map((t) => {
     const group = byTier(t);
     if (group.length === 0) return null;
     return (
-      <section class="mt-9">
-        <h2 class="font-mono text-sm text-accent mb-3">{TIER_LABEL[t] ?? `Tier ${t}`}</h2>
+      <section class="mt-10">
+        <h2 class="font-mono text-sm text-gradient inline-block mb-4">{TIER_LABEL[t] ?? `Tier ${t}`}</h2>
         <div class="grid sm:grid-cols-2 gap-3">
           {group.map((m) => {
             const vol = m.data.volatility ? VOL[m.data.volatility] : undefined;
             return (
-              <a href={withBase(`/modules/${m.id}`)} class="block rounded-lg border border-line p-4 no-underline hover:border-accent transition">
+              <a href={withBase(`/modules/${m.id}`)} class="glass-card block p-4 no-underline">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs text-ink-soft">{num(m.id)}</span>
+                  <span class="font-mono text-xs text-ink-dim">{num(m.id)}</span>
                   {vol && <span class={"text-[11px] px-2 py-0.5 rounded-full border " + vol.cls}>{vol.label}</span>}
                 </div>
-                <div class="font-semibold text-ink mt-1">{m.data.title}</div>
-                <div class="flex flex-wrap gap-1.5 mt-2">
+                <div class="font-semibold text-ink mt-1.5">{m.data.title}</div>
+                <div class="flex flex-wrap gap-1.5 mt-2.5">
                   {(m.data.loop_stages ?? []).map((s) => (
-                    <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-accent-soft text-accent">{s}</span>
+                    <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue/10 text-blue-bright border border-blue/20">{s}</span>
                   ))}
-                  {m.data.status && <span class="text-[11px] px-1.5 py-0.5 rounded bg-panel text-ink-soft">{m.data.status}</span>}
+                  {m.data.status && <span class="text-[11px] px-1.5 py-0.5 rounded bg-white/5 text-ink-dim">{m.data.status}</span>}
                 </div>
               </a>
             );

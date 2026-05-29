@@ -149,6 +149,7 @@ rot from meta.yaml — building clean via `bun run build`, deployable to GitHub 
 - 2026-05-28: **Custom domain `bootcamp.grc.engineering`** → `site` set to it, base `/` (root, not /repo/), `public/CNAME` emitted. DNS + Pages-enable + publish are owner steps, not taken here.
 - 2026-05-28: v1 owner dashboard is curriculum-rot (build-time, from meta) + local progress only; cross-learner telemetry is explicitly deferred (no backend) — stated in-UI, not faked.
 - 2026-05-28: Tier de-escalated classifier E4 → E3: the three architecture forks were resolved by owner answers, leaving substantial multi-file execution.
+- 2026-05-29: **Rebrand to grc.engineering identity.** Extracted the EXACT palette from grc.engineering + cheatsheet.grc.engineering (orange `#ffa84f`/`#ff8c00`, blue `#1b95c1`/`#00a8e8`, signature orange→blue gradient; dark-tech surfaces `#0b0b1a`/`#0f0f23`/`#151530`). Replaced ALL site-chrome emoji with **Heroicons** (`astro-icon` + `@iconify-json/heroicons`) — rot status, arrows, section/nav glyphs; curriculum-prose `→` left intact (authored content). Theme is dark, glassy (backdrop-blur, translucent cards), Inter/JetBrains Mono, orange→blue gradient on headline/CTAs/active states. Verified: clean build (21 pages), astro check 0 errors, Interceptor screenshots of home/dashboard/module/tracks in real Chrome.
 
 ## Changelog
 

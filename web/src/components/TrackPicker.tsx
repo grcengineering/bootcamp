@@ -28,10 +28,10 @@ export default function TrackPicker({ tracks }: { tracks: T[] }) {
               aria-pressed={active}
               onClick={() => choose(t.id)}
               className={
-                "px-3 py-1.5 rounded-md text-sm border transition " +
+                "px-3 py-1.5 rounded-lg text-sm border transition " +
                 (active
-                  ? "bg-accent text-white border-accent"
-                  : "bg-white text-ink-soft border-line hover:border-accent")
+                  ? "bg-gradient-brand text-white border-transparent shadow-lg shadow-blue/20"
+                  : "bg-white/5 text-ink-soft border-white/10 hover:border-orange/40")
               }
             >
               {t.title}
@@ -40,9 +40,9 @@ export default function TrackPicker({ tracks }: { tracks: T[] }) {
         })}
       </div>
       {current && (
-        <p className="text-sm text-ink-soft mt-3">
+        <p className="text-sm text-ink-dim mt-3">
           Your track is set to <strong className="text-ink">{tracks.find((t) => t.id === current)?.title ?? current}</strong>.
-          It shows on your <a href="dashboard">dashboard</a>.
+          It shows on your <a href="dashboard" className="text-blue-bright hover:text-orange">dashboard</a>.
         </p>
       )}
     </div>

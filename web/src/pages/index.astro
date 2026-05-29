@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { Icon } from "astro-icon/components";
 import { getCollection } from "astro:content";
 
 const mods = await getCollection("modules");
@@ -9,10 +10,10 @@ const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
 
 const loop = ["UNDERSTAND", "LOCATE", "QUERY", "EVALUATE", "EVIDENCE", "MONITOR", "OWN"];
 const tiers = [
-  { n: 1, name: "Foundations", loop: "UNDERSTAND · LOCATE · QUERY", blurb: "Reach and read the truth of a control by hand and by script — any OS, any API." },
-  { n: 2, name: "Engineering", loop: "QUERY · EVALUATE", blurb: "Pull control-truth at scale from cloud/SQL; enforce policy as code in CI." },
-  { n: 3, name: "GRC-as-Code", loop: "EVALUATE · EVIDENCE · MONITOR", blurb: "Express controls in OSCAL, auto-collect evidence, run continuous monitoring." },
-  { n: 4, name: "GRC-as-Product", loop: "OWN", blurb: "Run a control like a product: threat-informed, designed-left, owned, measured." },
+  { n: 1, name: "Foundations", loop: "UNDERSTAND · LOCATE · QUERY", icon: "heroicons:command-line", blurb: "Reach and read the truth of a control by hand and by script — any OS, any API." },
+  { n: 2, name: "Engineering", loop: "QUERY · EVALUATE", icon: "heroicons:wrench-screwdriver", blurb: "Pull control-truth at scale from cloud/SQL; enforce policy as code in CI." },
+  { n: 3, name: "GRC-as-Code", loop: "EVALUATE · EVIDENCE · MONITOR", icon: "heroicons:code-bracket-square", blurb: "Express controls in OSCAL, auto-collect evidence, run continuous monitoring." },
+  { n: 4, name: "GRC-as-Product", loop: "OWN", icon: "heroicons:cube", blurb: "Run a control like a product: threat-informed, designed-left, owned, measured." },
 ];
 const tracks = [
   ["Generalist", "the whole control loop, end-to-end"],
@@ -24,67 +25,83 @@ const tracks = [
 ---
 
 <Layout title="GRC Engineering Bootcamp">
-  <section class="py-8">
-    <p class="font-mono text-sm text-accent mb-3">GRC ENGINEERING BOOTCAMP</p>
-    <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-ink leading-[1.05]">
-      Engineer controls.<br />Don't check boxes.
+  <section class="py-10">
+    <div class="inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs font-mono text-ink-soft mb-6">
+      <span class="w-1.5 h-1.5 rounded-full bg-gradient-brand"></span> GRC ENGINEERING BOOTCAMP
+    </div>
+    <h1 class="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.03] text-ink">
+      Engineer controls.<br /><span class="text-gradient">Don't check boxes.</span>
     </h1>
-    <p class="mt-5 text-lg text-ink-soft max-w-2xl leading-relaxed">
+    <p class="mt-6 text-lg text-ink-soft max-w-2xl leading-relaxed">
       A progressive, 100%-original curriculum that takes a mixed-baseline team from zero technical
-      fluency to the full GRC Engineering canon. Legacy GRC flows framework → controls → evidence → audit.
-      This <strong class="text-ink">inverts it</strong>: start from running systems and real control
-      behavior, and let reality drive policy.
+      fluency to the full GRC Engineering canon. Legacy GRC flows framework → controls → evidence →
+      audit. This <strong class="text-ink">inverts it</strong>: start from running systems and real
+      control behavior, and let reality drive policy.
     </p>
-    <div class="mt-7 flex flex-wrap gap-3">
-      <a href={withBase("/modules")} class="px-5 py-2.5 rounded-md bg-accent text-white font-medium no-underline hover:opacity-90">
-        Start the {count} modules →
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href={withBase("/modules")} class="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-brand text-white font-medium no-underline shadow-lg shadow-blue/20 hover:opacity-95">
+        Start the {count} modules
+        <Icon name="heroicons:arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
       </a>
-      <a href={withBase("/tracks")} class="px-5 py-2.5 rounded-md border border-line text-ink no-underline hover:border-accent">
+      <a href={withBase("/tracks")} class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass text-ink no-underline hover:border-orange/40">
         Pick your track
       </a>
     </div>
   </section>
 
-  <section class="py-8 border-t border-line">
-    <h2 class="text-sm font-mono text-ink-soft mb-4">THE IRREDUCIBLE LOOP — every module maps to a stage</h2>
+  <section class="py-10 border-t border-white/10">
+    <h2 class="text-sm font-mono text-ink-dim mb-5">THE IRREDUCIBLE LOOP — every module maps to a stage</h2>
     <div class="flex flex-wrap items-center gap-2 font-mono text-sm">
       {loop.map((s, i) => (
         <Fragment>
-          <span class="px-2.5 py-1 rounded bg-accent-soft text-accent">{s}</span>
-          {i < loop.length - 1 && <span class="text-ink-soft">→</span>}
+          <span class="px-3 py-1.5 rounded-lg glass bg-gradient-brand-soft text-ink">{s}</span>
+          {i < loop.length - 1 && <Icon name="heroicons:arrow-long-right" class="w-4 h-4 text-ink-dim" />}
         </Fragment>
       ))}
     </div>
-    <p class="mt-4 text-ink-soft max-w-2xl">
-      A control is just a claim about the state of a system. <em>Engineering</em> one means running this
-      loop — and every tool you learn is instrumentation for it, never a checklist for its own sake.
+    <p class="mt-5 text-ink-soft max-w-2xl">
+      A control is just a claim about the state of a system. <em>Engineering</em> one means running
+      this loop — and every tool you learn is instrumentation for it, never a checklist for its own sake.
     </p>
   </section>
 
-  <section class="py-8 border-t border-line">
-    <h2 class="text-2xl font-bold text-ink mb-5">Four tiers</h2>
+  <section class="py-10 border-t border-white/10">
+    <h2 class="text-2xl font-bold text-ink mb-6">Four tiers</h2>
     <div class="grid sm:grid-cols-2 gap-4">
       {tiers.map((t) => (
-        <div class="rounded-lg border border-line p-5">
-          <div class="font-mono text-xs text-accent mb-1">TIER {t.n} · {t.loop}</div>
-          <div class="font-semibold text-ink text-lg">{t.name}</div>
-          <p class="text-ink-soft text-sm mt-1.5">{t.blurb}</p>
+        <div class="glass-card p-5">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="grid place-items-center w-9 h-9 rounded-lg bg-gradient-brand-soft border border-white/10">
+              <Icon name={t.icon} class="w-5 h-5 text-orange" />
+            </span>
+            <div>
+              <div class="font-mono text-[11px] text-blue-bright">TIER {t.n} · {t.loop}</div>
+              <div class="font-semibold text-ink">{t.name}</div>
+            </div>
+          </div>
+          <p class="text-ink-soft text-sm">{t.blurb}</p>
         </div>
       ))}
     </div>
   </section>
 
-  <section class="py-8 border-t border-line">
+  <section class="py-10 border-t border-white/10">
     <h2 class="text-2xl font-bold text-ink mb-2">Five role tracks</h2>
-    <p class="text-ink-soft mb-5 max-w-2xl">Everyone shares a placement-gated Common Core, then specializes by <em>the object they engineer</em>, then reconverges at a shared capstone showcase.</p>
+    <p class="text-ink-soft mb-6 max-w-2xl">Everyone shares a placement-gated Common Core, then specializes by <em>the object they engineer</em>, then reconverges at a shared capstone showcase.</p>
     <div class="grid sm:grid-cols-2 gap-3">
       {tracks.map(([name, obj]) => (
-        <div class="rounded-lg border border-line p-4">
-          <div class="font-semibold text-ink">{name}</div>
-          <div class="text-sm text-ink-soft">engineers {obj}</div>
+        <div class="glass-card p-4 flex items-start gap-3">
+          <Icon name="heroicons:cube-transparent" class="w-5 h-5 text-blue-bright shrink-0 mt-0.5" />
+          <div>
+            <div class="font-semibold text-ink">{name}</div>
+            <div class="text-sm text-ink-dim">engineers {obj}</div>
+          </div>
         </div>
       ))}
     </div>
-    <a href={withBase("/tracks")} class="inline-block mt-5 text-accent">See the coverage matrix →</a>
+    <a href={withBase("/tracks")} class="group inline-flex items-center gap-1.5 mt-6 text-blue-bright hover:text-orange no-underline">
+      See the coverage matrix
+      <Icon name="heroicons:arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+    </a>
   </section>
 </Layout>

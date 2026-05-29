@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
+import icon from "astro-icon";
 import tailwindcss from "@tailwindcss/vite";
 
 // Static site for GitHub Pages at the custom domain bootcamp.grc.engineering.
@@ -10,7 +11,7 @@ export default defineConfig({
   base: "/",
   output: "static",
   trailingSlash: "ignore",
-  integrations: [react()],
+  integrations: [react(), icon()],
   vite: {
     plugins: [tailwindcss()],
   },

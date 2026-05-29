@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { Icon } from "astro-icon/components";
 
 interface Props {
   title: string;
@@ -15,6 +16,8 @@ const nav = [
   { href: withBase("/dashboard"), label: "Dashboard" },
 ];
 const path = Astro.url.pathname;
+const isActive = (href: string, label: string) =>
+  href === path || (label !== "Home" && path.startsWith(href));
 ---
 
 <!doctype html>
@@ -23,7 +26,7 @@ const path = Astro.url.pathname;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#2257d6" />
+    <meta name="theme-color" content="#0b0b1a" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -32,10 +35,15 @@ const path = Astro.url.pathname;
     <title>{title}</title>
   </head>
   <body class="min-h-screen flex flex-col">
-    <header class="border-b border-[var(--color-line)] bg-[var(--color-paper)]/90 backdrop-blur sticky top-0 z-10">
-      <div class="mx-auto max-w-5xl px-5 h-14 flex items-center justify-between">
-        <a href={withBase("/")} class="font-mono font-semibold text-[var(--color-ink)] no-underline tracking-tight">
-          grc<span class="text-[var(--color-accent)]">.bootcamp</span>
+    <header class="glass-strong border-b border-white/10 sticky top-0 z-20">
+      <div class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
+        <a href={withBase("/")} class="group flex items-center gap-2 no-underline">
+          <span class="grid place-items-center w-8 h-8 rounded-lg bg-gradient-brand text-white shadow-lg shadow-blue/20">
+            <Icon name="heroicons:command-line-solid" class="w-[18px] h-[18px]" />
+          </span>
+          <span class="font-mono font-semibold tracking-tight text-ink">
+            grc<span class="text-gradient">.bootcamp</span>
+          </span>
         </a>
         <nav class="flex items-center gap-1 text-sm">
           {
@@ -43,10 +51,10 @@ const path = Astro.url.pathname;
               <a
                 href={n.href}
                 class:list={[
-                  "px-3 py-1.5 rounded-md no-underline hover:bg-[var(--color-panel)]",
-                  (n.href === path || (n.label !== "Home" && path.startsWith(n.href)))
-                    ? "text-[var(--color-accent)] font-medium bg-[var(--color-accent-soft)]"
-                    : "text-[var(--color-ink-soft)]",
+                  "px-3 py-1.5 rounded-lg no-underline transition",
+                  isActive(n.href, n.label)
+                    ? "text-ink bg-white/10"
+                    : "text-ink-dim hover:text-ink hover:bg-white/5",
                 ]}
               >
                 {n.label}
@@ -57,14 +65,14 @@ const path = Astro.url.pathname;
       </div>
     </header>
 
-    <main class="flex-1 mx-auto max-w-5xl w-full px-5 py-10">
+    <main class="flex-1 mx-auto max-w-6xl w-full px-5 py-12">
       <slot />
     </main>
 
-    <footer class="border-t border-[var(--color-line)] mt-16">
-      <div class="mx-auto max-w-5xl px-5 py-8 text-sm text-[var(--color-ink-soft)] flex flex-col sm:flex-row gap-2 sm:justify-between">
+    <footer class="mt-20 border-t border-white/10">
+      <div class="mx-auto max-w-6xl px-5 py-8 text-sm text-ink-dim flex flex-col sm:flex-row gap-2 sm:justify-between">
         <span>The curriculum is itself GRC-engineered — versioned, PR-reviewed, CI-tested, rot-monitored.</span>
-        <span>Progress is stored only in your browser. <a href="https://grc.engineering">grc.engineering</a></span>
+        <span>Progress stays in your browser. <a href="https://grc.engineering">grc.engineering</a></span>
       </div>
     </footer>
   </body>

@@ -1,8 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import ProgressSummary from "../components/ProgressSummary.tsx";
+import { Icon } from "astro-icon/components";
 import { getCollection } from "astro:content";
-import { rotStatus } from "../lib/rot";
+import { rotStatus, ROT_COLOR } from "../lib/rot";
 
 const base = import.meta.env.BASE_URL;
 const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
@@ -20,18 +21,25 @@ const num = (id: string) => id.split("-")[0];
 ---
 
 <Layout title="Dashboard — GRC Engineering Bootcamp">
-  <h1 class="text-3xl font-bold text-ink">Curriculum Dashboard</h1>
-  <p class="text-ink-soft mt-2 max-w-2xl">
+  <div class="flex items-center gap-3">
+    <span class="grid place-items-center w-10 h-10 rounded-xl bg-gradient-brand-soft border border-white/10">
+      <Icon name="heroicons:chart-bar-solid" class="w-5 h-5 text-orange" />
+    </span>
+    <h1 class="text-3xl font-bold text-ink tracking-tight">Curriculum Dashboard</h1>
+  </div>
+  <p class="text-ink-soft mt-3 max-w-2xl leading-relaxed">
     Continuous controls monitoring pointed at the curriculum itself: each module's
-    <code class="font-mono text-sm">review_due</code> (from its <code class="font-mono text-sm">meta.yaml</code>)
-    is treated like a control — 🟢 reviewed within cadence, 🟡 due within 30 days, 🔴 overdue.
-    As of {asOf.toISOString().slice(0, 10)}.
+    <code class="font-mono text-sm">review_due</code> is treated like a control — reviewed within
+    cadence, due within 30 days, or overdue. As of {asOf.toISOString().slice(0, 10)}.
   </p>
 
-  <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-    <strong>v1 boundary:</strong> this is a static site, so there is no cross-learner cohort telemetry —
-    your progress below is stored only in your browser. Aggregated per-objective pass-rates (the
-    curriculum's Loop-3 telemetry) need the deferred backend.
+  <div class="mt-5 glass rounded-xl px-4 py-3 flex items-start gap-3 text-sm text-ink-soft border-l-2 border-l-orange">
+    <Icon name="heroicons:information-circle-solid" class="w-5 h-5 text-orange shrink-0 mt-0.5" />
+    <span>
+      <strong class="text-ink">v1 boundary:</strong> this is a static site, so there is no cross-learner
+      cohort telemetry — your progress below is stored only in your browser. Aggregated per-objective
+      pass-rates (the curriculum's Loop-3 telemetry) need the deferred backend.
+    </span>
   </div>
 
   <section class="mt-6">
@@ -39,47 +47,49 @@ const num = (id: string) => id.split("-")[0];
   </section>
 
   <section class="mt-8">
-    <div class="flex items-center gap-4 mb-3 font-mono text-sm">
-      <span class="text-emerald-700">🟢 {c.green} green</span>
-      <span class="text-amber-700">🟡 {c.amber} amber</span>
-      <span class="text-rose-700">🔴 {c.red} red</span>
-      <span class="text-ink-soft">· {rows.length} modules</span>
+    <div class="flex items-center gap-5 mb-3 text-sm font-medium">
+      <span class="flex items-center gap-1.5 text-emerald-400"><Icon name="heroicons:check-circle-solid" class="w-4 h-4" /> {c.green} green</span>
+      <span class="flex items-center gap-1.5 text-amber-400"><Icon name="heroicons:clock-solid" class="w-4 h-4" /> {c.amber} amber</span>
+      <span class="flex items-center gap-1.5 text-rose-400"><Icon name="heroicons:exclamation-triangle-solid" class="w-4 h-4" /> {c.red} red</span>
+      <span class="text-ink-dim">· {rows.length} modules</span>
     </div>
-    <div class="overflow-x-auto rounded-lg border border-line">
-      <table class="w-full text-sm">
-        <thead class="bg-panel text-ink-soft">
-          <tr>
-            <th class="text-left font-medium px-3 py-2">State</th>
-            <th class="text-left font-medium px-3 py-2">Module</th>
-            <th class="text-left font-medium px-3 py-2">Owner</th>
-            <th class="text-left font-medium px-3 py-2">Vol</th>
-            <th class="text-left font-medium px-3 py-2">Status</th>
-            <th class="text-left font-medium px-3 py-2">Review due</th>
-            <th class="text-left font-medium px-3 py-2">Δ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr class="border-t border-line">
-              <td class="px-3 py-2" title={r.rot.level}>{r.rot.emoji}</td>
-              <td class="px-3 py-2">
-                <a href={withBase(`/modules/${r.id}`)} class="text-ink hover:text-accent">
-                  <span class="font-mono text-ink-soft">{num(r.id)}</span> {r.title}
-                </a>
-              </td>
-              <td class="px-3 py-2 text-ink-soft">{r.owner ?? "—"}</td>
-              <td class="px-3 py-2 text-ink-soft">{r.volatility ?? "—"}</td>
-              <td class="px-3 py-2 text-ink-soft">{r.status ?? "—"}</td>
-              <td class="px-3 py-2 text-ink-soft">{r.review_due ?? "—"}</td>
-              <td class="px-3 py-2 text-ink-soft">{r.rot.label}</td>
+    <div class="glass rounded-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-white/5 text-ink-dim">
+            <tr>
+              <th class="text-left font-medium px-3 py-2.5 w-10">State</th>
+              <th class="text-left font-medium px-3 py-2.5">Module</th>
+              <th class="text-left font-medium px-3 py-2.5">Owner</th>
+              <th class="text-left font-medium px-3 py-2.5">Vol</th>
+              <th class="text-left font-medium px-3 py-2.5">Status</th>
+              <th class="text-left font-medium px-3 py-2.5">Review due</th>
+              <th class="text-left font-medium px-3 py-2.5">Δ</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr class="border-t border-white/5 hover:bg-white/[0.03]">
+                <td class="px-3 py-2.5"><Icon name={r.rot.icon} class={`w-5 h-5 ${ROT_COLOR[r.rot.level]}`} title={r.rot.label} /></td>
+                <td class="px-3 py-2.5">
+                  <a href={withBase(`/modules/${r.id}`)} class="text-ink hover:text-orange no-underline">
+                    <span class="font-mono text-ink-dim">{num(r.id)}</span> {r.title}
+                  </a>
+                </td>
+                <td class="px-3 py-2.5 text-ink-dim">{r.owner ?? "—"}</td>
+                <td class="px-3 py-2.5 text-ink-dim">{r.volatility ?? "—"}</td>
+                <td class="px-3 py-2.5 text-ink-dim">{r.status ?? "—"}</td>
+                <td class="px-3 py-2.5 text-ink-dim">{r.review_due ?? "—"}</td>
+                <td class="px-3 py-2.5 text-ink-dim">{r.rot.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-    <p class="text-xs text-ink-soft mt-3">
-      A 🔴 module is treated exactly like an overdue control — visible, owned, escalated. If the team
-      can't keep their own training green, that's a live lesson in why controls rot.
+    <p class="text-xs text-ink-dim mt-3 max-w-2xl">
+      An overdue module is treated exactly like an overdue control — visible, owned, escalated. If the
+      team can't keep their own training green, that's a live lesson in why controls rot.
     </p>
   </section>
 </Layout>

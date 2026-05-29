@@ -16,9 +16,9 @@ export default function ProgressControl({ moduleId }: { moduleId: string }) {
   };
 
   return (
-    <div className="rounded-lg border border-line bg-panel p-4 not-prose">
-      <div className="text-sm font-medium text-ink mb-2">
-        Your progress{!ready && <span className="text-ink-soft"> …</span>}
+    <div className="glass rounded-xl p-4 not-prose">
+      <div className="text-sm font-medium text-ink mb-2.5">
+        Your progress{!ready && <span className="text-ink-dim"> …</span>}
       </div>
       <div role="group" aria-label="Module progress" className="flex flex-wrap gap-2">
         {STATUSES.map(({ value, label }) => {
@@ -30,10 +30,10 @@ export default function ProgressControl({ moduleId }: { moduleId: string }) {
               aria-pressed={active}
               onClick={() => choose(value)}
               className={
-                "px-3 py-1.5 rounded-md text-sm border transition " +
+                "px-3 py-1.5 rounded-lg text-sm border transition " +
                 (active
-                  ? "bg-accent text-white border-accent"
-                  : "bg-white text-ink-soft border-line hover:border-accent")
+                  ? "bg-gradient-brand text-white border-transparent shadow-lg shadow-blue/20"
+                  : "bg-white/5 text-ink-soft border-white/10 hover:border-orange/40")
               }
             >
               {label}
@@ -41,8 +41,8 @@ export default function ProgressControl({ moduleId }: { moduleId: string }) {
           );
         })}
       </div>
-      <p className="text-xs text-ink-soft mt-2">
-        Tip: if you can produce the §7 artifact unaided, mark <strong>Placed out</strong> and move on.
+      <p className="text-xs text-ink-dim mt-2.5">
+        Tip: if you can produce the §7 artifact unaided, mark <strong className="text-ink-soft">Placed out</strong> and move on.
       </p>
     </div>
   );
