@@ -1,0 +1,16 @@
+---
+import Layout from "../layouts/Layout.astro";
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
+---
+
+<Layout title="Not found — GRC Engineering Bootcamp">
+  <div class="py-20 text-center">
+    <p class="font-mono text-accent">404</p>
+    <h1 class="text-3xl font-bold text-ink mt-2">That page isn't here.</h1>
+    <p class="text-ink-soft mt-2">The link may be stale, or a module moved.</p>
+    <a href={withBase("/modules")} class="inline-block mt-7 px-5 py-2.5 rounded-md bg-accent text-white no-underline hover:opacity-90">
+      Browse the modules →
+    </a>
+  </div>
+</Layout>

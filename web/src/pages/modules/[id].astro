@@ -1,0 +1,60 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import ProgressControl from "../../components/ProgressControl.tsx";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const mods = (await getCollection("modules")).sort((a, b) => a.id.localeCompare(b.id));
+  return mods.map((entry, i) => ({
+    params: { id: entry.id },
+    props: { entry, prev: mods[i - 1] ?? null, next: mods[i + 1] ?? null },
+  }));
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
+const num = entry.id.split("-")[0];
+
+const TIER_LABEL: Record<number, string> = {
+  0: "Part I · Mindset", 1: "Tier 1 · Foundations", 2: "Tier 2 · Engineering",
+  3: "Tier 3 · GRC-as-Code", 4: "Tier 4 · GRC-as-Product",
+};
+---
+
+<Layout title={`${d.title} — GRC Engineering Bootcamp`} description={`Module ${num}: ${d.title}`}>
+  <a href={withBase("/modules")} class="text-sm text-ink-soft">← All modules</a>
+
+  <header class="mt-3 pb-6 border-b border-line">
+    <div class="font-mono text-xs text-accent">{(TIER_LABEL[d.tier ?? 0] ?? "")} · Module {num}</div>
+    <h1 class="text-3xl font-bold text-ink mt-1">{d.title}</h1>
+    <div class="flex flex-wrap gap-2 mt-3 text-xs">
+      {(d.loop_stages ?? []).map((s) => (
+        <span class="font-mono px-2 py-0.5 rounded bg-accent-soft text-accent">{s}</span>
+      ))}
+      {d.volatility && <span class="px-2 py-0.5 rounded border border-line text-ink-soft">volatility {d.volatility}</span>}
+      {d.status && <span class="px-2 py-0.5 rounded bg-panel text-ink-soft">{d.status}</span>}
+      {d.owner && <span class="px-2 py-0.5 rounded bg-panel text-ink-soft">owner: {d.owner}</span>}
+      {d.review_due && <span class="px-2 py-0.5 rounded bg-panel text-ink-soft">review due {d.review_due}</span>}
+    </div>
+  </header>
+
+  <div class="my-6">
+    <ProgressControl client:load moduleId={entry.id} />
+  </div>
+
+  <article class="prose">
+    <Content />
+  </article>
+
+  <nav class="mt-12 pt-6 border-t border-line flex justify-between gap-4 text-sm">
+    {prev ? (
+      <a href={withBase(`/modules/${prev.id}`)} class="text-ink-soft hover:text-accent">← {prev.data.title}</a>
+    ) : <span />}
+    {next ? (
+      <a href={withBase(`/modules/${next.id}`)} class="text-ink-soft hover:text-accent text-right">{next.data.title} →</a>
+    ) : <span />}
+  </nav>
+</Layout>

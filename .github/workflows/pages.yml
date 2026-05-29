@@ -1,0 +1,48 @@
+name: deploy-pages
+
+# MANUAL deploy only (workflow_dispatch) — publishing to bootcamp.grc.engineering is an
+# explicit, owner-triggered step. To enable continuous deploy on push, uncomment the `push`
+# trigger below (then a push to main that touches web/modules/tracks will auto-publish).
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths: ["web/**", "modules/**", "tracks/**"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install
+        working-directory: web
+      - name: Build (sync curriculum + astro build)
+        run: bun run build
+        working-directory: web
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,51 @@
+---
+import Layout from "../layouts/Layout.astro";
+import TrackPicker from "../components/TrackPicker.tsx";
+import { getCollection, render } from "astro:content";
+
+const all = await getCollection("tracks");
+const ROLE_IDS = ["generalist", "governance", "risk", "compliance", "customer-trust-assurance"];
+const roleTracks = ROLE_IDS.map((id) => all.find((t) => t.id === id)).filter(Boolean);
+const rendered = await Promise.all(
+  roleTracks.map(async (t) => ({ id: t!.id, title: t!.data.title, Content: (await render(t!)).Content }))
+);
+const coverage = all.find((t) => t.id === "coverage-matrix");
+const Cov = coverage ? (await render(coverage)).Content : null;
+---
+
+<Layout title="Tracks — GRC Engineering Bootcamp">
+  <h1 class="text-3xl font-bold text-ink">Tracks</h1>
+  <p class="text-ink-soft mt-2 max-w-2xl">
+    Five role tracks share a placement-gated Common Core, then specialize by <em>the object they
+    engineer</em>, then reconverge at a shared capstone showcase. Pick yours — it'll show on your dashboard.
+  </p>
+
+  <div class="my-6">
+    <TrackPicker client:load tracks={rendered.map((r) => ({ id: r.id, title: r.title }))} />
+  </div>
+
+  <div class="space-y-3">
+    {rendered.map((r) => {
+      const C = r.Content;
+      return (
+        <details class="border border-line rounded-lg overflow-hidden">
+          <summary class="cursor-pointer px-4 py-3 font-semibold text-ink bg-panel hover:bg-accent-soft">
+            {r.title}
+          </summary>
+          <div class="prose px-5 py-4">
+            <C />
+          </div>
+        </details>
+      );
+    })}
+  </div>
+
+  {Cov && (
+    <section class="mt-10">
+      <h2 class="text-2xl font-bold text-ink mb-4">Coverage matrix</h2>
+      <div class="prose">
+        <Cov />
+      </div>
+    </section>
+  )}
+</Layout>

@@ -1,0 +1,71 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = "GRC Engineering Bootcamp — learn to engineer controls, not check boxes." } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
+const nav = [
+  { href: withBase("/"), label: "Home" },
+  { href: withBase("/modules"), label: "Modules" },
+  { href: withBase("/tracks"), label: "Tracks" },
+  { href: withBase("/dashboard"), label: "Dashboard" },
+];
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#2257d6" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href={withBase("/favicon.svg")} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="border-b border-[var(--color-line)] bg-[var(--color-paper)]/90 backdrop-blur sticky top-0 z-10">
+      <div class="mx-auto max-w-5xl px-5 h-14 flex items-center justify-between">
+        <a href={withBase("/")} class="font-mono font-semibold text-[var(--color-ink)] no-underline tracking-tight">
+          grc<span class="text-[var(--color-accent)]">.bootcamp</span>
+        </a>
+        <nav class="flex items-center gap-1 text-sm">
+          {
+            nav.map((n) => (
+              <a
+                href={n.href}
+                class:list={[
+                  "px-3 py-1.5 rounded-md no-underline hover:bg-[var(--color-panel)]",
+                  (n.href === path || (n.label !== "Home" && path.startsWith(n.href)))
+                    ? "text-[var(--color-accent)] font-medium bg-[var(--color-accent-soft)]"
+                    : "text-[var(--color-ink-soft)]",
+                ]}
+              >
+                {n.label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 mx-auto max-w-5xl w-full px-5 py-10">
+      <slot />
+    </main>
+
+    <footer class="border-t border-[var(--color-line)] mt-16">
+      <div class="mx-auto max-w-5xl px-5 py-8 text-sm text-[var(--color-ink-soft)] flex flex-col sm:flex-row gap-2 sm:justify-between">
+        <span>The curriculum is itself GRC-engineered — versioned, PR-reviewed, CI-tested, rot-monitored.</span>
+        <span>Progress is stored only in your browser. <a href="https://grc.engineering">grc.engineering</a></span>
+      </div>
+    </footer>
+  </body>
+</html>
