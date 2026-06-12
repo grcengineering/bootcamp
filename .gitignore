@@ -4,3 +4,6 @@ research/job-market/
 
 # OS noise
 .DS_Store
+
+# Dependencies
+node_modules/
