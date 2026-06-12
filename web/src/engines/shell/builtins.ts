@@ -184,6 +184,7 @@ function printfBuiltin(args: string[], io: IOCtx, m: Machine): number {
   let rest = args.slice(1);
   let out = "";
   let cycles = 0;
+  let convFailed = false;
   do {
     let consumed = 0;
     let i = 0;
@@ -225,6 +226,11 @@ function printfBuiltin(args: string[], io: IOCtx, m: Machine): number {
         if (Number.isNaN(nval)) {
           io.err.write(`${m.shellName()}: printf: ${arg}: invalid number\n`);
           nval = 0;
+          convFailed = true;
+        } else if (arg !== undefined && !/^[+-]?\d+\s*$/.test(arg)) {
+          // bash warns and exits 1 on trailing garbage (e.g. 12abc) while printing the prefix
+          io.err.write(`${m.shellName()}: printf: ${arg}: invalid number\n`);
+          convFailed = true;
         }
         rendered =
           conv === "x" ? nval.toString(16) : conv === "X" ? nval.toString(16).toUpperCase() : conv === "o" ? nval.toString(8) : String(nval);
@@ -242,7 +248,7 @@ function printfBuiltin(args: string[], io: IOCtx, m: Machine): number {
     if (consumed === 0) break; // format has no conversions — never loop
   } while (rest.length > 0 && cycles < 10_000);
   io.out.write(out);
-  return 0;
+  return convFailed ? 1 : 0;
 }
 
 function evalTest(args: string[], io: IOCtx, m: Machine, name: string): number {

@@ -287,11 +287,6 @@ describe("snapshot/restore", () => {
 // session extensions: cols, editor writes, lab-file restore (ISC-117/123)
 // ---------------------------------------------------------------------------
 
-interface SessionExtras {
-  writeFileAs(path: string, content: string, provenance: string): void;
-  reseedFiles(seed: { files: { path: string; content?: string; dir?: boolean }[]; tools: Record<string, string> }): void;
-}
-
 describe("session extensions", () => {
   test("setCols re-parameterizes ls columnization live (ISC-123)", () => {
     const s = mkSession();
@@ -303,7 +298,7 @@ describe("session extensions", () => {
 
   test("writeFileAs stores editor output with honest provenance", () => {
     const s = mkSession();
-    (s as unknown as SessionExtras).writeFileAs("draft.txt", "edited in nano\n", "nano draft.txt");
+    s.writeFileAs!("draft.txt", "edited in nano\n", "nano draft.txt");
     expect(s.readFile("draft.txt")).toBe("edited in nano\n");
     expect(s.producedBy("draft.txt")).toBe("nano draft.txt");
     expect(run(s, "cat draft.txt").stdout).toBe("edited in nano\n");
@@ -316,7 +311,7 @@ describe("session extensions", () => {
     run(s, "echo mine > my-work.txt");
     run(s, "rm ../notes.txt");
     const historyBefore = s.history();
-    (s as unknown as SessionExtras).reseedFiles({
+    s.reseedFiles!({
       files: [
         { path: "~/evidence", dir: true },
         { path: "~/evidence/access.csv", content: "user,role\nalice,admin\nbob,viewer\nerin,admin\n" },
@@ -1132,12 +1127,15 @@ describe("coreutils", () => {
     const z = mkSession({ variant: "zsh-macos" });
     run(z, "printf '#!/usr/bin/env bash\\necho x\\n' > sc.sh; touch empty.txt");
     expect(run(z, "file evidence").stdout).toBe("evidence: directory\n");
-    expect(run(z, "file sc.sh").stdout).toBe("sc.sh: Bourne-Again shell script, ASCII text executable\n");
+    expect(run(z, "file sc.sh").stdout).toBe("sc.sh: Bourne-Again shell script text executable, ASCII text\n"); // pinned to m03x-file-script capture
     expect(run(z, "file notes.txt").stdout).toBe("notes.txt: ASCII text\n");
     expect(run(z, "file empty.txt").stdout).toBe("empty.txt: empty\n");
     expect(run(z, "file ghost").stdout).toBe("ghost: cannot open `ghost' (No such file or directory)\n");
     run(z, "printf '#!/bin/sh\\n' > shsc.sh");
-    expect(run(z, "file shsc.sh").stdout).toBe("shsc.sh: a script, ASCII text executable\n");
+    expect(run(z, "file shsc.sh").stdout).toBe("shsc.sh: POSIX shell script text executable, ASCII text\n"); // host probe 2026-06-12
+    run(z, "printf '#!/usr/bin/env python3\\nprint(1)\\n' > py.py");
+    const boundary = run(z, "file py.py");
+    expect(boundary.exit).toBe(64); // uncaptured type → honest sim boundary, never invention
   });
 
   test("ln -s creates working symlinks; duplicates fail", () => {

@@ -65,12 +65,54 @@ function expandDollar(text: string, q: boolean, host: ExpandHost, out: Piece[]) 
   const n = text.length;
   while (i < n) {
     const c = text[i]!;
+    // Backtick command substitution — the deprecated form bash still honors everywhere,
+    // including double quotes and heredoc bodies (engine audit finding 2, 2026-06-12).
+    if (c === "`") {
+      let j = i + 1;
+      let cmd = "";
+      while (j < n && text[j] !== "`") {
+        if (text[j] === "\\" && j + 1 < n && (text[j + 1] === "`" || text[j + 1] === "\\" || text[j + 1] === "$")) {
+          cmd += text[j + 1];
+          j += 2;
+          continue;
+        }
+        cmd += text[j];
+        j++;
+      }
+      if (j < n) {
+        pushText(out, host.runSub(cmd).replace(/\n+$/, ""), q, !q);
+        i = j + 1;
+        continue;
+      }
+      // unterminated backtick: fall through as literal (lexer-level errors handled upstream)
+    }
     if (c !== "$" || i + 1 >= n) {
       out.push({ c, q, s: false });
       i++;
       continue;
     }
     const nx = text[i + 1]!;
+    // $( … ) and $(( … )) reached as literal text (heredoc bodies are synthetic d-quoted
+    // lits that never pass the lexer's extraction — engine audit finding 3, 2026-06-12).
+    if (nx === "(") {
+      const arith = text[i + 2] === "(";
+      let depth = 0;
+      let j = i + 1;
+      while (j < n) {
+        if (text[j] === "(") depth++;
+        else if (text[j] === ")") { depth--; if (depth === 0) break; }
+        j++;
+      }
+      if (j < n) {
+        const inner = text.slice(i + 2, j); // for arith this includes the inner parens' body + ")"
+        const result = arith
+          ? host.runSub(`printf %s "$(${inner})"`).replace(/\n+$/, "")
+          : host.runSub(inner).replace(/\n+$/, "");
+        pushText(out, result, q, !q);
+        i = j + 1;
+        continue;
+      }
+    }
     if (nx === "?") {
       pushText(out, String(host.lastExit), q, !q);
       i += 2;

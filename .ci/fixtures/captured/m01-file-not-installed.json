@@ -1,0 +1,28 @@
+{
+  "id": "m01-file-not-installed",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "file /etc/hostname",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "negative space — file(1) is not in the minimal lab image; the sim must say so truthfully",
+  "stdout": "",
+  "stderr": "bash: line 2: file: command not found\n",
+  "exit": 127,
+  "stderr_interactive": "bash: file: command not found\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T15:20:55.723Z",
+    "captured_with": "capture.ts v1"
+  }
+}

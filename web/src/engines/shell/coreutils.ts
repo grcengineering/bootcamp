@@ -877,33 +877,31 @@ export const COREUTILS: Record<string, CoreutilImpl> = {
     return boundaryFlag("uname", args[0]!, io);
   },
 
+  // file(1) exists only on the macOS variant (absent from the minimal lab image — fixture
+  // m01-file-not-installed). Outputs pinned to real macOS captures (m03x-file-script fixture +
+  // host probes 2026-06-12: directory/empty/ASCII text/POSIX shell/cannot-open all verbatim;
+  // note macOS file exits 0 even for missing operands). Uncaptured types get the sim boundary.
   file: (args, io, m) => {
     const parsed = parseFlags("file", args, "", "", io);
     if (typeof parsed === "number") return parsed;
-    let failed = false;
     for (const f of parsed.operands) {
       const node = m.vfs.lookup(m.resolve(f));
       if (!node) {
         io.out.write(`${f}: cannot open \`${f}' (No such file or directory)\n`);
-        failed = true;
         continue;
       }
-      if (node.t === "dir") {
-        io.out.write(`${f}: directory\n`);
-        continue;
-      }
-      if (node.content === "") {
-        io.out.write(`${f}: empty\n`);
-        continue;
-      }
+      if (node.t === "dir") { io.out.write(`${f}: directory\n`); continue; }
+      if (node.content === "") { io.out.write(`${f}: empty\n`); continue; }
       if (node.content.startsWith("#!")) {
         const interp = node.content.slice(0, node.content.indexOf("\n"));
-        io.out.write(`${f}: ${interp.includes("bash") ? "Bourne-Again shell script" : "a script"}, ASCII text executable\n`);
-        continue;
+        if (interp.includes("bash")) { io.out.write(`${f}: Bourne-Again shell script text executable, ASCII text\n`); continue; }
+        if (/#!\s*\/bin\/sh\b/.test(interp)) { io.out.write(`${f}: POSIX shell script text executable, ASCII text\n`); continue; }
+        io.err.write(`grc-sim: file: this file type is outside the lab's captured surface — run it on a real machine to explore\n`);
+        return 64;
       }
       io.out.write(`${f}: ASCII text\n`);
     }
-    return failed ? 1 : 0;
+    return 0;
   },
 
   ln: (args, io, m) => {

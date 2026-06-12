@@ -48,6 +48,10 @@ interface EngineVfsBlob {
   prevCwd: string;
 }
 
+// DELIBERATE DIVERGENCE (documented per engine audit finding 6, 2026-06-12): in real
+// interactive bash, \`set -e; false\` terminates the session. Here the session survives —
+// ending a learner's lab because they experimented with set -e would be hostile UX, and the
+// lab page has no concept of a dead session. Scripts (bash f.sh / ./f.sh) honor set -e fully.
 class ShellSessionImpl implements ShellSession {
   private m: Machine;
   private pending: Pending | null = null;

@@ -607,7 +607,7 @@ export class Machine {
           continue;
         }
         if (target === "2") {
-          out.out = out.err;
+          if (r.fd !== 2) out.out = out.err; // 2>&2 is a no-op, not an alias swap (audit finding 7)
           continue;
         }
         out.err.write(`${this.errPrefix()}${target}: Bad file descriptor\n`);
