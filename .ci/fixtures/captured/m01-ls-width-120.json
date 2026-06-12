@@ -1,0 +1,31 @@
+{
+  "id": "m01-ls-width-120",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [
+    "lab-setup 01",
+    "cd lab01",
+    "touch alpha.txt beta.txt gamma-longer-name.txt delta.txt"
+  ],
+  "cmd": "ls -C -w120",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "access-export.csv  alpha.txt  beta.txt\tdelta.txt  gamma-longer-name.txt\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

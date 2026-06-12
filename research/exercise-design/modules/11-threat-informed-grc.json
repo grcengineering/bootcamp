@@ -1,0 +1,164 @@
+{
+  "module_id": "11-threat-informed-grc",
+  "title": "Threat-informed GRC & Systems/Design Thinking",
+  "commands": [
+    {
+      "cmd": "bash setup.sh ./work",
+      "example_invocations": [
+        "bash setup.sh ./work",
+        "bash setup.sh /tmp/assess11"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Module 11 fixtures staged in ./work/ (prioritized-threats.txt, controls-in-scope.txt, coverage-map.csv)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "bun validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]",
+      "example_invocations": [
+        "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "SEED MAP (exit 1):\nprioritized threats: 5 | in-scope controls: 4 | map rows: 6 | threats covered: 4/5\nFAIL: 1 coverage gap(s) — prioritized threat with no mapped control:\n  - T-1486\nFAIL: 1 zero-threat control(s) — in-scope control mitigates no prioritized threat (kill/downgrade candidate):\n  - CTRL-DLP-AGENT-04\nexit: 1",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "bun validate-coverage.ts work/coverage-map.csv (resolved map, dead control removed from scope)",
+      "example_invocations": [
+        "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "RESOLVED MAP (exit 0):\nprioritized threats: 5 | in-scope controls: 4 | map rows: 6 | threats covered: 5/5\nPASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid.",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "bun validate-coverage.ts (map containing an invalid mitigation label — honesty negative test)",
+      "example_invocations": [
+        "bun validate-coverage.ts work/coverage-map-bad.csv work/prioritized-threats.txt work/controls-resolved.txt"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "BAD LABEL (exit 1):\nprioritized threats: 5 | in-scope controls: 4 | map rows: 7 | threats covered: 5/5\nFAIL: 1 row(s) carry an invalid mitigation label:\n  - T-1110 -> CTRL-MFA-01 has mitigation 'eliminates-totally' (allowed: prevents|detects|partial)\nexit: 1",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "bun validate-coverage.ts (other validator error branches, verbatim from source)",
+      "example_invocations": [
+        "bun validate-coverage.ts",
+        "bun validate-coverage.ts map.csv missing-threats.txt",
+        "bun validate-coverage.ts map-with-unknown-threat.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "No args: 'usage: validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]' (exit 1). Missing files: 'FAIL: prioritized-threats file not found: <path>' / 'FAIL: controls-in-scope file not found: <path>'. Empty map: 'FAIL: coverage map has no data rows'. Bad header: \"FAIL: header must be 'threat_id,threat_name,control_id,mitigation', got '<got>'\". Unknown threat row: 'FAIL: N row(s) map a control to a non-prioritized threat:' then '  - <controlId> -> '<threatId>' (threat is not on the prioritized list)'. All failures end with 'exit: 1' on stderr and exit code 1.",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "echo $? (exit code as the verdict)",
+      "example_invocations": [
+        "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt; echo $?"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "1 (seed map), 0 (resolved map). Module and rubric explicitly use 'exit code as the verdict'.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "cat / open fixture files (inspection step, task 1)",
+      "example_invocations": [
+        "cat work/prioritized-threats.txt",
+        "cat work/controls-in-scope.txt",
+        "cat work/coverage-map.csv"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "coverage-map.csv verbatim:\nthreat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,,\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\n\nprioritized-threats.txt (after comment header): T-1566, T-1078, T-1530, T-1486, T-1110\ncontrols-in-scope.txt (after comment header): CTRL-MFA-01, CTRL-ACCESS-REVIEW-02, CTRL-BUCKET-ENC-03, CTRL-DLP-AGENT-04",
+      "fidelity_source": "authored-fixture"
+    },
+    {
+      "cmd": "validator output redirection to capture files",
+      "example_invocations": [
+        "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt > validation-before.txt 2>&1",
+        "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt > validation-after.txt 2>&1"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Lab tasks 2 and 5 require capturing the failing run into validation-before.txt and the passing run into validation-after.txt. Note: summary line and PASS go to stdout; FAIL lines and 'exit: 1' go to stderr — capture needs 2>&1.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "bash happy-path.sh (CI smoke test; awk fallback validator when bun absent)",
+      "example_invocations": [
+        "bash happy-path.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "PASS: Module 11 lab reproduces — coverage gap (T-1486) caught, zero-threat control (CTRL-DLP-AGENT-04) caught, both resolved to a clean map, invalid mitigation label rejected (bun reference validator agreed).\n(or suffix ' (bun not present; awk core-logic only).' without bun). Awk fallback prints one line per defect: 'DEFECT coverage-gap T-1486', 'DEFECT zero-threat-control CTRL-DLP-AGENT-04', 'DEFECT bad-mitigation T-1110 CTRL-MFA-01 eliminates-totally', 'DEFECT unknown-threat <cid> <tid>', 'DEFECT bad-header'.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "sed edit of coverage-map.csv to close the gap (happy-path's canonical fix)",
+      "example_invocations": [
+        "sed 's/^T-1486,Data encrypted for ransom,,$/T-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,detects/' work/coverage-map.csv > work/coverage-map-resolved.csv"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "No stdout; rewrites the empty-control gap row T-1486 to map it to CTRL-BACKUP-RESTORE-05 with label 'detects'. Learners may equivalently edit the CSV in any editor.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "grep -v removal of killed control from scope (the kill verdict, mechanically)",
+      "example_invocations": [
+        "grep -v '^CTRL-DLP-AGENT-04$' work/controls-in-scope.txt > work/controls-resolved.txt",
+        "printf 'CTRL-BACKUP-RESTORE-05\\n' >> work/controls-in-scope.txt"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "No stdout. Killing CTRL-DLP-AGENT-04 = deleting its line from controls-in-scope.txt; adding the new backup control to scope so it is not itself flagged as unmapped.",
+      "fidelity_source": "docker-linux"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Open prioritized-threats.txt, controls-in-scope.txt, and coverage-map.csv; state in one sentence each what the threat list is (left column — threats the team decided it faces), what the in-scope control list is (right column — controls actually run), and what a coverage-map row is (one threat -> one control + honest mitigation strength).",
+      "objective": "O2 — read the coverage matrix as two distinct signals",
+      "machine_verify_check": "Learner has viewed all three files (track file-open events in sim); free-text answers checked for required concepts via keyword/semantic match: 'threats we face/prioritized' for left column, 'controls we run/cost effort' for right column, 'one threat to one control plus mitigation label' for row. Alternatively use three multiple-choice 'which sentence is correct' items."
+    },
+    {
+      "instruction": "Run the validator unresolved: bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt. Confirm exit non-zero and that BOTH defects are reported by name (coverage gap T-1486, zero-threat control CTRL-DLP-AGENT-04). Capture output into validation-before.txt.",
+      "objective": "O2, O6 — surface both defects mechanically",
+      "machine_verify_check": "Sim terminal records the exact command run; simulated validator returns exit 1; engine asserts validation-before.txt exists in sim FS and contains both strings 'T-1486' (under coverage gap) and 'CTRL-DLP-AGENT-04' (under zero-threat control) and 'exit: 1'."
+    },
+    {
+      "instruction": "Close the coverage gap: add a row mapping T-1486 (data encrypted for ransom) to an appropriate control (e.g. a backup/restore control) with an honest mitigation label (prevents/detects/partial), and explain in one sentence why that label rather than a stronger one.",
+      "objective": "O2 — coverage-gap remediation with label honesty",
+      "machine_verify_check": "Parse edited coverage-map.csv in sim state: the T-1486 row must have a non-empty control_id and mitigation in {prevents,detects,partial}. Honesty heuristic: backups against ransomware should be 'partial' or 'detects', not 'prevents' — flag 'prevents' for a follow-up justification prompt. One-sentence rationale checked for non-emptiness plus reasoning keywords."
+    },
+    {
+      "instruction": "Write a documented verdict (kill / downgrade / keep-and-fix-threat-list) for the zero-threat control CTRL-DLP-AGENT-04 into removal-recommendation.md: name the threat it was assumed to mitigate, show it maps to none of the prioritized threats, state its running cost, and justify with evidence (not 'we've always had it'). If keep-and-fix-threat-list, add the missing threat to prioritized-threats.txt and draw the line instead.",
+      "objective": "O3 — evidence-based kill/downgrade verdict",
+      "machine_verify_check": "removal-recommendation.md exists in sim FS and contains: one of the three verdict tokens; an assumed_to_mitigate field/phrase; a running-cost statement; mention of zero prioritized-threat mappings. Reject if rationale matches 'always had it' patterns. Structured-form version: required fields control_id, assumed_to_mitigate, maps_to_prioritized_threats (must be 0), running_cost, verdict enum, rationale text — all deterministically checkable."
+    },
+    {
+      "instruction": "Re-run the validator on the edited map; confirm exit 0 — every prioritized threat covered and every in-scope control mapped (or removed from scope by a kill verdict). Capture output into validation-after.txt.",
+      "objective": "O6 — fail-then-pass with exit code as verdict",
+      "machine_verify_check": "Engine re-runs the (simulated) validator against current sim-state CSV + lists: zero coverage gaps, zero zero-threat controls, all labels valid, no unknown-threat rows. Cross-check consistency: if verdict was 'kill', CTRL-DLP-AGENT-04 must be absent from controls-in-scope.txt; if 'downgrade', it must be either descoped or mapped per the learner's stated tiering; if 'keep-and-fix', the new threat must be in prioritized-threats.txt with a line drawn. validation-after.txt must contain the PASS line."
+    },
+    {
+      "instruction": "Pick one surviving control and conduct a stakeholder-as-customer interview using the four §4.6 questions (who produces the evidence; what work were they already doing; where does the control force extra work), writing concrete answers into interview-notes.md, ending with one sentence naming where the control's truth lives vs where its evidence is currently gathered.",
+      "objective": "O4 — locate where the control's truth lives",
+      "machine_verify_check": "interview-notes.md exists, references a control that is mapped to >=1 prioritized threat in current sim state (not the killed control), contains all interview question/answer sections, and a closing truth-vs-evidence sentence. In a branching-dialogue sim, verify the learner asked all four canonical questions and selected the correct 'where truth lives' diagnosis (e.g. access-request tool vs quarterly spreadsheet/PDF)."
+    },
+    {
+      "instruction": "Redesign that control as a before/after in redesigned-control-flow.md following §5.4's shape: the toil-laden flow, the flow where evidence is a by-product of real work, one sentence on why cheaper, one on why harder to fake, and the threat it still mitigates.",
+      "objective": "O5 — evidence-as-by-product redesign",
+      "machine_verify_check": "redesigned-control-flow.md exists with BEFORE and AFTER sections, a cheaper-rationale, a harder-to-fake rationale, and a 'still mitigates' line naming a threat ID that current sim coverage-map actually maps to that control. Structured-builder version makes every slot a required field; the still-mitigates threat ID is validated against the live map."
+    }
+  ],
+  "lab_setup_state": "Self-contained, offline, no network/cloud/accounts. `bash setup.sh ./work` copies four committed fixtures into ./work/: (1) prioritized-threats.txt — 5 threat IDs T-1566, T-1078, T-1530, T-1486, T-1110, with comment header explaining it is the owned left column (comments/# and blank lines ignored by validator); (2) controls-in-scope.txt — 4 control IDs CTRL-MFA-01, CTRL-ACCESS-REVIEW-02, CTRL-BUCKET-ENC-03, CTRL-DLP-AGENT-04; (3) coverage-map.csv — header threat_id,threat_name,control_id,mitigation plus 6 data rows, engineered with ONE deliberate coverage gap (row 'T-1486,Data encrypted for ransom,,' with empty control_id) and ONE zero-threat control (CTRL-DLP-AGENT-04 appears on no row); (4) validate-coverage.ts — dependency-free bun/TypeScript reference validator. Allowed mitigation vocabulary: prevents|detects|partial. happy-path.sh provides an awk re-implementation of the same logic for machines without bun. SaaS-environment scenario; the team 'inherited a control library that grew by accretion'.",
+  "assessment_artifact": "60-minute unaided competency artifact from FRESH unseen inputs (assessor assembles: 5-8 prioritized threat IDs from the real ATT&CK taxonomy for a non-SaaS environment, 4-7 in-scope controls with at least one planted zero-threat control carrying a plausible 'assumed to mitigate' story, a partially-filled coverage map with at least one coverage gap and optionally one deliberately inflated mitigation label as a trap). Deliverables: (1) completed coverage map (CSV/JSON) with honest labels, validated by TWO runs — failing on both defects then passing, exit code as the verdict; (2) evidence-based removal recommendation (assumed threats, zero mappings shown, running cost, kill/downgrade/keep-and-fix-threat-list verdict; 'we've always had it' = automatic Not-yet); (3) redesigned before/after control flow for a SURVIVING control where evidence is a by-product (cheaper + harder to fake + threat still mitigated); (4) walkthrough: control-vs-threat claim distinction, justify two rows' mitigation labels, identify the planted zero-threat control and its deserved verdict. Scored Pass/Not-yet per rubric row against six objectives; Not-yet routes to the named concept section.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": [
+      "terminal-sim",
+      "matching-mapping",
+      "structured-builder",
+      "code-editor"
+    ],
+    "sim_state": "A virtual lab workspace holding the four fixture files as live, editable state: prioritized-threats.txt (set of threat IDs), controls-in-scope.txt (set of control IDs), coverage-map.csv (rows of threat_id/threat_name/control_id/mitigation), plus learner-authored artifacts (validation-before.txt, validation-after.txt, removal-recommendation.md, interview-notes.md, redesigned-control-flow.md). The validator logic (~60 lines: load two ID sets, parse CSV, compute coverage gaps = prioritized minus covered, zero-threat controls = in-scope minus mitigating, label-vocabulary check, unknown-threat check) is trivially reimplementable in client-side JS for byte-identical output to validate-coverage.ts — exact FAIL/PASS strings and exit codes captured in this manifest. State mutations: editing CSV rows, adding/removing lines from the two list files, writing markdown artifacts. The validator must always evaluate the CURRENT state so fail-then-pass is genuine, not scripted.",
+    "task_count": 10,
+    "notes": "This module is unusually well-suited to a static web app because the entire lab is offline, fixture-driven, and the validator is pure set logic. Recommended flow: (Phase A — read the map) an interactive two-column matching/graph view: 5 threats on the left, 4 controls on the right, the 5 seed mapping lines drawn; tasks ask the learner to click-identify the coverage gap (T-1486) and the zero-threat control (CTRL-DLP-AGENT-04) BEFORE running the validator — building the mental model that the validator then mechanizes. Include a warm-up matcher on §3/§4.1 vocabulary (tactic vs technique vs stable ID; the three answers to 'why does this control exist'). (Phase B — terminal sim) learner runs `bash setup.sh ./work`, inspects fixtures with cat, runs `bun validate-coverage.ts ...` and sees the exact real FAIL output with exit 1, redirects to validation-before.txt. (Phase C — fix the map) a CSV row editor (or in-terminal editor) to fill the T-1486 control_id with a mitigation-label dropdown limited to prevents/detects/partial plus a free 'why not stronger' sentence; a deliberately wrong choice ('prevents' for backups vs ransomware) triggers the honesty coaching from §4.3. (Phase D — the verdict) a structured-builder form mirroring §5.2's YAML block: assumed_to_mitigate, maps_to_prioritized_threats (auto-computed as 0 from live state), running_cost, verdict enum, rationale; choosing 'kill' auto-offers removing the line from controls-in-scope.txt; 'we've always had it' style rationales are pattern-rejected. (Phase E — re-validate) re-run validator against mutated state, see real PASS + exit 0, capture validation-after.txt; engine verifies fail-then-pass sequence actually occurred. (Phase F — interview + redesign) a branching stakeholder-interview dialogue for CTRL-ACCESS-REVIEW-02 using §5.3's verbatim Q&A as the script (learner picks the four §4.6 questions from a question bank; padding/wrong questions yield no signal), ending with a forced choice of where the truth lives (access-request tool log) vs where evidence is gathered (quarterly spreadsheet + signed PDF); then a structured before/after builder per §5.4 with required slots (work, evidence, failure mode / why cheaper, why harder to fake, still-mitigates threat ID validated against the live map). A negative-test bonus task appends an invalid label row and asserts the validator rejects 'eliminates-totally'. Every check is deterministic against sim state except the short free-text rationales, which use keyword heuristics or example-answer reveal-and-self-grade."
+  },
+  "fidelity_notes": "High overall fidelity is achievable: all validator outputs in this manifest were captured by actually running validate-coverage.ts under bun against the committed fixtures (2026-06-12). Gotchas: (1) the validator splits stdout/stderr — the summary line ('prioritized threats: 5 | ...') and PASS go to stdout, all FAIL lines and the trailing 'exit: 1' go to stderr; a terminal sim should interleave them in the order shown, and the lab's capture step implicitly needs 2>&1. (2) The em-dash in FAIL lines ('coverage gap(s) — prioritized') is U+2014; reproduce exactly. (3) The resolved-state run shows 'in-scope controls: 4' only because the happy-path adds CTRL-BACKUP-RESTORE-05 (+1) and kills CTRL-DLP-AGENT-04 (-1); learners who choose downgrade-but-keep-in-scope or keep-and-fix-threat-list will see different counts — the sim must compute counts from live state rather than hard-code. (4) Threat IDs are deliberately fictionalized ('T-1566' not ATT&CK 'T1566'); module §5 disclaims that real maps use official current technique numbering — do not 'correct' them to real ATT&CK IDs in the lab sim, but the assessment expects real-taxonomy IDs. (5) bun is the stated runtime; the awk fallback in happy-path.sh emits a different output grammar ('DEFECT coverage-gap T-1486' lines) — pick ONE surface for the sim (recommend the bun validator's richer output) and don't mix them. (6) CSV parsing is naive split-on-comma with trim; threat names containing commas would break — fixtures avoid this; keep sim fixtures comma-free in name fields. (7) The gap row 'T-1486,Data encrypted for ransom,,' has an empty mitigation too; the validator skips rows with empty control_id entirely (no bad-mitigation error), and counts it in 'map rows: 6'. (8) The unknown-threat defect (mapping to a non-prioritized threat) and bad-header defect exist in the validator but are not exercised by the seed fixtures — good material for bonus negative tests; their exact strings are in the commands manifest. (9) Free-text artifacts (removal-recommendation.md, interview-notes.md, redesigned-control-flow.md) cannot be byte-verified; verify structure/required fields deterministically and grade prose via keyword heuristics or self-grade against §5.2-§5.4 model answers."
+}

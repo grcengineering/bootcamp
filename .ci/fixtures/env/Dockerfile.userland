@@ -1,0 +1,20 @@
+# Executable environment contract — userland captures (root ISC-54).
+# The simulated machine IS this box: a minimal Ubuntu 24.04 userland with the analyst account.
+# Every byte-exact fixture's truth claim is scoped to exactly this image.
+FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54
+
+# The contract: deterministic identity. Stock uid-1000 "ubuntu" removed so analyst owns uid 1000.
+RUN userdel -r ubuntu \
+ && useradd -m -u 1000 -s /bin/bash analyst \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends libfaketime nano \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC \
+    FAKETIME="@2026-06-01 09:00:00" \
+    LD_PRELOAD=/usr/lib/aarch64-linux-gnu/faketime/libfaketime.so.1
+
+USER analyst
+WORKDIR /home/analyst
+# Prompt canon (module prose): analyst@workstation:~$ — hostname set at `docker run --hostname workstation`.
+ENV PS1='\u@\h:\w\$ ' HOME=/home/analyst SHELL=/bin/bash COLUMNS=80

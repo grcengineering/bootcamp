@@ -1,0 +1,7 @@
+user,role
+alice,admin
+bob,viewer
+dave,editor
+erin,admin
+frank,viewer
+grace,auditor

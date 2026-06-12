@@ -1,0 +1,146 @@
+{
+  "module_id": "14-product-ownership-build-vs-buy",
+  "title": "Product Ownership & Build-vs-Buy",
+  "commands": [
+    {
+      "cmd": "bash labs/setup.sh",
+      "example_invocations": [
+        "bash labs/setup.sh",
+        "labs/setup.sh",
+        "bash setup.sh ./fixtures",
+        "bash setup.sh /tmp/work/fixtures"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Module 14 fixture written to ./fixtures/risk-input.json",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "cat fixtures/risk-input.json",
+      "example_invocations": [
+        "cat fixtures/risk-input.json",
+        "cat labs/fixtures/risk-input.json",
+        "bat fixtures/risk-input.json",
+        "jq . fixtures/risk-input.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "{\n  \"control\": \"prod-db-access-least-privilege\",\n  \"gap\": \"12 standing prod-db access grants that never expire\",\n  \"loss_event\": \"a standing grant is abused or compromised, causing a data incident\",\n  \"frequency\": { \"min\": 0.1, \"max\": 0.6, \"unit\": \"events/year\" },\n  \"magnitude\": { \"min\": 300000, \"max\": 2500000, \"unit\": \"USD/event\" },\n  \"iterations\": 10000,\n  \"tail_percentile\": 95,\n  \"seed\": 42\n}",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun expected_loss.ts fixtures/risk-input.json",
+      "example_invocations": [
+        "bun expected_loss.ts fixtures/risk-input.json",
+        "bun labs/expected_loss.ts labs/fixtures/risk-input.json",
+        "bun expected_loss.ts ./fixtures/risk-input.json",
+        "bun expected_loss.ts my-risk-input.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "{\n  \"mean\": 493516,\n  \"tailPercentile\": 95,\n  \"tailValue\": 1133873,\n  \"iterations\": 10000\n}",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun expected_loss.ts",
+      "example_invocations": [
+        "bun expected_loss.ts"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "usage: bun expected_loss.ts <path/to/risk-input.json>  (stderr, exit code 2)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bash labs/happy-path.sh",
+      "example_invocations": [
+        "bash labs/happy-path.sh",
+        "./labs/happy-path.sh",
+        "bash happy-path.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "PASS: Module 14 lab reproduces (mean=$491867/yr, p95 tail=$1126125/yr > mean, 7/7 loop stages scored build/buy/hybrid)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "awk Monte-Carlo-lite (frequency x magnitude sampling, histogram p95)",
+      "example_invocations": [
+        "awk -v fmin=0.1 -v fmax=0.6 -v mmin=300000 -v mmax=2500000 -v n=10000 -v seed=42 'BEGIN{srand(seed); ... }'"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "491867 1126125 490000 (MEAN TAIL ANALYTIC on macOS awk; ANALYTIC = mean(freq)*mean(mag) = ((0.1+0.6)/2)*((300000+2500000)/2) = 490000; MEAN/TAIL vary by awk implementation since rand() after srand(42) is not standardized)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "grep -o '\"frequency\"[^}]*}' fixtures/risk-input.json",
+      "example_invocations": [
+        "grep -o '\"frequency\"[^}]*}' fixtures/risk-input.json",
+        "grep -o '\"magnitude\"[^}]*}' fixtures/risk-input.json",
+        "grep -o '\"iterations\":[ ]*[0-9]*' fixtures/risk-input.json",
+        "grep -o '\"seed\":[ ]*[0-9]*' fixtures/risk-input.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "\"frequency\": { \"min\": 0.1, \"max\": 0.6, \"unit\": \"events/year\" }",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "cat scoring-table.tsv / grep stage assertions",
+      "example_invocations": [
+        "cat scoring-table.tsv",
+        "grep -q '^EVALUATE\\t' scoring-table.tsv",
+        "awk -F'\\t' 'NR>1{c++} END{print c+0}' scoring-table.tsv"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "stage\\tdeciding_question\\tcall\\nUNDERSTAND\\tWho is this control for / what is our context?\\tBUILD\\nLOCATE\\tWhere does the access truth live (IdP, DB, cloud)?\\tBUY\\nQUERY\\tPull the raw grant state\\tBUY\\nEVALUATE\\tIs a grant compliant per OUR policy?\\tBUILD\\nEVIDENCE\\tStore durable, dated, audit-ready proof\\tHYBRID\\nMONITOR\\tAlert when a grant outlives its shift\\tBUY\\nOWN\\tBacklog, metrics, the boundary itself\\tBUILD",
+      "fidelity_source": "authored-fixture"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Pick one real control you own (or the §5 prod-db access control) and write its product card: owner (exactly one human), customers in priority order, top-3 ranked backlog, the UX target, and the metrics — using the §5.1 shape.",
+      "objective": "O1 — describe a control as a product (customers, backlog, UX, owner, metrics)",
+      "machine_verify_check": "Parse the learner's product-card artifact (structured form or markdown): assert exactly one owner name (reject 'team'/'committee'/multiple names); assert >=2 customer types from {engineer, auditor, business} in an explicit priority order; assert >=3 backlog items present and ranked; assert UX-target field non-empty (bonus check: mentions 'evidence as a by-product'); assert >=4 metrics listed including a loss-exposure ($) metric."
+    },
+    {
+      "instruction": "Open fixtures/risk-input.json. In words, state what the frequency range and magnitude range mean and why they're estimated separately.",
+      "objective": "O2 — understand the FAIR frequency/magnitude decomposition",
+      "machine_verify_check": "Verify the learner ran `cat`/`jq` on fixtures/risk-input.json in the sim terminal (file-read event in sim state); then grade a short structured answer: frequency = events/year (0.1-0.6), magnitude = USD/event (300000-2500000), separated because different evidence informs each (incident history vs value at stake). Multiple-choice or keyword match on 'events/year', 'dollars per event', 'different evidence'."
+    },
+    {
+      "instruction": "Run the reference calculator (bun expected_loss.ts fixtures/risk-input.json) to compute the mean expected annual loss and the 95th-percentile bad year from the fixture. Record both numbers in your memo.",
+      "objective": "O2 — produce a mean and tail percentile from a sampling calculation",
+      "machine_verify_check": "Sim terminal command `bun expected_loss.ts fixtures/risk-input.json` returns deterministic JSON {mean: 493516, tailPercentile: 95, tailValue: 1133873, iterations: 10000} (LCG seed 42 is fully deterministic — port the LCG to JS in the sim for exact fidelity). Then assert the learner entered mean=493516 (accept ~$494k, 490000-497000 band) and tail=1133873 (accept ~$1.13M band) into the memo fields."
+    },
+    {
+      "instruction": "Replace the fixture's ranges with your control's estimates and re-run. Confirm the mean and the tail move the way you'd expect (wider magnitude range → fatter tail). Write one sentence on why the tail, not the mean, is the executive's concern.",
+      "objective": "O2 — manipulate ranges and reason about distribution shape",
+      "machine_verify_check": "Sim tracks edits to risk-input.json (editor pane); assert at least one of frequency.min/max or magnitude.min/max changed from fixture defaults; re-run event recorded; sim recomputes with same LCG so new mean/tail are exact; assert learner's recorded new numbers match recompute; assert tail > mean in their result; grade the one-sentence tail rationale via keyword/rubric match ('bad year', 'worst case', 'tail risk', '1-in-20')."
+    },
+    {
+      "instruction": "Build the seven-stage scoring table for your control: for each of UNDERSTAND, LOCATE, QUERY, EVALUATE, EVIDENCE, MONITOR, OWN write the deciding question and your BUILD/BUY/HYBRID call with a one-line reason.",
+      "objective": "O3 — map all seven loop stages onto build/buy/hybrid",
+      "machine_verify_check": "Structured table builder: assert all 7 stages present (same assertion as happy-path.sh: each row has a call in {BUILD, BUY, HYBRID} and non-empty deciding question + reason). Soft-grade against the canonical pattern (UNDERSTAND=BUILD, OWN=BUILD always; LOCATE/QUERY/MONITOR lean BUY; EVALUATE leans BUILD; EVIDENCE leans HYBRID) — hard-fail only UNDERSTAND/OWN != BUILD since module states those are 'always own'; flag-and-explain for contrarian calls elsewhere if reason is empty."
+    },
+    {
+      "instruction": "Draw the boundary line: one explicit paragraph stating which stages are vendor-owned, which are yours, and specifically why you own (or don't) the EVALUATE/policy-and-evidence layer. Name one case where the vendor abstraction wins and one where owning the library wins.",
+      "objective": "O4 — diagnose where vendor abstraction helps vs where owning beats it, avoiding NIH and vendor-worship",
+      "machine_verify_check": "Structured two-field input ('vendor wins because...' and 'owning wins because...'): assert BOTH fields non-empty and non-duplicate (single-direction argument = automatic fail per rubric); assert the boundary paragraph references EVALUATE explicitly; keyword/rubric grade for undifferentiated-breadth reasoning (vendor case) and posture-nuance reasoning (owning case: exceptions, compensating controls, crosswalks)."
+    },
+    {
+      "instruction": "Assemble tasks 1-6 into a single decision-memo.md ending with a one-paragraph recommendation that explicitly ties the boundary to the loss number from task 3 (e.g., 'we own EVALUATE because the $Xk/yr exposure lives in a posture the generic check can't model').",
+      "objective": "O5 — produce a finance-legible, risk-quantified build-vs-buy decision memo",
+      "machine_verify_check": "Assert decision-memo.md exists in sim filesystem and contains all five parts (product card, two loss figures, 7-row table, boundary paragraph, recommendation); assert the recommendation paragraph contains a dollar figure matching the task-3/4 computed mean or tail (regex for $ amount within tolerance of computed values); assert it reads as a decision (contains a build/buy/own verb directed at a stage), not a summary."
+    }
+  ],
+  "lab_setup_state": "Offline, no cloud/vendor/network. labs/setup.sh writes fixtures/risk-input.json (FAIR-style input for the §5.2 scenario '12 standing prod-db access grants that never expire'): frequency 0.1-0.6 events/year, magnitude $300,000-$2,500,000/event, iterations 10000, tail_percentile 95, seed 42. labs/expected_loss.ts is a bun TypeScript reference calculator using a deterministic Numerical Recipes LCG (state = state*1664525 + 1013904223 mod 2^32, seeded 42) sampling uniform pairs, sorting losses, linear-interpolated percentile — exact output on fixture: mean 493516, tailValue 1133873. labs/happy-path.sh is the coreutils-only CI reproduction (awk srand-based sampling + 2000-bucket histogram p95, no sort) asserting fixture ranges unchanged, mean within ±5% of analytic 490000 (= 0.35 × 1,400,000), tail > mean (right-skew), and a 7-row scoring-table.tsv with valid BUILD/BUY/HYBRID calls. Learner needs bash + coreutils + awk; bun optional.",
+  "assessment_artifact": "A build-vs-buy decision memo (decision-memo.md) for one control area, produced unaided in 120 minutes, with five mandatory parts mapped to rubric rows (all Pass/Not-yet, all must pass): (1) Product card — exactly one accountable owner, customers in deliberate priority order, ranked backlog of >=3 with highest-risk item near top, UX target (ideally 'evidence as a by-product'), >=4 observable metrics including loss exposure bought down; (2) Loss-exposure quantification — frequency and magnitude estimated separately as ranges with a one-line reason, run through a sampling calculation reporting mean AND tail percentile (point estimates or RAG cells fail outright), plus why the tail is the executive's concern; (3) Seven-stage BUILD/BUY/HYBRID scoring table with deciding question and one-line reason per stage; (4) Explicit owned-vs-vendor boundary paragraph with a specific EVALUATE-layer call and BOTH one honest vendor-wins case and one honest owning-wins case; (5) Risk-quantified recommendation tying the boundary explicitly to the Part-2 number in finance-legible terms (one-time cost vs recurring expected loss + tail). Reproducibility condition: reviewer re-running the stated ranges must land in the same band. Pass-rate threshold 0.80; 'Quantified gap' (O2) and 'Boundary judgment' (O4) are the early-warning rows.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": [
+      "terminal-sim (bash: setup.sh, cat/jq fixture, bun expected_loss.ts, happy-path.sh)",
+      "code-editor (edit risk-input.json ranges; view expected_loss.ts source)",
+      "structured-builder (product card form; seven-stage BUILD/BUY/HYBRID scoring table; boundary two-sided argument; memo assembler)",
+      "dashboard-sim (live loss-distribution histogram that re-renders as ranges change — mean line vs p95 tail line)"
+    ],
+    "sim_state": "Virtual lab directory {labs/setup.sh, labs/expected_loss.ts, labs/fixtures/risk-input.json, (learner-created) decision-memo.md, scoring-table.tsv}; a risk-input document model (frequency/magnitude ranges, iterations, seed) shared between editor and calculator; a ported deterministic LCG sampler (exact JS reimplementation of expected_loss.ts — trivially portable since it IS JS/TS) so every run is bit-identical to the real tool; a memo document model accumulating the five parts; a scoring-table state object validated with the same assertions as happy-path.sh.",
+    "task_count": 9,
+    "notes": "This module is uniquely well-suited to a static web app because its reference calculator is already TypeScript with a seeded LCG — port computeExposure() verbatim and the sim achieves 100% output fidelity with zero backend. Recommended flow: (1) terminal-sim warmup — run setup.sh, cat the fixture, answer what each field means; (2) run bun expected_loss.ts in the terminal-sim and record mean=493516 / tail=1133873 into memo fields (exact-match verification); (3) interactive distribution explorer — sliders/editor bound to frequency/magnitude ranges with a live histogram showing mean vs p95; tasks like 'widen the magnitude max to $5M and observe the tail fatten' and 'why does uniform sampling understate the tail?' (the §4.5 lognormal caveat as a reflection question); (4) RAG-grid demolition mini-exercise — given a 5x5 colored grid and two priced options ($200k high vs 2×$50k mediums), show the grid cannot answer which to fund, then answer it with the sampler; (5) product-card structured builder with machine checks (one owner, prioritized customers, ranked backlog, metrics incl. $ exposure); (6) seven-stage scoring table builder reusing happy-path.sh's exact assertions (7 stages, valid calls, hard-fail UNDERSTAND/OWN != BUILD); (7) boundary builder forcing BOTH a vendor-wins and an owning-wins entry (the anti-NIH/anti-vendor-worship check is structural); (8) policy-exception scenario — vendor dashboard shows 'FAIL: unencrypted disk' for a risk-accepted public-data server; learner picks the defensible response (encode exception in owned policy layer vs manual quarterly override); (9) memo assembly — concatenate the artifacts into decision-memo.md and verify the recommendation cites the computed dollar figure. Free-text paragraphs (boundary, recommendation, tail rationale) need keyword/rubric heuristics or an optional LLM-grader; everything else is fully deterministic."
+  },
+  "fidelity_notes": "Two fidelity classes here. (1) expected_loss.ts is fully deterministic (LCG seed 42) and platform-independent — exact fixture output is mean=493516, tailValue=1133873; module §5.2 rounds these to ~$494,000 and ~$1,134,000. Port the LCG verbatim to the sim for perfect fidelity, and recompute exactly when the learner edits ranges. (2) happy-path.sh's awk path is NOT portable-deterministic: awk's srand(42)/rand() differs across implementations (macOS awk produced mean=$491867, p95=$1126125; gawk on Linux will produce different numbers). The script is designed for this — it asserts a ±5% band around the analytic mean (0.35 × 1,400,000 = $490,000) and tail>mean, never exact values. A sim reproducing happy-path.sh should either pin one implementation's verbatim PASS line (e.g., the macOS one above, or run once under gawk in docker for a Linux-canonical line) or render the PASS line from the sim's own sampler values, since any mean in [465500, 514500] with tail>mean is a legitimate run. Also note one inconsistency to avoid teaching as gospel: setup.sh defaults DEST to ./fixtures relative to CWD, so running it from the repo root vs labs/ writes to different paths — the sim should mirror the lab convention (run from labs/, fixture at labs/fixtures/risk-input.json). The committed fixture and the setup.sh-generated fixture are byte-identical. All free-text deliverables (boundary paragraph, recommendation) have no machine-exact ground truth — grade structurally (both-directions present, dollar figure cited, EVALUATE named) plus keyword heuristics."
+}

@@ -1,0 +1,162 @@
+{
+  "module_id": "15-capstone-ship-one-control",
+  "title": "Capstone: Ship One Control, Fully Engineered",
+  "commands": [
+    {
+      "cmd": "bash labs/setup.sh \"$PWD/capstone-lab\"",
+      "example_invocations": [
+        "bash labs/setup.sh \"$PWD/capstone-lab\"",
+        "bash labs/setup.sh",
+        "bash setup.sh ./capstone-lab"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Echoes the absolute lab dir path, e.g.: /tmp/tmp.hva8VGDqgG/capstone-lab (creates capstone-manifest.yaml, validate-capstone.sh, control-statement.md, collect.sh, policy/public_access.rego, evidence/.keep, .github/workflows/ccm.yml, README.md, before-after.md)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "./validate-capstone.sh capstone-manifest.yaml",
+      "example_invocations": [
+        "./validate-capstone.sh capstone-manifest.yaml",
+        "./validate-capstone.sh capstone-manifest-incomplete.yaml",
+        "bash validate-capstone.sh capstone-manifest.yaml"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "COMPLETE manifest (exit 0):\nchecking loop coverage...\n  UNDERSTAND  ok  -> control-statement.md\n  LOCATE      ok  -> control-statement.md\n  QUERY       ok  -> collect.sh\n  EVALUATE    ok  -> policy/public_access.rego\n  EVIDENCE    ok  -> evidence/\n  MONITOR     ok  -> .github/workflows/ccm.yml\n  OWN         ok  -> README.md\nchecking before/after...\n  before/after ok -> before-after.md\nPASS: all 7 loop stages covered; before/after present\n\nINCOMPLETE manifest (exit 1):\nchecking loop coverage...\n  UNDERSTAND  ok  -> control-statement.md\n  LOCATE      ok  -> control-statement.md\n  QUERY       ok  -> collect.sh\n  EVALUATE    ok  -> policy/public_access.rego\n  EVIDENCE    ok  -> evidence/\n  MONITOR     MISSING (no artifact mapped)\n  OWN         ok  -> README.md\nchecking before/after...\n  before/after MISSING (no before_after pointer or file not found)\nFAIL: capstone coverage incomplete — close the named gaps before shipping\n\nMissing-file variant: '  MONITOR     MISSING (artifact not found: <path>)'. Missing manifest (exit 2): 'FAIL: manifest not found: <path>'. No-arg (exit 1 via set -u): 'validate-capstone.sh: line 6: 1: usage: validate-capstone.sh <capstone-manifest.yaml>'. NOTE: module.md §5.2 shows a slightly abbreviated transcript ('checking before/after... ok -> before-after.md' on one line); the real validator prints 'checking before/after...' then '  before/after ok -> before-after.md' on two lines — sim should match the real validator (verified output above).",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "./validate-capstone.sh capstone-manifest.yaml | tail -1",
+      "example_invocations": [
+        "./validate-capstone.sh capstone-manifest.yaml | tail -1"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "PASS: all 7 loop stages covered; before/after present (used by happy-path.sh to assert the verdict is identical across two runs — reproducibility check, lab task 7)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "./collect.sh",
+      "example_invocations": [
+        "./collect.sh",
+        "./collect.sh | tee /tmp/state.json",
+        "bash collect.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Placeholder QUERY artifact emits: {\"buckets\":[]} — in the exercise sim this should be upgraded to emit realistic per-bucket public-access-block state, e.g. {\"buckets\":[{\"name\":\"app-logs\",\"public_access_block\":{\"BlockPublicAcls\":true,\"BlockPublicPolicy\":true,\"IgnorePublicAcls\":true,\"RestrictPublicBuckets\":true}}]}",
+      "fidelity_source": "authored-fixture"
+    },
+    {
+      "cmd": "cat capstone-manifest.yaml",
+      "example_invocations": [
+        "cat capstone-manifest.yaml",
+        "cat capstone-manifest-incomplete.yaml",
+        "cat control-statement.md",
+        "cat before-after.md",
+        "cat README.md",
+        "cat policy/public_access.rego",
+        "cat .github/workflows/ccm.yml",
+        "cat evidence/.keep"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Manifest fixture verbatim:\ncontrol: \"S3 buckets block public access (SOC 2 CC6.1)\"\nowner: \"a.engineer@example.com\"\nloop_coverage:\n  UNDERSTAND: control-statement.md\n  LOCATE:     control-statement.md\n  QUERY:      collect.sh\n  EVALUATE:   policy/public_access.rego\n  EVIDENCE:   evidence/\n  MONITOR:    .github/workflows/ccm.yml\n  OWN:        README.md\nbefore_after: before-after.md",
+      "fidelity_source": "authored-fixture"
+    },
+    {
+      "cmd": "ls",
+      "example_invocations": [
+        "ls capstone-lab",
+        "ls -la",
+        "ls policy evidence .github/workflows",
+        "ls evidence/"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Lab tree after setup: .github/workflows/ccm.yml, README.md, before-after.md, capstone-manifest.yaml, collect.sh, control-statement.md, evidence/.keep, policy/public_access.rego, validate-capstone.sh",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "echo $?",
+      "example_invocations": [
+        "./validate-capstone.sh capstone-manifest.yaml; echo $?",
+        "echo $?"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "0 after complete manifest validation; 1 after incomplete manifest; 2 when manifest file not found — exit-code semantics are explicitly load-bearing (lab task 7 and reviewer reproduction require exit 0)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "chmod +x validate-capstone.sh",
+      "example_invocations": [
+        "chmod +x validate-capstone.sh",
+        "chmod +x collect.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "(no output; setup.sh does this — only needed if learner recreates files)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "bash labs/happy-path.sh",
+      "example_invocations": [
+        "bash labs/happy-path.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "PASS: Module 15 capstone coverage reproduces (complete=PASS+7-stages+before/after, incomplete=FAIL+named-gaps, deterministic) — CI smoke test, not a learner-facing command, but defines the canonical positive/negative/reproducibility assertions an exercise engine should mirror",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "awk (manifest parsing inside validate-capstone.sh)",
+      "example_invocations": [
+        "awk -v key=QUERY '/^loop_coverage:/ { inblk=1; next } inblk && /^[^[:space:]]/ { inblk=0 } inblk { ... }' capstone-manifest.yaml",
+        "awk -F: '/^before_after:/ { v=$2; sub(/^[[:space:]]+/,\"\",v); print v; exit }' capstone-manifest.yaml"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Extracts the artifact path mapped to a stage key from the indented loop_coverage block (e.g. 'collect.sh'); pure bash+coreutils+awk, no yq — the sim's manifest parser must replicate this exact behavior: only keys inside the loop_coverage block count, block ends at first non-indented line",
+      "fidelity_source": "docker-linux"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Open capstone-manifest.yaml. Rewrite the control: line for the control you are shipping and, for each of the seven loop stages (UNDERSTAND, LOCATE, QUERY, EVALUATE, EVIDENCE, MONITOR, OWN), name the real artifact in your repo that discharges it. Do not leave a placeholder.",
+      "objective": "O1, O2 — map one real control onto all seven loop stages with a concrete artifact per stage; no stage left implicit",
+      "machine_verify_check": "Parse the manifest in sim state: control: value differs from the fixture default (or matches the exercise's assigned control), loop_coverage block contains all seven stage keys, each value is a non-empty path, and each path resolves to a file/dir present in the simulated filesystem."
+    },
+    {
+      "instruction": "Run ./validate-capstone.sh capstone-manifest.yaml and read its per-stage output. If it reports a missing stage, do NOT edit the validator to pass — create the missing artifact and re-run.",
+      "objective": "O1, O5 — use the coverage validator as a control check; closing gaps by creating artifacts, never by gaming the gate",
+      "machine_verify_check": "Sim records that validate-capstone.sh was executed against the manifest; validator file content is unmodified (hash check — editing the validator is the named anti-pattern and should fail the task or trigger targeted feedback); final run output contains 'PASS: all 7 loop stages covered; before/after present' and exit code 0."
+    },
+    {
+      "instruction": "Write control-statement.md: the control's claim in your own words, the threat it mitigates (cite the Module-11 mapping), and the named ground-truth location the claim is checked against — specific enough that someone else could fetch it.",
+      "objective": "O1 — discharge UNDERSTAND and LOCATE in a single artifact with a fetchable ground-truth location",
+      "machine_verify_check": "control-statement.md exists in sim state and contains (a) a claim/control statement, (b) a threat reference, (c) a ground-truth location naming concrete fields (e.g. the four public-access-block fields: BlockPublicAcls, BlockPublicPolicy, IgnorePublicAcls, RestrictPublicBuckets). Check via required-keyword/section matching or structured-form fields rather than free-prose NLP."
+    },
+    {
+      "instruction": "Confirm the seam: run your QUERY artifact and feed its output to your EVALUATE artifact by hand, then confirm the EVIDENCE artifact records the same verdict. Then confirm the MONITOR path invokes the same code, not a parallel copy. Write one sentence in before-after.md stating the hand-run and scheduled path agree.",
+      "objective": "O2 — verify the QUERY→EVALUATE→EVIDENCE seam holds and the monitored path shares the manual code path",
+      "machine_verify_check": "Sim command history shows collect.sh executed, its output piped/fed to the policy evaluation step, and an evidence/run-<timestamp>.json written whose verdict field equals the evaluation result; the MONITOR artifact (ccm.yml) references the same script names (collect.sh + policy path) rather than duplicated inline logic; before-after.md contains a seam-verification sentence (keyword check: hand-run/manual + scheduled + agree/same verdict)."
+    },
+    {
+      "instruction": "Write the README.md product section: name the control's customers, its single accountable owner, three backlog items (including at least one honest known gap), the one metric that says it's working, and one sentence of UX rationale (evidence as a by-product of the work).",
+      "objective": "O3 — produce a control-as-product README with all five product elements",
+      "machine_verify_check": "README.md in sim state contains all five labeled elements: Customers (>=1 named), Owner (exactly one individual identity, not a team alias — reject values like 'security-team@'), Backlog (>=3 items, >=1 flagged as known gap), Metric (one named measurable), UX rationale (>=1 sentence). Best verified via a structured-builder form serialized into the README, then string-checked."
+    },
+    {
+      "instruction": "Complete before-after.md: lay the control's week-0 legacy state beside its engineered state on at least four concrete dimensions (effort, frequency, drift detection, durability), score each side against the five legacy problems, and include at least one residual gap that did NOT improve, cross-referenced to a backlog item.",
+      "objective": "O4, O6 — compose a defensible, evidence-backed before/after with honest residual gaps",
+      "machine_verify_check": "before-after.md contains a comparison table with >=4 dimension rows each having before and after cells; mentions of the five legacy problems (or at minimum problems #1 toil and #5 checkbox per fixture); and a residual-gap line that references a backlog item also present in README.md (cross-reference check: shared keyword/anchor between the two files)."
+    },
+    {
+      "instruction": "Re-run ./validate-capstone.sh capstone-manifest.yaml and confirm it reports all seven stages covered and the before/after present, exiting 0. Run it a second time and confirm an identical verdict — the coverage proof is itself reproducible.",
+      "objective": "O5 — close the loop: the coverage proof passes and is deterministic across runs",
+      "machine_verify_check": "Sim command history shows >=2 invocations of the validator after all edits, both producing identical final-line output 'PASS: all 7 loop stages covered; before/after present' and exit code 0."
+    }
+  ],
+  "lab_setup_state": "setup.sh writes a starter capstone repo at ./capstone-lab (pure bash+coreutils+awk; no network, cloud, Docker, or yq): capstone-manifest.yaml (complete fixture: S3 public-access control, owner a.engineer@example.com, all 7 stages mapped, before_after: before-after.md); placeholder artifacts each manifest entry resolves to — control-statement.md (claim + threat + four public-access-block ground-truth fields), collect.sh (executable, echoes '{\"buckets\":[]}'), policy/public_access.rego (package capstone.public_access; default allow := false), evidence/.keep, .github/workflows/ccm.yml (name: ccm, cron '0 */6 * * *'), README.md (customers/owner/backlog x3 with known gap/metric/UX), before-after.md (4-dimension table + legacy problems #1/#5 + residual gap); and validate-capstone.sh (executable awk/grep coverage validator, exit 0/1/2 semantics). A second fixture, capstone-manifest-incomplete.yaml (MONITOR key and before_after pointer absent), is used for the negative case. setup.sh echoes the absolute lab dir path.",
+  "assessment_artifact": "Terminal assessment of the entire curriculum — a shipped control repository for one real control plus before-after.md, independently reproduced by a DIFFERENT reviewer from a clean checkout: (1) capstone-manifest.yaml mapping all 7 loop stages to real artifacts + a validator the reviewer runs that exits 0; (2) an end-to-end pipeline where the scheduled/monitored path invokes the same QUERY→EVALUATE→EVIDENCE code as the manual run and produces the verdict the evidence claims; (3) README.md treating the control as a product (customers, single accountable owner, backlog with >=1 honest known gap, success metric, UX rationale); (4) before-after.md comparing the same control on >=4 concrete dimensions, scored against the 5 legacy-GRC problems, with >=1 residual gap cross-referenced to the backlog; (5) a walkthrough mapping all 7 stages, arguing trustworthiness from the before/after and live monitoring, and honestly diagnosing thin coverage. Rubric (7 rows, all must Pass, Pass/Not-yet with section routing): Loop coverage (O1,O5 -> §4.1-4.2,§5.1), End-to-end integration (O2 -> §4.3), Control-as-product (O3 -> §4.4), Before/after rigor (O4 -> §4.5,§5.3), Critical diagnosis (O5 -> §4.3,§5.4 — distinguishing done from claimed, e.g. logging mistaken for monitoring), Trust argument (O6 -> §3,§2), Reviewer reproduction (O2,O5 -> §4.6). Key reviewer rule: a stage claimed in the manifest but not actually satisfied (e.g. a MONITOR that collects but never evaluates or alerts) is Not-yet on Coverage regardless of what the manifest says.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": ["terminal-sim", "code-editor", "structured-builder", "matching-mapping"],
+    "sim_state": "A simulated capstone repo filesystem seeded exactly from setup.sh output (9 files incl. the complete manifest fixture), plus the incomplete manifest fixture for the negative/diagnosis exercises. State tracked: file contents (manifest YAML, control-statement.md, README.md, before-after.md, ccm.yml, collect.sh, rego policy), executable bits, validator invocation history with exit codes, validator file hash (to detect gate-gaming), and an evidence/ directory that accumulates run-<timestamp>.json records when the learner runs the pipeline. The terminal-sim implements validate-capstone.sh faithfully: awk-style loop_coverage block parsing, per-stage ok/MISSING lines with exact column alignment ('  %-11s ok  -> %s'), the two MISSING variants ('no artifact mapped' vs 'artifact not found: <path>'), before/after check, and exit codes 0/1/2.",
+    "task_count": 7,
+    "notes": "This is a synthesis module, so the most realistic exercise is a 'ship the spine' simulation in four phases mirroring the lab. Phase A (matching-mapping warm-up): drag each of 9 candidate artifacts onto the 7 loop stages for the S3 public-access control (§5.1 coverage table) — includes distractors like 'a screenshot in a drive' and 'a parallel copy of collect.sh in the workflow' to test stage understanding. Phase B (terminal-sim + code-editor): start from the INCOMPLETE manifest in the seeded repo; learner runs ./validate-capstone.sh, reads the named gaps (MONITOR MISSING, before/after MISSING), then fixes them by editing capstone-manifest.yaml and creating .github/workflows/ccm.yml and before-after.md in the editor — re-running until PASS + exit 0, then running twice for reproducibility. Crucially, the sim must allow (and detect) the anti-pattern of editing the validator: if the learner modifies validate-capstone.sh, give targeted feedback that gaming the gate is the exact failure the program teaches against. Phase C (structured-builder): fill the control-as-product README (customers / single owner — reject team aliases / 3 backlog items with >=1 known-gap flag / metric / UX sentence) and the before/after table (4 dimension rows, 5 legacy-problem scores, 1 residual gap that must cross-reference a Phase C backlog item — enforce the cross-ref mechanically). Phase D (critical diagnosis, the §5.4 skill): present a peer's submission — manifest claims all 7 stages, but the ccm.yml schedule only runs collect.sh and uploads output, never invoking the rego policy or alerting; learner must mark MONITOR as 'claimed but not satisfied' and select the correct fix ('wire the existing EVALUATE into the scheduled path') from options that include plausible wrong fixes ('add more logging', 'increase schedule frequency', 'write a second policy for the scheduled path' — the last being the seam anti-pattern). The validator's exact transcript is the gold thread through the whole exercise: every phase ends with the learner predicting or producing the validator verdict line."
+  },
+  "fidelity_notes": "All lab tooling is pure bash+coreutils+awk by design (no yq, no cloud, no network, no Docker), so terminal-sim fidelity is highly achievable — the validator was executed on the macOS host and its full transcripts captured verbatim for both fixtures (validator output is identical on Linux; only mktemp paths differ). Three fidelity caveats: (1) module.md §5.2 shows the before/after check as one line ('checking before/after... ok -> before-after.md') but the real validator prints it as two lines ('checking before/after...' then '  before/after ok -> before-after.md') — the sim should match the real validator, and exercise answer-checking should not regex against the module's abbreviated transcript; (2) the per-stage output uses printf '  %-11s ok  -> %s' — two leading spaces, stage name left-padded to 11 chars, TWO spaces after 'ok' — happy-path.sh greps '^  ${stage} +ok  ->' so alignment is load-bearing; (3) evidence/run-<timestamp>.json, the rego evaluation (opa eval), and the GitHub Actions scheduled run are described but never executed by the lab fixtures — the placeholder collect.sh emits '{\"buckets\":[]}' and the rego is a stub (default allow := false); any sim that has the learner actually run the QUERY→EVALUATE→EVIDENCE pipeline (lab task 4) must author plausible opa/jq outputs as fixtures since the module shows no verbatim output for that path. The real capstone targets the learner's own environment (AWS S3, real OPA, real GitHub Actions) which a static web app cannot reproduce — the exercise should explicitly frame itself as the coverage-spine scaffold, exactly as the lab does."
+}

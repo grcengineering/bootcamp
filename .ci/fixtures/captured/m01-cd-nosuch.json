@@ -1,0 +1,27 @@
+{
+  "id": "m01-cd-nosuch",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "cd nosuchdir",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "",
+  "stderr": "bash: line 2: cd: nosuchdir: No such file or directory\n",
+  "exit": 1,
+  "stderr_interactive": "bash: cd: nosuchdir: No such file or directory\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "m01-vim-not-installed",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "vim",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "negative space — the lab box genuinely lacks vim; sim must say so truthfully",
+  "stdout": "",
+  "stderr": "bash: line 2: vim: command not found\n",
+  "exit": 127,
+  "stderr_interactive": "bash: vim: command not found\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

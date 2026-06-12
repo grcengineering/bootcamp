@@ -1,0 +1,25 @@
+# Executable environment contract — booted captures (root ISC-54; RedTeam finding 3).
+# Module 02's family (systemctl/journalctl/sshd/users) has NO ground truth in a userland container.
+# This image runs systemd as PID 1 (run with: --privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup)
+# and seeds the module's scenario box: user grcops uid 1001 in sudo (module §4.4 prose canon),
+# sshd, and the module's fictional evidence-collector unit — authored HERE so that its
+# `systemctl status` output is captured REAL, never invented.
+FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends systemd systemd-sysv openssh-server sudo libfaketime \
+ && rm -rf /var/lib/apt/lists/* \
+ && userdel -r ubuntu \
+ && useradd -m -u 1001 -s /bin/bash grcops \
+ && usermod -aG sudo grcops
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC
+
+COPY evidence-collector /usr/local/bin/evidence-collector
+COPY evidence-collector.service /etc/systemd/system/evidence-collector.service
+RUN chmod +x /usr/local/bin/evidence-collector \
+ && systemctl enable ssh \
+ && systemctl enable evidence-collector
+
+STOPSIGNAL SIGRTMIN+3
+CMD ["/lib/systemd/systemd"]

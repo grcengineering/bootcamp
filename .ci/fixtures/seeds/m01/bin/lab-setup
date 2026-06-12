@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Lab provisioning tool (module 01 §6 setup). The CSV bytes are canon-locked to
+# modules/01-terminal-and-command-line-basics/labs/setup.sh — a CI drift check asserts equality.
+set -euo pipefail
+case "${1:-}" in
+  01)
+    mkdir -p "$HOME/lab01"
+    cat > "$HOME/lab01/access-export.csv" <<'CSV'
+user,role
+alice,admin
+bob,viewer
+carol,legacy-admin
+dave,editor
+erin,admin
+frank,viewer
+MALFORMED_ROW_WITH_NO_DELIMITER
+grace,auditor
+CSV
+    echo "lab01 fixture written to $HOME/lab01/access-export.csv"
+    ;;
+  *)
+    echo "usage: lab-setup <module-number>" >&2
+    exit 1
+    ;;
+esac

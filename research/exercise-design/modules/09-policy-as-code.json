@@ -1,0 +1,201 @@
+{
+  "module_id": "09-policy-as-code",
+  "title": "Policy as Code",
+  "commands": [
+    {
+      "cmd": "bash labs/setup.sh ./lab09",
+      "example_invocations": [
+        "bash labs/setup.sh ./lab09",
+        "bash labs/setup.sh /tmp/assess09",
+        "bash setup.sh"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "lab09 fixtures copied to ./lab09/ (evidence-store/ ready)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "./check.sh <access-export.csv>",
+      "example_invocations": [
+        "./check.sh access-violation.csv",
+        "./check.sh access-clean.csv",
+        "bash check.sh access-violation.csv",
+        "./check.sh"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "On access-violation.csv: 'DENY  row 4: carol -> legacy-admin  (forbidden by AC-6)' then 'RESULT  control=AC-6-legacy-admin  decision=deny  violations=1' (exit 1). On access-clean.csv: 'RESULT  control=AC-6-legacy-admin  decision=allow  violations=0' (exit 0). With no args: 'usage: check.sh <access-export.csv>' to stderr (exit 2). Missing file: 'ERROR: access export not found: <path>' (exit 2).",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "./run-policy-gate.sh <access-export.csv> <evidence-store-dir>",
+      "example_invocations": [
+        "./run-policy-gate.sh access-violation.csv evidence-store",
+        "./run-policy-gate.sh access-clean.csv evidence-store",
+        "./run-policy-gate.sh access-export.csv",
+        "CI_RUN_ID=ci-1789 GATE_FAKE_TIME=2026-05-28T17:04:00Z bash run-policy-gate.sh access-violation.csv evidence-store"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "$ ./run-policy-gate.sh access-export.csv\nEVAL  control=AC-6-legacy-admin engine=cedar input=access-export.csv\nDENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\nGATE  result=FAIL  (1 violation)  exit=1\n--- Actual fixture output adds an EVIDENCE line between DENY and GATE: 'EVIDENCE  wrote <store>/AC-6-legacy-admin-<run>-<digits>.json' and the GATE line reads 'GATE  result=FAIL  (violations=1)  exit=1'. Clean run: 'EVAL ...' / 'EVIDENCE  wrote ...' / 'GATE  result=PASS  (violations=0)  exit=0'. Missing args: 'usage: run-policy-gate.sh <access-export.csv> <evidence-store-dir>' (exit 2).",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "echo $?",
+      "example_invocations": [
+        "echo $?"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Expected '1' after running the check on access-violation.csv, '0' after access-clean.csv, '2' on usage error. Task 3 explicitly says: 'Confirm the exit codes with echo $?'.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "cat <file>",
+      "example_invocations": [
+        "cat access-clean.csv",
+        "cat access-violation.csv",
+        "cat policy.cedar",
+        "cat policy.rego",
+        "cat rotted-policy.txt",
+        "cat evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Fixture contents are committed and exact. access-violation.csv: header 'row,principal,action,resource_role' + rows '1,alice,grantRole,reader' / '2,bob,grantRole,editor' / '3,dave,revokeRole,legacy-admin' / '4,carol,grantRole,legacy-admin'. access-clean.csv identical except row 4 is 'erin,grantRole,viewer'. Evidence record JSON shape shown in §4.6/§5.3.",
+      "fidelity_source": "authored-fixture"
+    },
+    {
+      "cmd": "ls evidence-store/",
+      "example_invocations": [
+        "ls evidence-store/",
+        "ls lab09/evidence-store/*.json",
+        "ls -la lab09"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Record filenames follow the pattern '<CONTROL_ID>-<RUN_ID>-<timestamp-digits>.json', e.g. 'AC-6-legacy-admin-ci-1789-20260528170400.json' and 'AC-6-legacy-admin-ci-1804-20260528172200.json'.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "awk -F, '<rule>' <csv>",
+      "example_invocations": [
+        "awk -F, -v act=grantRole -v role=legacy-admin 'NR==1{next} $3==act && $4==role {printf \"DENY  row %s: %s -> %s  (forbidden by AC-6)\\n\", $1, $2, $4}' access-violation.csv"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "The reference check.sh implements the verdict-function as one awk pass: skip header, trim fields, deny when action==grantRole AND role==legacy-admin, count via '::count::N' sentinel line.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "sed (tamper edits on fixtures)",
+      "example_invocations": [
+        "sed 's/4,carol,grantRole,legacy-admin/4,carol,revokeRole,legacy-admin/' access-violation.csv > access-tampered.csv",
+        "sed 's/1,alice,grantRole,reader/1,alice,grantRole,legacy-admin/' access-clean.csv > access-injected.csv"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Used by happy-path.sh tamper proof: grant->revoke edit must flip the gate FAIL->PASS (proves the verdict checks the action column, not just the role); injecting a legacy-admin grant into the clean export must flip PASS->FAIL.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "bash labs/happy-path.sh",
+      "example_invocations": [
+        "bash labs/happy-path.sh"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "PASS: Module 09 policy gate reproduces (violation=BLOCKED+passed:false, clean=PASS+passed:true, revoke!=grant, evidence shape complete, tamper flips the verdict both ways)",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "opa eval / opa test (optional real engine)",
+      "example_invocations": [
+        "opa eval -d policy.rego -i input.json 'data.access.deny'",
+        "opa test ."
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Not shown verbatim — module says the engines (Cedar CLI, OPA) are optional and the lab is engine-agnostic; §8 references the 'opa test' workflow. §4.3 doctrine: 'A Rego policy without tests is a guess wearing a uniform.'",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "cedar authorize / cedar validate (optional real engine)",
+      "example_invocations": [
+        "cedar authorize --policies policy.cedar --entities entities.json --request-json request.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Not shown verbatim — Cedar CLI named as optional; the committed policy.cedar is the canonical artifact: forbid(principal, action == Action::\"grantRole\", resource) when { resource.role == \"legacy-admin\" };",
+      "fidelity_source": "real-engine-wasm"
+    },
+    {
+      "cmd": "date -u +%Y-%m-%dT%H:%M:%SZ",
+      "example_invocations": [
+        "date -u +%Y-%m-%dT%H:%M:%SZ"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Used by run-policy-gate.sh for the evaluated_at field unless GATE_FAKE_TIME overrides it (e.g. 2026-05-28T17:04:00Z).",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "cksum <file> (input_ref hash)",
+      "example_invocations": [
+        "cksum access-violation.csv"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Gate derives input_ref as '<basename-no-ext>@<first-8-hex-of-cksum>', e.g. 'access-export@4f1c' / 'access-export@9ab2' in §5.3; falls back to '@nohash' if cksum is absent.",
+      "fidelity_source": "docker-linux"
+    },
+    {
+      "cmd": "chmod +x check.sh run-policy-gate.sh",
+      "example_invocations": [
+        "chmod +x check.sh run-policy-gate.sh"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "Done by setup.sh; learner-authored scripts need it before ./script invocation works.",
+      "fidelity_source": "docker-linux"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Write the control ('access changes must never grant the legacy-admin role') as a Cedar forbid statement and as a Rego deny rule, in two files. For each, write one sentence on what this language forced you to specify that the other didn't.",
+      "objective": "O2 — compose the same control in two policy languages and articulate how each shapes the question (Cedar: principal/action/resource authorization model; Rego: condition over arbitrary JSON).",
+      "machine_verify_check": "Parse the Cedar editor buffer for a 'forbid(' statement with action == Action::\"grantRole\" and a when clause testing resource.role == \"legacy-admin\" ending in ';'. Parse the Rego buffer for 'package', 'import rego.v1', a 'deny contains msg if {' rule body with input.action == \"grantRole\" and input.resource.role == \"legacy-admin\", and an assigned msg. Reflection sentences: non-empty free text, optionally keyword-checked (principal/action/resource vs JSON/input)."
+    },
+    {
+      "instruction": "Implement the verdict-function as a small engine-agnostic check script: takes an access-export CSV, denies any row whose action is grantRole AND role is legacy-admin, prints one DENY line per violation, exits non-zero iff there is at least one violation.",
+      "objective": "O1/O3 — make decision = policy(input) real as an executable function with a meaningful exit code; the critical trap is checking BOTH action and role (a revoke of legacy-admin must pass).",
+      "machine_verify_check": "Run the learner's logic (or simulated equivalent) against three seeded inputs: access-clean.csv must exit 0 with zero DENY lines (it deliberately contains 'dave,revokeRole,legacy-admin'); access-violation.csv must exit 1 with exactly one DENY line matching row 4 carol; a tampered variant where row 4's grantRole becomes revokeRole must flip to exit 0. Engine asserts exit codes and DENY-line counts."
+    },
+    {
+      "instruction": "Run your check against access-clean.csv (expect exit 0, no denials) and access-violation.csv (expect non-zero, one denial). Confirm exit codes with `echo $?`. State in one sentence why 'exit non-zero on violation' is what gives the gate teeth.",
+      "objective": "O3 — connect the exit code to the CI blocking mechanism: non-zero fails the build, so a non-compliant change physically cannot merge.",
+      "machine_verify_check": "Terminal-sim transcript must contain both check invocations each followed by 'echo $?' echoing 0 then 1 (order-agnostic per input). Sentence check: free text mentioning build failure/merge blocking (graded by keyword or short-answer rubric)."
+    },
+    {
+      "instruction": "Wrap the check in run-policy-gate.sh that any CI system would call: it runs the check and, on EVERY run regardless of verdict, appends a structured JSON evidence record (control id, engine, decision, passed, violations, input ref, timestamp, run id) to lab09/evidence-store/.",
+      "objective": "O3/O4 — evidence as a by-product of evaluation: the gate both blocks and proves, with the §4.6 record shape.",
+      "machine_verify_check": "After a simulated gate run, inspect the simulated evidence-store: exactly one new .json file per run whose parsed object contains all 8 required keys (control_id, policy_engine, decision, passed, violations, input_ref, evaluated_at, run) with correct types (passed boolean, violations number) and verdict-consistent values (deny/false/1 on the violating input)."
+    },
+    {
+      "instruction": "Simulate a CI run on the violating input: confirm the gate exited non-zero AND a passed:false record was written. Then run on the clean input: confirm exit 0 AND a passed:true record. You now have a before/after audit trail produced by the gate, not by you.",
+      "objective": "O4 — produce the two-record before/after audit trail automatically (deny/passed:false then allow/passed:true).",
+      "machine_verify_check": "Simulated store must contain >= 2 records: at least one with decision=deny, passed=false, violations=1 and one with decision=allow, passed=true, violations=0; the gate exit codes in the transcript must be 1 then 0 respectively and each record's run id must differ."
+    },
+    {
+      "instruction": "Policy-rot drill: open rotted-policy.txt (a Rego rule that only checks a last_reviewed field exists, auto-stamped by the ticketing system on any edit). In 3-4 sentences explain why it is green-but-meaningless, name the ownership gap that let it rot, and state the fix.",
+      "objective": "O5 — diagnose policy-rot: the rule tests date-presence not human re-evaluation; no owner and no review cadence let it drift; fix = named owner + cadence, and ultimately retire the rule.",
+      "machine_verify_check": "Free-text response graded against three rubric facets (each checkable by keyword sets or an LLM rubric, or replaced by a structured multi-select): (1) the check asserts field presence while the field is auto-stamped, so green != a risk decision; (2) OWNER: none recorded / REVIEW CADENCE: none recorded is the gap; (3) fix names an owner + cadence and/or retires the policy for a human review workflow."
+    },
+    {
+      "instruction": "Tool-fit justification: one paragraph defending YES for the legacy-admin control (objective, high-frequency, ownable verdict — name owner and review cadence), and one paragraph defending NO for the rotted vendor-risk-acceptance control (genuine human judgment that a function would lie about — name the manual alternative).",
+      "objective": "O6 — the senior judgment: decide in writing whether PaC was the right tool at all, and defend both the yes and the no.",
+      "machine_verify_check": "Two free-text paragraphs. Structured-builder alternative: force the learner to classify each control against the three §4.8 fit criteria (objective verdict? high-frequency? ownable?) via toggles, then auto-check the classification (legacy-admin = yes/yes/yes -> PaC; VR-3 = no on 'objective' -> manual review), with the paragraph as supporting text."
+    }
+  ],
+  "lab_setup_state": "Learner runs `bash labs/setup.sh ./lab09`, which copies the committed fixtures into ./lab09/: access-clean.csv (4 rows incl. a deliberate 'dave,revokeRole,legacy-admin' trap row), access-violation.csv (same plus '4,carol,grantRole,legacy-admin'), policy.cedar (reference forbid statement), policy.rego (reference deny rule), check.sh (reference verdict-function, exec bit set), run-policy-gate.sh (reference CI gate, exec bit set; env vars POLICY_ENGINE/CI_RUN_ID/GATE_FAKE_TIME control engine name, run id, timestamp), rotted-policy.txt (VR-3 policy-rot drill fixture with the Rego snippet, 'OWNER: (none recorded)', 'REVIEW CADENCE: (none recorded)', and the ticketing-system auto-stamp note), and an empty evidence-store/ directory. CSV schema: row,principal,action,resource_role. Control id is AC-6-legacy-admin throughout. No network, no policy-engine install required — bash + coreutils + awk only; Cedar CLI and OPA are optional swap-ins.",
+  "assessment_artifact": "Given a FRESH unseen control (e.g. 'deployments must never grant the break-glass role' or 'no access change may target the prod-root resource') plus clean and violating sample inputs in a comparable CSV/JSON shape and a fresh rotted-policy snippet (hollow in a NEW way, e.g. asserts a field is non-empty rather than that a decision was made), the learner must within 60 minutes unaided deliver: (1) the control as a correct Cedar forbid AND a correct Rego deny rule encoding the same verdict, each with a one-sentence 'what this language forced me to specify' note; (2) a runnable CI gate script that exits non-zero on a violation and zero when clean; (3) auto-emitted structured versioned evidence records — at minimum one passed:false and one passed:true — each carrying control id, policy engine, decision, passed, violations, input ref, timestamp, run id; (4) a written tool-fit justification (owner + review cadence if yes, manual alternative if no) plus a correct rot diagnosis of the supplied rotted policy. Rubric is 6 rows (O1-O6), all Pass/Not-yet, all must pass; Not-yet routes to the named concept section.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": [
+      "terminal-sim (bash session over a virtual lab09/ filesystem: setup.sh, check.sh, run-policy-gate.sh, cat, ls, echo $?, sed tamper edits)",
+      "policy-editor (Cedar pane + Rego pane with syntax highlighting and structural validators; optionally OPA compiled to WASM for real Rego evaluation, and cedar-policy WASM for real Cedar authorization — both engines genuinely ship WASM builds)",
+      "code-editor (author/complete check.sh and run-policy-gate.sh against an in-browser test harness that replays the happy-path.sh assertions)",
+      "structured-builder (evidence-record field assembly; tool-fit yes/no classification against the three §4.8 criteria; rot-diagnosis multi-select)"
+    ],
+    "sim_state": "Virtual filesystem seeded with the exact committed fixtures (both CSVs verbatim, policy.cedar, policy.rego, rotted-policy.txt, reference scripts) plus an evidence-store/ directory that the simulated gate writes into. Terminal state tracks: files present, exec bits, last exit code (for echo $?), and accumulated evidence records (JSON objects with deterministic filenames using GATE_FAKE_TIME-style fixed timestamps so output is reproducible). The CSV verdict logic is trivially simulable in JS with 100% fidelity to check.sh: deny iff action==grantRole && resource_role==legacy-admin, skip header, exit 1 iff count>0.",
+    "task_count": 7,
+    "notes": "This module is unusually well-suited to a static web app because the lab was deliberately built engine-agnostic (bash+awk only) and happy-path.sh is effectively a ready-made autograder spec. Recommended flow mirrors the 7 lab tasks: (1) policy-editor task — fill in the Cedar forbid and Rego deny rules with structural validation (and, if WASM engines are bundled, live-evaluate against the request {action:'grantRole', resource:{role:'legacy-admin'}} to show DENY); (2) code/terminal task — implement or fix the verdict check and run it against both CSVs in the terminal-sim, asserting exit codes via echo $?; include the revoke-trap: a naive role-only check must visibly fail the clean fixture, reproducing the §4.3 'subtly silently wrong' lesson; (3) terminal task — gate runs on violating then clean input with CI_RUN_ID/GATE_FAKE_TIME pinned, learner inspects the two evidence records with cat/ls; (4) structured-builder — assemble the §4.6 evidence record from its 8 required fields and have the engine reject missing/mistyped fields; (5) tamper-proof task straight from happy-path.sh — sed the grant to a revoke and predict-then-observe the gate flipping FAIL->PASS, and inject a grant into the clean file to flip PASS->FAIL; (6) rot-diagnosis — show rotted-policy.txt and grade a 3-facet diagnosis (green-but-meaningless mechanism, ownership gap, fix) via multi-select plus short free text; (7) tool-fit — toggle-classify both controls against objective/high-frequency/ownable, auto-check the yes(legacy-admin)/no(VR-3) verdicts, then a short written justification. The strongest fidelity move: replay the verbatim §5.2 gate transcript (EVAL/DENY/GATE lines) and the §5.3 record JSON exactly, since the module shows them verbatim and the fixtures reproduce them deterministically."
+  },
+  "fidelity_notes": "Almost everything is deterministic and easy to reproduce exactly: fixtures are committed, scripts avoid jq/network/engines, and GATE_FAKE_TIME + CI_RUN_ID pin timestamps and run ids (happy-path.sh demonstrates the exact expected strings). Three gaps: (1) the §5.2 module prose shows 'GATE  result=FAIL  (1 violation)  exit=1' but the committed run-policy-gate.sh emits 'GATE  result=FAIL  (violations=1)  exit=1' and adds an EVIDENCE line — pick the fixture output as ground truth and note the prose discrepancy; (2) the §5.3 input_ref values ('access-export@4f1c', 'access-export@9ab2') come from cksum of a hypothetical access-export.csv, not the committed fixtures — sim should compute its own stable 8-hex ref or hardcode plausible values; (3) real Cedar CLI and OPA output formats are never shown in the module (engines are explicitly optional), so if the exercise bundles cedar/OPA WASM, any displayed engine output is additive rather than fidelity-constrained — validate against real engine output (opa eval JSON result shape; Cedar Decision::Deny) rather than inventing CLI text. Evidence-record filename embeds 'tr -dc 0-9' of the timestamp (e.g. 20260528170400) — replicate that exact naming in the sim since happy-path.sh globs on it."
+}

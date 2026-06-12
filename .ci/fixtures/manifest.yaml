@@ -1,0 +1,270 @@
+# Fidelity manifest — the enumeration of every taught command invocation the simulator must
+# reproduce, each with its ground-truth source and match class (root ISA ISC-53).
+# Captured fixtures land in .ci/fixtures/captured/<id>.json with provenance.
+#
+# match classes: byte-exact | structured | engine-pinned | synthesized-porcelain |
+#                authored-with-citation | computed
+# sources: docker-linux-userland | docker-linux-booted | macos-host | pwsh-authored |
+#          wasm-engine | authored
+
+meta:
+  version: 1
+  epoch: "2026-06-01T09:00:00Z"
+  contracts:
+    docker-linux-userland:
+      dockerfile: env/Dockerfile.userland
+      base_digest: "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54"
+      hostname: workstation
+      user: analyst
+      uid: 1000
+      home: /home/analyst
+      shell: /bin/bash
+      locale: C.UTF-8
+      cols: 80
+      notes: >
+        tty-style columnar output is captured via explicit width flags (e.g. `ls -C -w80`),
+        which GNU ls renders byte-identically to a tty at that width — no pty needed,
+        stderr separation preserved. Plain (TERM=dumb) output: no color codes anywhere.
+    docker-linux-booted:
+      dockerfile: env/Dockerfile.booted
+      base_digest: "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54"
+      hostname: web-01
+      user: grcops
+      uid: 1001
+      run_flags: "--privileged --cgroupns=host"
+      notes: systemd as PID 1; module 02 family only. Manifest lint rejects systemd commands on userland.
+    macos-host:
+      script: env/macos-contract.sh
+      shell: zsh -f
+      user: analyst
+      cols: 80
+
+seeds:
+  m01:
+    home: seeds/m01/home          # copied to /home/analyst (ownership analyst:analyst)
+    path_bin: seeds/m01/bin       # installed to /usr/local/bin (mode 0755)
+
+entries:
+  # ---- module 01 — §5.1 orientation (prose canon transcripts) ----
+  - id: m01-pwd-home
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "pwd"
+  - id: m01-ls-home
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "ls -C -w80"
+    tty_equiv: "ls"               # what the learner types; tty rendering == this capture
+  - id: m01-pwd-after-cd
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["cd evidence"]
+    cmd: "pwd"
+  - id: m01-cd-nosuch
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "cd nosuchdir"
+
+  # ---- module 01 — §5.2 streams (fictional tool; stderr line is prose canon) ----
+  - id: m01-collect-plain
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst/evidence
+    cmd: "collect-encryption-status"
+    citation: "module 01 §5.2 (WARN line verbatim; stdout authored fixture)"
+  - id: m01-collect-redirect
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst/evidence
+    cmd: "collect-encryption-status > encryption.txt"
+    post: ["cat encryption.txt"]
+  - id: m01-collect-both
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst/evidence
+    cmd: "collect-encryption-status > encryption.txt 2> collection-errors.log"
+    post: ["cat encryption.txt", "cat collection-errors.log"]
+
+  # ---- module 01 — §5.3/§5.4 composition + verdict (prose canon) ----
+  - id: m01-pipeline-clean
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst/evidence
+    cmd: "cat access.csv | grep \"legacy-admin\" | wc -l"
+  - id: m01-grepq-clean
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst/evidence
+    cmd: "grep -q \"legacy-admin\" access.csv"
+    post: ["echo $?"]
+
+  # ---- module 01 — §6 lab ----
+  - id: m01-lab-setup
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "lab-setup 01"
+  - id: m01-lab-pipeline
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "cat access-export.csv | grep admin | wc -l"
+  - id: m01-lab-evidence-file
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "cat access-export.csv | grep admin | wc -l > evidence-admin-count.txt"
+    post: ["cat evidence-admin-count.txt"]
+  - id: m01-parse-tool
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "parse-access-export access-export.csv"
+  - id: m01-parse-separated
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "parse-access-export access-export.csv > clean-rows.txt 2> collection-errors.log"
+    post: ["cat clean-rows.txt", "cat collection-errors.log"]
+  - id: m01-lab-count-via-tool
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "parse-access-export access-export.csv 2> collection-errors.log | grep admin | wc -l"
+  - id: m01-grepq-lab
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01"]
+    cmd: "grep -q admin access-export.csv"
+    post: ["echo $?"]
+  - id: m01-script-roundtrip
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre:
+      - "lab-setup 01"
+      - "cd lab01"
+      - "printf '#!/usr/bin/env bash\\nparse-access-export \"$1\" 2> collection-errors.log | grep admin | wc -l\\n' > check-admin-access.sh"
+    cmd: "bash check-admin-access.sh access-export.csv"
+  - id: m01-script-noexec
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre:
+      - "lab-setup 01"
+      - "cd lab01"
+      - "printf '#!/usr/bin/env bash\\necho hi\\n' > s.sh"
+    cmd: "./s.sh"
+  - id: m01-script-exec
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre:
+      - "lab-setup 01"
+      - "cd lab01"
+      - "printf '#!/usr/bin/env bash\\necho hi\\n' > s.sh"
+      - "chmod +x s.sh"
+    cmd: "./s.sh"
+
+  # ---- module 01 — §4.5 self-help + ls detail + negative space (ISC-120) ----
+  - id: m01-grep-help
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "grep --help"
+  - id: m01-ls-l-lab
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre:
+      - "lab-setup 01"
+      - "touch -d '2026-06-01 09:00:00' lab01 lab01/access-export.csv"
+    cmd: "ls -l lab01"
+    notes: >
+      mtimes aligned to the sim epoch: in-sim, lab-setup creates files at sim-now (epoch+elapsed),
+      so recent-format dates (Jun  1 09:00) are the truthful rendering; capture matches by
+      explicit alignment, since the container kernel writes real wall-clock mtimes.
+  - id: m01-cmd-not-found
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "frobnicate"
+  - id: m01-vim-not-installed
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    cmd: "vim"
+    notes: negative space — the lab box genuinely lacks vim; sim must say so truthfully
+  - id: m01-ls-width-45
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01", "touch alpha.txt beta.txt gamma-longer-name.txt delta.txt"]
+    cmd: "ls -C -w45"
+    notes: width-parameterized columnizer unit-test fixture (web ISC-123)
+  - id: m01-ls-width-120
+    module: "01"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m01
+    cwd: /home/analyst
+    pre: ["lab-setup 01", "cd lab01", "touch alpha.txt beta.txt gamma-longer-name.txt delta.txt"]
+    cmd: "ls -C -w120"

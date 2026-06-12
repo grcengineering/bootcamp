@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# The fictional GRC evidence collector daemon (module 02 scenario asset).
+# Real enough that systemd reports it active (running); it emits one journal line per interval.
+while true; do
+  echo "evidence-collector: heartbeat ok"
+  sleep 300
+done

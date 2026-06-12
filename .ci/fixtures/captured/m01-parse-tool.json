@@ -1,0 +1,30 @@
+{
+  "id": "m01-parse-tool",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [
+    "lab-setup 01",
+    "cd lab01"
+  ],
+  "cmd": "parse-access-export access-export.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "alice,admin\nbob,viewer\ncarol,legacy-admin\ndave,editor\nerin,admin\nfrank,viewer\ngrace,auditor\n",
+  "stderr": "WARN: malformed row: MALFORMED_ROW_WITH_NO_DELIMITER\n",
+  "exit": 0,
+  "stderr_interactive": "WARN: malformed row: MALFORMED_ROW_WITH_NO_DELIMITER\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

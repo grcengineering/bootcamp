@@ -1,0 +1,27 @@
+{
+  "id": "m01-collect-plain",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst/evidence",
+  "pre": [],
+  "cmd": "collect-encryption-status",
+  "tty_equiv": null,
+  "citation": "module 01 §5.2 (WARN line verbatim; stdout authored fixture)",
+  "notes": null,
+  "stdout": "laptop-01: encrypted\nlaptop-02: encrypted\nlaptop-03: encrypted\nlaptop-04: encrypted\nlaptop-05: not-encrypted\n",
+  "stderr": "WARN: host db-07 unreachable\n",
+  "exit": 0,
+  "stderr_interactive": "WARN: host db-07 unreachable\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

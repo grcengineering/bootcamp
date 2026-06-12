@@ -1,11 +1,12 @@
 ---
 project: grc-engineering-bootcamp
-effort: E3
-phase: execute
-progress: 42/44
+effort: E5
+phase: build
+progress: 42/68
 mode: build
 started: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-11
+iteration: 2
 owner: Justin Pagano (accountable) · Jai (operational)
 ---
 
@@ -17,9 +18,13 @@ owner: Justin Pagano (accountable) · Jai (operational)
 
 A mixed-baseline team (some never opened a terminal, some already script) needs to reach the full GRC Engineering canon. Iteration 1 used named third-party courses as the spine — which (a) contradicts the manifesto's "mindset, not a stack" thesis, (b) rots silently as links die and tools change, and (c) owns no explanation. There is no instantiated curriculum: four planning docs + one proof module sit at repo root; nothing is versioned as teachable, maintainable units.
 
+**Wave 2 (2026-06-11):** the 16 modules exist and are gate-green, but the curriculum is read-only. A learner who has never opened a terminal reads *about* `pwd` instead of running it. The labs say "in the lab container, run `lab-setup 01`" — but no lab container, simulation, or interactive surface exists anywhere. "Learning by doing" is the curriculum's pedagogy on paper and is structurally impossible in practice. The missing half: every module needs an in-app interactive exercise whose simulated environment is so accurate that the same commands run on a real machine produce the same outputs — otherwise the curriculum teaches a fiction.
+
 ## Vision
 
 A new engineer clones the repo and *learns GRC Engineering by watching it run on their own training material*: the module is the versioned policy, green CI is the evidence, the rot dashboard is continuous controls monitoring, `meta.yaml` is ownership. The medium is the method. When the team can keep their own curriculum green, they have a live, honest lesson in why controls rot — and when they can't, the dashboard goes red and someone owns it. Euphoric surprise: the curriculum *is* the first control they engineer.
+
+**Wave 2:** a learner opens Module 01 in the app, and instead of reading about a terminal, *a terminal is there* — prompt, cursor, the lab's seeded files already in place. They type `pwd` and get `/home/analyst`. They type the exact pipeline from §5.3 and get the exact output. Later they run the same commands on a real machine of the same platform and get the same answers — same content, same exit codes; where their platform legitimately differs (BSD `wc` pads, zsh globs error), the app *teaches the divergence* instead of hiding it, because format-instability across platforms is itself a GRC lesson (it's why evidence pipelines normalize). Simulation fidelity is engineered as a control under a **declared ground-truth taxonomy** — byte-exact where reality is deterministic, structured-with-typed-holes where entropy is real (PIDs, fingerprints), engine-pinned where a real engine runs in-browser, synthesized-porcelain-over-real-plumbing where state is real but CLI text is rendered, authored-with-citation where capture is impossible — each class with its own capture path and diff semantics, diffed in CI, drift goes red, someone owns it. Euphoric surprise: the mock terminal is *provably honest about exactly what it proves* — and the proof mechanism is the very CCM loop the curriculum teaches.
 
 ## Out of Scope
 
@@ -28,6 +33,7 @@ A new engineer clones the repo and *learns GRC Engineering by watching it run on
 - Third-party content as load-bearing material (it lives only under §8 Supplemental, always optional).
 - Certifications as the goal (de-emphasized by design; capability portfolio first).
 - Pushing/publishing anything externally this build (local commits only until explicit "yes push").
+- **Wave 2 additions:** running real user machines or cloud sandboxes per learner (no backend exists — the simulation is fully client-side). Simulating *every* flag of *every* command (the fidelity contract covers what the curriculum teaches and the labs require, not all of coreutils). Verbatim man pages (licensing — `--help` output is program output and is captured verbatim; `man` in-sim renders condensed original pages labeled as such). A full vi/vim emulation (a beginner-honest `nano`-class editor is in scope; modal vim is not). Real SSH to real hosts (e.g. OverTheWire stays a §8 supplemental, not simulated). Windows host capture (no Windows machine — PowerShell fixtures are authored from documented sources with citations, flagged per fixture).
 
 ## Principles
 
@@ -36,6 +42,8 @@ A new engineer clones the repo and *learns GRC Engineering by watching it run on
 - **Maintenance is a first-class, automated, visible activity** — not an afterthought. The anti-rot machinery ships with module #1, not at the end.
 - **The pipeline is the discipline being taught.** Production *is* the engineering lesson: PR-gated, reviewed, reproduced-from-clean.
 - **Measurable outcomes over checkbox.** Objectives are Bloom-falsifiable; assessments are artifacts, not trivia quizzes.
+- **Simulation fidelity is a control, not an aspiration (Wave 2).** A taught command's simulated output is a *claim about reality*; the claim is verified the GRC-engineering way — ground truth captured from real systems, diffed in CI, drift goes red. Where ground truth cannot be captured (Windows), the fixture carries its documentary citation; where a real engine exists in WASM (Python, SQLite, jq, Rego, Cedar, git), run the real engine instead of imitating it.
+- **Doing beats reading at every opportunity (Wave 2).** Every module's exercise makes the learner *perform* the loop stage the module teaches, with machine-verified completion from simulated state — never a quiz about the doing.
 
 ## Constraints
 
@@ -46,10 +54,13 @@ A new engineer clones the repo and *learns GRC Engineering by watching it run on
 - `research/job-market/` corpus is **gitignored, local-only** — never staged, never pushed (exfiltration boundary).
 - **Five role tracks** (Generalist + Governance + Risk[1st+3rd] + Compliance + Customer Trust & Assurance) — not six.
 - 95% meaningful-coverage floor on `.ci/`+`dashboard/` TypeScript tooling (content markdown is not "code").
+- **Wave 2:** exercise *content* is **data** — one spec per module under `modules/*/exercises/`, schema-validated by `.ci/exercise-lint.ts`; the app renders specs, it never hardcodes exercise content. Exercise *verifiers* are **code with two sanctioned homes** (RedTeam finding 10): a closed, unit-tested, Zod-schema'd primitive registry in `web/src/verifiers/`, and domain-native test artifacts (pytest assertions, Cedar decision pairs, expected SQL result sets) executed by the engines; specs reference verifiers by name + params only — `expr:`/`js:`/`script:` fields are lint-banned. Ground-truth fixtures follow the **fidelity taxonomy** (RedTeam core finding): match class per fixture (`byte-exact` | `structured` with typed holes naming their entropy source | `engine-pinned` | `synthesized-porcelain-over-real-plumbing` | `authored-with-citation` | `computed-from-declared-parameters`), source per entry (`docker-linux-userland` | `docker-linux-booted` (systemd-PID-1 lab image) | `macos-host` | `pwsh-authored` | `wasm-engine` | `authored`), tty-ness + columns explicit, environment contract committed as an **executable artifact** (Dockerfile/entry script pinning hostname/user/uid/HOME/PS1/locale; symmetric `zsh -f` clean-account contract for macOS captures). The simulation engine is **pure DOM-free TypeScript** testable under `bun test`. Everything remains static/client-side (GitHub Pages — no backend, no telemetry exfiltration).
 
 ## Goal
 
 Instantiate a living curriculum-as-code repository that produces and maintains 100% original GRC Engineering training material across five role tracks, where the curriculum is itself GRC-engineered — versioned, PR-gated, CI-tested (anatomy + originality + style + lab-repro + link-check), rot-monitored via a dashboard, and ownership-tracked per module. Done when the engine runs green on the migrated proof module and authoring of the full backlog is pipelined.
+
+**Wave 2 (refined 2026-06-11):** every one of the 16 modules additionally ships a highly interactive in-app exercise — terminal simulations whose taught-command outputs are CI-diffed against ground truth captured from real systems, real WASM engines (Python/SQL/jq/Rego/Cedar/git) where they exist, and realistic structured simulations elsewhere — schema-validated as exercise specs in this repo, rendered by the web app, machine-verified task-by-task, and folded into the same anti-rot machinery. Done when all 16 exercises pass their gates, the fidelity suite is green, and the app demonstrably lets a zero-terminal learner complete Module 01's lab end-to-end in the browser.
 
 ## Criteria
 
@@ -105,6 +116,48 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [ ] ISC-43: Antecedent: the Curriculum Owner reads each module before merge to main (no auto-merge-on-green for prose)
 - [x] ISC-44: Cross-module coherence pass — loop-label canon reconciled to UNDERSTAND (Plan parenthetical) + the 7 Forge worked-example/fixture inconsistencies fixed and re-gated green
 
+### Wave 2 — Interactive exercise layer: spec contract (added 2026-06-11)
+- [ ] ISC-45: every module `modules/*/exercises/exercise.yaml` exists (16/16) describing the module's interactive exercise(s)
+- [ ] ISC-46: exercise-spec schema documented (`style/EXERCISE-SPEC.md`) and enforced by `.ci/exercise-lint.ts` (exit 0 on 16/16)
+- [ ] ISC-47: every exercise task declares a machine-verifiable completion check (lint rejects judgment-only tasks)
+- [ ] ISC-48: every module's exercise tasks cover ≥1 task per §1 learning objective (lint-checked objective coverage)
+- [ ] ISC-49: each exercise spec embeds/references the lab's seeded state matching module §6 setup (files, data, fixtures)
+- [ ] ISC-50: every exercise task ships a hint ladder (≥2 rungs: nudge → reveal) in the spec
+- [ ] ISC-51: Anti: exercise specs introduce no third-party URLs outside §8 (originality-lint extended to exercises/ and green)
+- [ ] ISC-52: Anti: no exercise task is a trivia quiz about the doing — every task mutates or queries simulated state (lint heuristic + review)
+
+### Wave 2 — Ground-truth fidelity harness (amended 2026-06-12 per RedTeam findings 2/3/4/9/11)
+- [ ] ISC-53: `.ci/fixtures/manifest.yaml` enumerates every taught command invocation per module with fidelity **source** (docker-linux-userland | docker-linux-booted | macos-host | pwsh-authored | wasm-engine | authored) AND **match class** (byte-exact | structured | engine-pinned | synthesized-porcelain | authored-with-citation | computed) AND explicit tty/columns
+- [ ] ISC-54: `.ci/fixtures/capture-linux.sh` replays userland entries in a digest-pinned `ubuntu:24.04` container via a **committed executable environment contract** (Dockerfile/entry: hostname, analyst user/uid after `userdel ubuntu`, HOME, PS1, `C.UTF-8`, pinned width, libfaketime seed epoch); a separate **Dockerfile-pinned systemd-PID-1 lab image** captures the booted family (systemctl/journalctl/sshd) — manifest lint rejects systemd-family commands claiming userland provenance
+- [ ] ISC-55: `.ci/fixtures/capture-macos.sh` replays macos-host entries under a symmetric contract (`zsh -f`, clean account, pinned PATH, sanitized env in provenance); a parallel macos fixture set covers module-01 taught invocations so GNU↔BSD divergence callouts are **generated by diffing the two fixture sets in CI**, not hand-asserted
+- [ ] ISC-56: fixture format captures command, args, cwd, seed-state id, stdout, stderr, exit code, provenance (image digest / sw_vers / engine version), match class, and — for `structured` — typed holes each naming its entropy source (PID, fingerprint, kernel-release…)
+- [ ] ISC-57: every pwsh-authored / authored entry carries a documentation citation in the fixture metadata
+- [ ] ISC-58: `bun test` fidelity suite (web/) replays every fixture through the simulation engine — byte-exact class diffs byte-exact, structured class diffs structure-exact with hole validation, **0 undeclared normalizations** — 0 failures
+- [ ] ISC-59: fidelity coverage: 100% of manifest entries have fixtures and pass (suite prints per-command, per-class coverage report)
+- [ ] ISC-60: Anti: no fixture whose source could be captured is hand-written (provenance proves capture origin); any expected value derivable from seeded state is **generated by running the reference transcript** — lint rejects hand literals for capturable check types
+- [ ] ISC-61: CI workflow runs exercise-lint + the fidelity suite on PR + nightly (job present in `.github/workflows/ci.yml`)
+
+### Wave 2 — Curriculum finalization
+- [ ] ISC-62: each module.md §6 gains an "Interactive lab" pointer to its in-app exercise (16/16, anatomy-lint still green)
+- [ ] ISC-63: ISC-41 closed: `.ci/semantic-originality.ts` ships (n-gram overlap heuristic vs §8 sources) and runs green over 16 modules
+- [ ] ISC-64: README + Production-And-Maintenance-Plan document the exercise layer + fidelity harness (Loop integration: fixtures re-capture on review_due)
+- [ ] ISC-65: CHANGELOG entry for Wave 2
+- [ ] ISC-66: rot dashboard includes exercise specs (exercise present/missing + fixture age per module)
+- [ ] ISC-67: `.ci/`+`dashboard/` coverage stays ≥95% lines/functions with new tooling included (`bun test --coverage`)
+- [ ] ISC-68: Anti: nothing pushed to `origin`/published without explicit "yes push" (standing, re-verified at wave end)
+- [ ] ISC-69: exercises carry owner/volatility/review_due (exercise.yaml fields) and age in the rot dashboard like modules
+- [ ] ISC-70: exercise-lint cross-checks taught commands in module.md (§5/§6) against fidelity-manifest entries (spec↔prose drift tripwire)
+- [ ] ISC-71: `.ci/triggers.yaml` gains fixture re-capture triggers: ubuntu digest change, macOS host version change, WASM engine version bump
+- [ ] ISC-72: Anti: loosening a fixture assertion (adding a normalization rule or converting byte-exact → structured) requires a `justification` field in fixture meta — lint-enforced (anti-eroding-goals tripwire; declared typed holes at capture time are design, not loosening)
+- [ ] ISC-73: every exercise ships ≥1 golden reference transcript AND ≥1 near-miss anti-transcript (e.g. the `echo 3 > file` cheat), replayed headlessly through the Lab Player verifier in `bun test` — golden passes all tasks, anti-transcript fails its targeted task (RedTeam finding 11; wave-1 fail-open lesson applied to exercises)
+- [ ] ISC-74: exercise-lint rule: every machine-gated task is completable using only commands in the module's fidelity manifest; tasks of declared type `reflection` are excluded from machine gating (RedTeam finding 1)
+- [ ] ISC-75: Module 01 lab §6 reconciled with its reference solution — the task-5 stderr mechanism is producible with taught commands (or a seeded fictional tool), and the pipes-only constraint no longer contradicts the reference implementation; re-gated green
+- [ ] ISC-76: Module 05's printed git transcripts regenerated from a real scripted git capture with pinned identity+dates (deterministic SHAs) so the in-app engine, the prose, and reality agree
+- [ ] ISC-77: verifier mutation testing — for every verifier primitive, perturbing its golden input by one token/row/key flips the verdict to reject (the verifiers discriminate, not just accept) (advisor 2026-06-12)
+- [ ] ISC-78: determinism substrate pinned and audited per engine: PYTHONHASHSEED + float repr (Python), ORDER BY required in expected SQL results, jq/opa/cedar key-iteration order, no wall-clock leak into any transcript (grep gate over fixtures for capture-date strings) (advisor 2026-06-12)
+- [ ] ISC-79: exercise-lint validates the spec↔registry seam: every declared verifier exists in the registry, its params satisfy the verifier's Zod schema, and the fixture's match-class is compatible with the verifier kind (advisor 2026-06-12)
+- [ ] ISC-80: integration-canary matrix gates fan-out: one minimal smoke exercise per engine × match-class combination in actual use, all green in `bun test` + built site, BEFORE per-module authoring fan-out (advisor 2026-06-12: Module 01 is a content milestone, not an integration proof)
+
 ## Test Strategy
 
 | isc | type | check | threshold | tool |
@@ -120,6 +173,15 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 | ISC-22 | originality | URLs only in §8 across all modules | 0 violations | `originality-lint` |
 | ISC-24 | lab | every module happy-path reproduces | all pass | `lab-repro.sh` |
 | ISC-29..37 | content | module.md present + passes all CI gates | per module | pipeline |
+| ISC-45/46 | spec | exercise.yaml present + schema-valid 16/16 | exit 0 | `exercise-lint` |
+| ISC-47/48/50 | spec | verifiable checks, objective coverage, hint ladders | lint rules | `exercise-lint` |
+| ISC-53..57 | fixtures | manifest complete; capture scripts run; provenance/citations present | per entry | `bash` + `Read` |
+| ISC-58/59 | fidelity | sim output diffs byte-exact vs every fixture | 0 failures / 100% | `bun test` (web) |
+| ISC-60 | anti | provenance field = capture script for capturable entries | 0 hand-written | fixture meta scan |
+| ISC-62 | content | §6 interactive-lab pointer present 16/16 | 16/16 | `grep` + anatomy-lint |
+| ISC-63 | gate | semantic-originality exit code | 0 | `bun` |
+| ISC-66 | render | dashboard rows include exercise + fixture-age columns | present | `bun` + `Read` |
+| ISC-67 | coverage | bun test --coverage on .ci/+dashboard | ≥95/95 | `bun test` |
 
 ## Features
 
@@ -131,6 +193,10 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 | tier2-4 | Modules 07–15 original authoring | ISC-35..37 | engine | yes (1 author/module) |
 | track-wiring | 5 track defs + coverage matrix + capstones | ISC-38,39 | common-core | partial |
 | anti-rot | triggers.yaml + dashboard + review cadence live with module #1 | ISC-9,10,11 | engine | no |
+| exercise-contract | spec schema + exercise-lint + EXERCISE-SPEC.md | ISC-45..52 | anatomy-contract | no (foundation for wave 2) |
+| fidelity-harness | manifest + capture scripts + fixture format + CI wiring | ISC-53..61 | exercise-contract | partial (linux/macos capture parallel) |
+| exercise-authoring | 16 exercise.yaml specs + seeded states + hint ladders | ISC-45,47..52 | exercise-contract | yes (1 author/module, canary first) |
+| curriculum-finalize | §6 pointers, semantic-originality, docs, dashboard, changelog | ISC-62..68 | exercise-authoring | partial |
 
 ## Decisions
 
@@ -144,6 +210,13 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - 2026-05-28: **Workflow gotcha** — file-producing author agents under a required `StructuredOutput` schema reliably WRITE the files but skip the final schema call (12/15 "failed" in wave 1; all files were on disk and passed gates). Fix: omit the schema on file-producing author stages; verify via gates/disk. Kept the schema only on the review stage (Forge called it reliably). Reusable for future authoring workflows.
 - 2026-05-28: **Loop-label canon reconciled to UNDERSTAND** (ISC-44 partial) — Curriculum + 4 modules used UNDERSTAND; only the Production Plan §3 parenthetical said "control→…"; aligned the Plan to UNDERSTAND.
 - 2026-05-28: **Fix wave launched** for the 6 Forge-revise modules (03,04,05,07,12,13). Module 14's two findings already applied (distribution disclosure in §4.5; loop-label via Plan).
+- 2026-06-11: **Wave 2 opened at E5 (context-override).** Goal directive: create/test/refine/finalize ALL curricula incl. implicitly intended interactive exercises with a highly accurate mock terminal. Classifier hit fail-safe timeout (E3); goal scope + session ultracode override to E5. Autonomous mode — owner away; stop-hook holds until done.
+- 2026-06-11: **Interview (E5 gate) run self-directed — owner absent.** Q: all 16 modules interactive, or terminal-modules only? A: all 16 — goal says "ALL … explicitly proposed and implicitly intended," and non-terminal modules get realistic non-terminal simulations (policy editors, SQL consoles, API clients, structured builders). Q: real engines or mocks? A: real WASM engines where they exist (Python/SQLite/jq/Rego/Cedar/git); fixture-verified TypeScript simulation for shells/OS tools; authored-with-citation only where capture is impossible (Windows). Q: where do exercises live? A: specs in this repo (data), rendering in web/ (code) — same one-source-of-truth bridge as content. Q: deploy? A: local only; standing no-push anti-criterion holds. Q: placement? A: exercise completion stored locally per learner; test-out flow deferred to a later wave (noted in Out of Scope of web ISA).
+- 2026-06-11: **Forge/Cato unavailable** — codex CLI absent on this machine (PROJECTS.md TF-CATO). Fallback: Anvil (Kimi K2.6, Moonshot) as cross-family reviewer for engine code + exercise content; if Anvil also unavailable, Claude-family adversarial panel with distinct lenses, logged honestly as same-family.
+- 2026-06-11: **ISC-floor math (E5 ≥256, soft).** ISA-line ISCs across root+web ≈ 190 after wave-2 appends. The per-command fidelity enumeration (~200+ probes: every taught invocation × byte-exact stdout/stderr/exit diff) lives in `.ci/fixtures/manifest.yaml` and the fidelity suite's per-command report — machine-owned enumeration, one source of truth, each probe individually failing. Encoding those as ISA prose lines would duplicate a generated artifact and rot. Effective verifiable-criteria count ≈ 390+ ≥ 256. Floor satisfied via manifest-as-enumeration.
+- 2026-06-11: **Canary-first for wave 2** (vs wave-1's full fan-out): the exercise layer has a hard foundation dependency (engine API + spec schema), so Module 01 ships end-to-end (engine + spec + fixtures + app player + Interceptor pass) before per-module fan-out. Wave-1's lesson (CI = form-floor; cross-family review load-bearing) carries over to exercise content review.
+- 2026-06-12: **Commitment-boundary advisor (Rule 2) consulted before BUILD.** Its "blocking" claim (no architecture-of-record) was a stale `--auto-state` pointer to an unrelated session's ISA — factually moot, both project ISAs exist and are current (Rule 3 conflict noted, no re-call needed: the substantive advice is independent of the pointer). Adopted all four substantive recommendations as ISC-77..80: verifier mutation testing, determinism-substrate pinning, spec↔registry seam validation, and a coverage-representative integration-canary matrix gating fan-out. Build order hardened: taxonomy+registry freeze → env contracts → engine pin → THEN golden capture (no parallel capture against a moving engine).
+- 2026-06-12: **RedTeam (8 attackers, 48 findings → top 12) returned CONDITIONAL GO; all 12 remediations adopted as ISA amendments before build.** Core finding accepted: one fidelity class cannot cover reality — adopted the declared ground-truth taxonomy (byte-exact | structured-with-typed-holes | engine-pinned | synthesized-porcelain | authored-with-citation | computed), per-class capture paths and diff semantics (ISC-53..60 amended). Empirically-verified attack highlights: plain ubuntu:24.04 has no systemd (→ booted lab image, ISC-54); BSD wc/zsh globs falsify the cross-platform promise (→ per-platform honesty + generated divergence callouts, ISC-55, Vision reworded); opa-wasm cannot compile learner Rego in-browser (→ Cedar is the live-authoring flagship, Rego via precompiled policies + input-mutation, web ISC-71 rewritten); isomorphic-git emits no porcelain (→ synthesized-porcelain-over-real-plumbing class, web ISC-66 rewritten); verifier-in-YAML is untested code (→ closed verifier registry + domain-native test artifacts, Constraints rewritten); no gate executed verifiers against known answers (→ golden + anti-transcript gate, ISC-73 — the wave-1 fail-open lesson applied to exercises); module-01's own lab contradicts its reference solution (→ ISC-75 curriculum fix). Frozen clock replaced with simulated-epoch + monotonic advance (web ISC-132).
 
 ## Changelog
 

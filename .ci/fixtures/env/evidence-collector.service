@@ -1,0 +1,10 @@
+[Unit]
+Description=GRC evidence collector
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/evidence-collector
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

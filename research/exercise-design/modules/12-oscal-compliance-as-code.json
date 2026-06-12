@@ -1,0 +1,152 @@
+{
+  "module_id": "12-oscal-compliance-as-code",
+  "title": "OSCAL & Compliance-as-Code",
+  "commands": [
+    {
+      "cmd": "bash labs/setup.sh ./lab12",
+      "example_invocations": [
+        "bash labs/setup.sh ./lab12",
+        "bash labs/setup.sh",
+        "bash ../labs/setup.sh /tmp/assess12"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "lab12 fixtures copied to ./lab12/",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun validate-oscal.ts <catalog.json> <profile.json> <component.json> (well-formed set, exit 0)",
+      "example_invocations": [
+        "bun validate-oscal.ts acme-catalog.json acme-profile.json acme-component.json",
+        "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "catalog: \"Acme Internal Control Spine\" | controls: 2 (ac-2, sc-28)\nprofile: imports acme-catalog.json | in-scope: 1 (ac-2) | dangling: 0\ncomponent: implemented-requirements: 1 | policy-linked: 1\n  ac-2 -> policy \"ac-2-account-management\"  [link resolves]\nPASS: required fields present, profile references resolve, control is implemented and policy-linked\nexit: 0",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun validate-oscal.ts <broken-catalog.json> <profile.json> <component.json> (control id removed, exit 1)",
+      "example_invocations": [
+        "bun validate-oscal.ts acme-catalog-broken.json acme-profile.json acme-component.json",
+        "bun lab12/validate-oscal.ts lab12/acme-catalog-broken.json lab12/acme-profile.json lab12/acme-component.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "FAIL: catalog control missing required \"id\"\n  -> a control with no id cannot be referenced by a profile or a policy link; this would break any importer (an auditor's tool, a FedRAMP pipeline) downstream.\nexit: 1",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun validate-oscal.ts <catalog.json> <dangling-profile.json> <component.json> (profile includes ac-9 the catalog does not define, exit 1)",
+      "example_invocations": [
+        "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "FAIL: profile references control id(s) the catalog does not define: ac-9\n  -> this is the OSCAL form of a Module-10 crosswalk orphan: the profile claims a control that has no home in the spine, so the selection cannot be resolved.\nexit: 1",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun validate-oscal.ts (missing args, usage error, exit 2)",
+      "example_invocations": [
+        "bun validate-oscal.ts",
+        "bun validate-oscal.ts nonexistent.json a.json b.json"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "ERROR: missing file argument\nusage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "echo $? (inspect validator exit code after a run)",
+      "example_invocations": [
+        "echo $?"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "0 (after a clean run) / 1 (after broken-catalog or dangling-reference run); module Task 4 says 'Inspect $?'",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bun ... > lab12/oscal-validation-pass.txt (capture clean run to deliverable file)",
+      "example_invocations": [
+        "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json > lab12/oscal-validation-pass.txt",
+        "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json | tee lab12/oscal-validation-pass.txt"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "none (module says 'Capture the output into lab12/oscal-validation-pass.txt')",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "sed 's/\"ac-2\"/\"ac-9\"/' acme-profile.json > acme-profile-dangling.json (CI's mechanical version of lab Task 6's hand edit)",
+      "example_invocations": [
+        "sed 's/\"ac-2\"/\"ac-9\"/' \"$PROF\" > \"$DANGLING_PROF\""
+      ],
+      "platform": "any",
+      "output_shown_in_module": "none (used in happy-path.sh; the lab itself asks the learner to hand-edit the profile)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bash labs/happy-path.sh (CI smoke test, 5 assertions)",
+      "example_invocations": [
+        "bash labs/happy-path.sh"
+      ],
+      "platform": "any",
+      "output_shown_in_module": "PASS: Module 12 OSCAL validation reproduces (valid=PASS, required-fields present, ac-2->policy linked, broken-catalog=FAIL, dangling-ref=FAIL)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "pip install compliance-trestle / trestle import / trestle validate (real-environment optional Task 7)",
+      "example_invocations": [
+        "pip install compliance-trestle",
+        "trestle init",
+        "trestle import -f acme-catalog.json -o acme-catalog",
+        "trestle validate -a"
+      ],
+      "platform": "python",
+      "output_shown_in_module": "none (module marks this '(real environment, optional)' and never shows trestle output; it warns to use oscal-compass/compliance-trestle, never the dead usnistgov/trestle repo)",
+      "fidelity_source": "authored-fixture"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Open acme-catalog.json and, before running anything, write down the three pieces the schema requires for a valid catalog (document UUID, metadata, at least one control with an id). State in one sentence why a control with no id is invalid, not merely incomplete.",
+      "objective": "O1, O2 — understand schema-vs-format and the catalog layer's required fields",
+      "machine_verify_check": "Inspection/quiz step: present the catalog JSON read-only and require the learner to select/identify the three required pieces (catalog.uuid, catalog.metadata{title,version,oscal-version}, controls[].id) via click-to-highlight or multi-select; grade the free-text 'why' against keywords (reference/referenced, profile/link, cannot be addressed) or with a structured choice."
+    },
+    {
+      "instruction": "Open acme-profile.json. Identify the catalog it imports and the control IDs it includes. Explain in one sentence why this profile is the OSCAL form of 'a framework is a subset of the spine' and what including an undefined control ID would mean.",
+      "objective": "O2, O3 — profile = selection over a catalog; dangling reference = crosswalk orphan",
+      "machine_verify_check": "Verify the learner identifies imports[0].href == 'acme-catalog.json' and with-ids == ['ac-2'] (form fields or click-on-JSON-node); explanation graded via choice list (correct answer: a dangling reference / OSCAL crosswalk orphan that a resolving validator flags)."
+    },
+    {
+      "instruction": "Open acme-component.json. Find the control-id, the links entry, and the back-matter resource naming the policy. Trace the chain: profile selects ac-2 -> component implements ac-2 -> implementation links to policy ac-2-account-management. State which Module-09 artifact that policy id refers to.",
+      "objective": "O3, O6 — the C2P join from claim to enforcing policy",
+      "machine_verify_check": "Chain-builder interaction: learner assembles the join (profile with-ids: ac-2) -> (implemented-requirement control-id: ac-2) -> (links rel:'policy' href:'#policy-ac-2-account-management') -> (back-matter props policy-id: 'ac-2-account-management'); engine checks ordered node selection equals the canonical chain and that the Module-09 answer is the policy-as-code rule that denies legacy-admin grants and emits evidence."
+    },
+    {
+      "instruction": "Run the validator on the well-formed set: bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json. Inspect $?. Confirm it reports the catalog controls, zero dangling references, and that ac-2 is policy-linked. Capture the output into lab12/oscal-validation-pass.txt.",
+      "objective": "O4, O6 — run the gate, read its machine verdict, produce the deliverable",
+      "machine_verify_check": "Terminal-sim: match the command (validator + the three correct file args in order), emit the canonical 6-line PASS output, set $?=0; verify completion when sim state contains file lab12/oscal-validation-pass.txt whose content includes the 'PASS:' line and 'policy-linked: 1', and the learner has run echo $? or equivalent showing 0."
+    },
+    {
+      "instruction": "Run the validator on the broken catalog: bun lab12/validate-oscal.ts lab12/acme-catalog-broken.json lab12/acme-profile.json lab12/acme-component.json. Confirm it exits non-zero and names the missing field and the downstream consumer it would break. State which kind of consumer a missing control id actually breaks and why.",
+      "objective": "O5 — diagnose a validator rejection and name the blast radius",
+      "machine_verify_check": "Terminal-sim: detect broken-catalog arg, emit the canonical FAIL output ('catalog control missing required \"id\"' + consumer line), set $?=1; then a structured question requiring the learner to pick the broken field (control id) and a valid consumer (auditor's importer / FedRAMP pipeline / sister team's importer)."
+    },
+    {
+      "instruction": "Break a different thing yourself: edit acme-profile.json to include a control ID the catalog does not define (e.g. ac-9), re-run the validator, confirm it flags a dangling reference, then restore the file. Explain why this is the OSCAL equivalent of a Module-10 crosswalk orphan.",
+      "objective": "O4, O5 — introduce a dangling reference, observe the gate bite, restore",
+      "machine_verify_check": "Code-editor + terminal-sim: parse the edited profile JSON and check with-ids now contains an id not in {ac-2, sc-28}; on validator run emit the dangling FAIL output naming that id with exit 1; verify restore by checking the profile JSON deep-equals the original fixture and a final validator run exits 0."
+    },
+    {
+      "instruction": "(Real environment, optional) Install compliance-trestle, import the bundled catalog, validate it against the actual OSCAL schema, author/assemble a profile with trestle, and confirm trestle agrees with the offline gate on the broken document. Note any field the real schema requires that the minimal fixture omits.",
+      "objective": "O2, O4 — real-schema validation and Tier-C volatility awareness",
+      "machine_verify_check": "Not simulatable with fidelity in a static web app (live pip install + trestle CLI). Replace with a reflection/knowledge check: which repo is the maintained trestle home (oscal-compass/compliance-trestle, NOT usnistgov/trestle) and what kinds of fields the real schema additionally requires (e.g. last-modified, UUIDs on more objects, groups/params)."
+    }
+  ],
+  "lab_setup_state": "A ./lab12/ working directory staged by labs/setup.sh containing five committed fixtures: (1) acme-catalog.json — minimal OSCAL catalog, uuid 11111111-1111-4111-8111-111111111111, metadata {title: 'Acme Internal Control Spine', version: '1.0.0', oscal-version: '1.1.2', last-modified: '2026-05-28T00:00:00Z'}, two controls: ac-2 'Account Management' and sc-28 'Protection of Information at Rest', each with a statement part; (2) acme-profile.json — uuid 22222222-..., title 'SOC 2 Security - Acme Profile', imports[0].href 'acme-catalog.json' with include-controls with-ids ['ac-2']; (3) acme-component.json — uuid 33333333-..., title 'Acme IAM Service - Control Implementation', one component (uuid 44444444-..., type 'service', title 'IAM Service') with one control-implementation (uuid 55555555-..., source 'acme-profile.json') containing one implemented-requirement (uuid 66666666-..., control-id 'ac-2', links [{rel:'policy', href:'#policy-ac-2-account-management'}]), and back-matter resource (uuid 77777777-...) with prop {name:'policy-id', value:'ac-2-account-management'}; (4) acme-catalog-broken.json — identical catalog but the ac-2 control's 'id' field removed (title 'Acme Internal Control Spine (BROKEN - control id removed)'); (5) validate-oscal.ts — ~187-line bun TypeScript validator with exit codes 0 (valid), 1 (missing field / dangling reference / unresolved policy link), 2 (usage/JSON-parse error). No network, no trestle, no schema download; bash + coreutils to stage, bun to run the validator.",
+  "assessment_artifact": "60-minute unaided competency artifact from a FRESH unseen mini-crosswalk (e.g. spine control sc-28 instead of ac-2, a different framework profile, and a different policy identifier supplied at assessment time): (1) a schema-valid minimal OSCAL set — catalog with document UUID/title/version/oscal-version and stable id on every control, profile importing the catalog and selecting the in-scope control(s), component-definition with at least one implemented-requirement naming a real control id; (2) a resolvable C2P link from the implemented control via links + back-matter to the provided policy identifier; (3) a validator run showing the set first FAILING on an introduced defect (missing required field OR dangling profile reference) then PASSING once resolved, with exit codes as verdicts; plus a written walkthrough covering schema-vs-format, what each OSCAL layer is the machine-readable version of, the control-id join from profile to implementation to policy, and the downstream consumer the defect would have broken. Scored Pass/Not-yet across 6 rubric rows (O1-O6); any Not-yet routes back to a named concept section.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": ["code-editor", "terminal-sim", "structured-builder", "matching-mapping"],
+    "sim_state": "Virtual file system seeded with the five lab12 fixtures (exact JSON above) plus a working directory. The terminal-sim implements one real binary — the validator — as a faithful TypeScript port of validate-oscal.ts's logic running client-side against the in-browser file system (the validator is plain Bun/TS with no deps, so its exact logic and all output strings can run verbatim in the browser, giving real-engine fidelity rather than canned transcripts: any learner edit to any JSON file produces the genuinely correct PASS/FAIL/usage output and exit code). Also simulate: bash labs/setup.sh (stages fixtures), echo $?, output redirection (> file) and cat/ls for inspecting captured deliverables. Track last exit code in sim state.",
+    "task_count": 9,
+    "notes": "This module is unusually well-suited to a high-fidelity static-web exercise because its entire toolchain is a dependency-free TypeScript validator over three small JSON documents — port validate-oscal.ts directly to the browser and every output is exact by construction. Recommended 9-task arc: (1) MATCHING warm-up — map the four OSCAL layers (catalog/profile/component-definition/assessment-POA&M) to the real-world artifact each is the machine-readable version of, plus schema-vs-format discrimination items; (2) INSPECT catalog — click-to-identify the three required pieces (uuid, metadata triple, control id) in a read-only JSON view; (3) INSPECT profile — identify the import href and with-ids, answer the subset-of-the-spine question; (4) CHAIN BUILDER — assemble the C2P join graph by dragging nodes: profile with-ids ac-2 -> implemented-requirement control-id ac-2 -> link rel 'policy' href '#policy-ac-2-account-management' -> back-matter policy-id 'ac-2-account-management' -> Module-09 enforcing policy; (5) TERMINAL — run the validator on the well-formed set, inspect $?, redirect output to oscal-validation-pass.txt (verify file exists with PASS line); (6) TERMINAL — run on acme-catalog-broken.json, then structured diagnosis (broken field + downstream consumer); (7) EDITOR+TERMINAL — hand-edit acme-profile.json to introduce ac-9, re-run, observe dangling FAIL, restore file, re-run to green (the real validator port makes ANY edit the learner tries behave correctly, including unanticipated breakage); (8) BUILD — assessment-style structured-builder: given a fresh mini-crosswalk (sc-28 + a new framework name + policy id 'sc-28-encryption-at-rest'), author the three JSON documents in the editor from skeleton stubs until the validator passes — this is the module's actual competency, fully machine-verifiable by running the ported validator; (9) FIX-THE-DEFECT capstone — engine injects one of several randomized defects (missing uuid, missing oscal-version, blanked control id, dangling with-ids, broken policy href, missing back-matter prop) into the learner's passing set; learner must read the FAIL output, name the defect and consumer, and repair to exit 0. The validator's distinct FAIL messages (12+ unique failure strings with consumer-impact lines) give rich, exact feedback for every defect class."
+  },
+  "fidelity_notes": "Highest-fidelity module in the curriculum for browser simulation: validate-oscal.ts is pure dependency-free TypeScript (Bun.file is the only Bun API; trivially swapped for in-memory file reads), so the actual engine can run in the browser — no canned transcripts needed. Verified discrepancies to encode: (1) module.md §5.4 shows the broken-catalog consumer line wrapped across two lines ('...policy link;' newline '     this would break...'); the real validator emits it as ONE line ('...policy link; this would break any importer...') — the browser port should match the real single-line output, not the prettified module text; (2) module.md §5.1 catalog example omits 'last-modified' which the committed fixture includes — use the fixture as ground truth; the validator does not require last-modified; (3) exit code 2 (usage/unparseable JSON) goes to stderr via console.error, while FAIL/PASS go to stdout — a terminal-sim should merge streams as a real terminal does; (4) the optional trestle Task 7 cannot be simulated faithfully (live pip install, large real OSCAL schema, version-shifting CLI per the module's own Tier-B warning) — convert to a knowledge check about repo provenance (oscal-compass/compliance-trestle vs dead usnistgov/trestle) and real-schema deltas; do NOT fabricate trestle CLI output; (5) happy-path.sh asserts exact grep targets ('PASS:', 'ac-2 -> policy \"ac-2-account-management\"', 'policy-linked: 1', 'control missing required \"id\"', 'catalog does not define') — these strings are load-bearing contract and must survive any port verbatim; (6) the validator accepts href forms '#<policy-id>' and '#policy-<policy-id>' when resolving links — preserve both in the port so learner-authored variants behave identically."
+}

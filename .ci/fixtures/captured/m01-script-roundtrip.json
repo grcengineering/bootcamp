@@ -1,0 +1,31 @@
+{
+  "id": "m01-script-roundtrip",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst",
+  "pre": [
+    "lab-setup 01",
+    "cd lab01",
+    "printf '#!/usr/bin/env bash\\nparse-access-export \"$1\" 2> collection-errors.log | grep admin | wc -l\\n' > check-admin-access.sh"
+  ],
+  "cmd": "bash check-admin-access.sh access-export.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "3\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

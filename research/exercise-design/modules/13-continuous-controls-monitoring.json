@@ -1,0 +1,193 @@
+{
+  "module_id": "13-continuous-controls-monitoring",
+  "title": "Continuous Controls Monitoring",
+  "commands": [
+    {
+      "cmd": "bash labs/setup.sh ./ccm-lab",
+      "example_invocations": [
+        "bash labs/setup.sh ./ccm-lab",
+        "bash labs/setup.sh /tmp/assess13"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "./ccm-lab",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "source ./ccm-lab/ccm-check.sh",
+      "example_invocations": [
+        "source ./ccm-lab/ccm-check.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "(no output — loads normalize_buckets, evaluate_control, emit_evidence into the shell)",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "evaluate_control <state-json-file>",
+      "example_invocations": [
+        "evaluate_control labs/fixtures/state-compliant.json",
+        "evaluate_control labs/fixtures/state-drifted.json",
+        "evaluate_control labs/fixtures/state-drifted-pretty.json",
+        "evaluate_control labs/fixtures/state-empty.json"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Compliant: 'PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0' (exit 0). Drifted (compact or pretty-printed): 'FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1' then 'NONCOMPLIANT acme-public-website' (exit 1). Empty: stderr 'ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)' + stdout 'FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated' (exit 2, fail closed). Verified verbatim by running the real library on this host.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "echo $?",
+      "example_invocations": [
+        "evaluate_control labs/fixtures/state-compliant.json; echo $?",
+        "emit_evidence labs/fixtures/state-drifted.json ./ccm-lab/evidence; echo $?"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "0 (pass) / 1 (drift) / 2 (fail-closed, zero resources). Module §5.1 shows 'exit_code: 0', §5.3 shows 'exit_code: 1'.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "emit_evidence <state-json-file> <evidence-dir>",
+      "example_invocations": [
+        "emit_evidence labs/fixtures/state-compliant.json ./ccm-lab/evidence",
+        "emit_evidence labs/fixtures/state-drifted.json ./ccm-lab/evidence",
+        "emit_evidence labs/fixtures/state-empty.json ./ccm-lab/evidence"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "No stdout. Side effects (verified): writes evidence/run-20260520090000.evidence containing 'control_id=CC6.1-s3-public-access-block\\ncaptured_at=2026-05-20T09:00:00Z\\nverdict=PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\\nexit_code=0\\nsource_state=state-compliant.json'; appends ledger row '2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0'; on drift additionally writes alert-run-20260521090000.txt: 'ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-21T09:00:00Z\\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\\ndrifted_resource=acme-public-website'. Returns the check's exit code (0/1/2). run_id is derived from captured_at digits.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "ls ./ccm-lab/evidence",
+      "example_invocations": [
+        "ls ./ccm-lab/evidence",
+        "ls ./ccm-lab/evidence/alert-*.txt"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "After one pass + one drift run: alert-run-20260521090000.txt  ledger.log  run-20260520090000.evidence  run-20260521090000.evidence",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "cat ./ccm-lab/evidence/run-20260520090000.evidence",
+      "example_invocations": [
+        "cat ./ccm-lab/evidence/run-20260520090000.evidence",
+        "cat ./ccm-lab/evidence/run-20260521090000.evidence",
+        "cat ./ccm-lab/evidence/alert-run-20260521090000.txt",
+        "cat ./ccm-lab/evidence/ledger.log"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Passing record (module §5.2 verbatim, matches real run): 'control_id=CC6.1-s3-public-access-block / captured_at=2026-05-20T09:00:00Z / verdict=PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0 / exit_code=0 / source_state=state-compliant.json'. Ledger after two runs: '2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0' then '2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1'.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "tail -1 ./ccm-lab/evidence/ledger.log",
+      "example_invocations": [
+        "tail -1 ./ccm-lab/evidence/ledger.log",
+        "tail -30 ./ccm-lab/evidence/ledger.log"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Latest ledger row = current state: '2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1'",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "awk '{print ($3==\"rc=0\" ? \"🟢\" : \"🔴\")}' ./ccm-lab/evidence/ledger.log",
+      "example_invocations": [
+        "awk '{printf ($3==\"rc=0\" ? \"🟢\" : \"🔴\")} END{print \"\"}' ./ccm-lab/evidence/ledger.log",
+        "tail -30 ./ccm-lab/evidence/ledger.log | awk '{printf ($3==\"rc=0\"?\"🟢\":\"🔴\")} END{print \"\"}'",
+        "grep -c 'rc=0' ./ccm-lab/evidence/ledger.log"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Dashboard-tile shape from module §5.4: 'CC6.1 — S3 public access block        CURRENT: 🔴 FAIL (acme-public-website)' / '30-day history:  🟢×30 then 🔴' / 'held green for 30 days, drifted on the 31st'. Lab task 5 is learner-authored (any tail/awk/grep one-liner over ledger.log) — exact command not prescribed, only that it prints latest verdict + a pass/fail strip.",
+      "fidelity_source": "authored-fixture"
+    },
+    {
+      "cmd": "grep <pattern> ledger.log / evidence records",
+      "example_invocations": [
+        "grep rc=1 ./ccm-lab/evidence/ledger.log",
+        "grep -q verdict=PASS ./ccm-lab/evidence/run-20260520090000.evidence"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "rc=1 row: '2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1'",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "bash labs/happy-path.sh",
+      "example_invocations": [
+        "bash labs/happy-path.sh"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "On success prints: 'PASS: Module 13 CCM loop reproduces (compliant=PASS+evidence+no-alert, drift=FAIL+evidence+alert, ledger=2 rows, deterministic, pretty-printed drift CAUGHT, empty input FAILS CLOSED)'. CI smoke test asserting 7 properties of the loop.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "normalize_buckets <state-json-file>",
+      "example_invocations": [
+        "normalize_buckets labs/fixtures/state-drifted-pretty.json"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "One tab-separated row per bucket: '<name>\\t<block_public_acls>\\t<block_public_policy>\\t<ignore_public_acls>\\t<restrict_public_buckets>' with literal true/false. e.g. 'acme-public-website\\tfalse\\tfalse\\tfalse\\tfalse'. Internal helper (uses bun JSON parse when available, pure-awk brace-walker fallback otherwise) — not directly exercised by lab tasks but readable in ccm-check.sh.",
+      "fidelity_source": "macos-host"
+    },
+    {
+      "cmd": "cat labs/fixtures/state-compliant.json",
+      "example_invocations": [
+        "cat labs/fixtures/state-compliant.json",
+        "cat labs/fixtures/state-drifted.json",
+        "cat labs/fixtures/state-drifted-pretty.json",
+        "cat labs/fixtures/state-empty.json"
+      ],
+      "platform": "linux",
+      "output_shown_in_module": "Snapshot JSON: {control_id: 'CC6.1-s3-public-access-block', captured_at: '2026-05-20T09:00:00Z' (drifted=05-21, pretty=05-22, empty=05-23), source: 'aws-config-snapshot', buckets: [acme-evidence-store, acme-audit-logs, acme-public-website] each with the four boolean flags block_public_acls/block_public_policy/ignore_public_acls/restrict_public_buckets}. Drifted versions flip all four flags to false on acme-public-website only; state-empty.json has 'buckets': [].",
+      "fidelity_source": "authored-fixture"
+    }
+  ],
+  "lab_tasks": [
+    {
+      "instruction": "Open state-compliant.json and, before running anything, write down in words the binary control claim and which observable fields decide it; then read ccm-check.sh and find the line where a bucket is judged compliant only if all four flags are true, and reconcile the stated claim with the code's logic.",
+      "objective": "O1/O2 — translate a fuzzy policy into a sharp binary observable claim and map it to evaluation code",
+      "machine_verify_check": "Free-text answer graded by keyword/structured match: claim names the population (every S3 bucket), the four flags (block_public_acls, block_public_policy, ignore_public_acls, restrict_public_buckets), and binary pass/fail semantics; learner identifies the awk condition $2==\"true\" && $3==\"true\" && $4==\"true\" && $5==\"true\" (or the bun flag() equivalent) as the compliance test. In a sim: multiple-choice or click-the-line-of-code selection in a read-only code viewer."
+    },
+    {
+      "instruction": "source ./ccm-lab/ccm-check.sh, run evaluate_control labs/fixtures/state-compliant.json, inspect $?, and state in one sentence what the exit code means and why the loop branches on it rather than on the printed text.",
+      "objective": "O2/O3 — verdict via exit code; exit code is the machine-facing contract",
+      "machine_verify_check": "Terminal sim verifies the learner ran evaluate_control on the compliant fixture and then 'echo $?' showing 0; sim state records last_exit_code==0 and that the PASS line 'PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0' was displayed. One-sentence answer checked for 'exit code 0 = control holds / machines branch on exit code'."
+    },
+    {
+      "instruction": "Run emit_evidence labs/fixtures/state-compliant.json ./ccm-lab/evidence; open the run-*.evidence record and the new ledger.log row; confirm NO alert-*.txt was created; explain why storing a passing record is not redundant.",
+      "objective": "O3/O4 — evidence on every run; proof of the negative",
+      "machine_verify_check": "Sim filesystem check: evidence/run-20260520090000.evidence exists with exit_code=0 and verdict=PASS line, ledger.log has exactly 1 row containing 'rc=0', and zero files matching alert-*.txt. Learner must run ls/cat on the record (command-history check). Explanation graded for the 'prove the control held the entire period / proof of the negative' idea."
+    },
+    {
+      "instruction": "Induce drift: run emit_evidence labs/fixtures/state-drifted.json ./ccm-lab/evidence; inspect $?, the new evidence record, the second ledger row, and the alert-*.txt that now exists; from the alert alone name the control, the drifted resource, and the moment compliance was lost.",
+      "objective": "O3/O5 — drift detection and alert-driven diagnosis",
+      "machine_verify_check": "Sim state: last_exit_code==1; evidence dir now has run-20260521090000.evidence (exit_code=1), ledger.log row 2 contains 'rc=1', and alert-run-20260521090000.txt exists containing 'drifted_resource=acme-public-website' and 'captured_at=2026-05-21T09:00:00Z'. Diagnosis answer auto-graded against three exact fields: control=CC6.1-s3-public-access-block, resource=acme-public-website, timestamp=2026-05-21T09:00:00Z."
+    },
+    {
+      "instruction": "Build the dashboard tile as a query over the ledger: write one or two lines using tail/awk/grep on ledger.log that print the current verdict (latest row) and a 30-day strip of pass/fail markers; confirm the tile shows the drift as a single red interval after a run of green, and explain why the strip is evidence the bare current state is not.",
+      "objective": "O4 — dashboard tile is a query over the append-only store, not a separately maintained status",
+      "machine_verify_check": "Open-ended command verified by output contract, not exact command: sim checks the learner's pipeline (a) reads ledger.log, (b) its stdout includes the latest row's verdict (FAIL) and (c) renders one marker per ledger row distinguishing rc=0 from rc!=0 (green/red glyphs or PASS/FAIL tokens). With a pre-seeded 31-row ledger, expect 30 green markers then 1 red. Explanation graded for 'continuous history vs point-in-time / a single light can hide flapping'."
+    },
+    {
+      "instruction": "Re-run task 4's drifted evaluation a second time and confirm the verdict line is byte-identical to the first; state why a non-deterministic check would make the entire history store untrustworthy.",
+      "objective": "O2/O3 — determinism: same snapshot, same verdict",
+      "machine_verify_check": "Sim checks evaluate_control was invoked twice on state-drifted.json and the captured first-line output strings are identical ('FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1'); a diff/test comparison command or visual confirmation is accepted. Answer graded for 'history would be noise / can't distinguish drift from flaky check'."
+    },
+    {
+      "instruction": "Write a 5-7 sentence build-vs-buy memo: for each of the five loop parts (control claim, check/evaluation, evidence emission, history store + dashboard, drift alert) plus the scheduler, state own vs rent and why, and name one vendor claim you would refuse to treat as evidence.",
+      "objective": "O6 — stage-by-stage build-vs-buy judgment",
+      "machine_verify_check": "Structured-builder form instead of free prose: six rows (control claim, check/evaluation, evidence emission, history+dashboard, alert, scheduler) each with an own/rent toggle plus a one-line rationale, and one text field for the refused vendor claim. Auto-check: all six rows decided; canonical-default scoring rewards owning control claim + evaluation logic + evidence schema and renting capture/scheduling/storage/notification; refused-claim field matched against marketing-claim patterns ('category leader', '300% growth', 'analyst quadrant')."
+    },
+    {
+      "instruction": "(Real environment, optional) Replace the static fixture with a real cloud configuration export and wire emit_evidence to a scheduler (cron, CI schedule, or cloud scheduled job) with the alert routed to a real channel; induce a genuine drift in a sandbox account and confirm the loop catches it.",
+      "objective": "O2/O5/O6 — wiring the offline core to a live scheduler and capture",
+      "machine_verify_check": "Not machine-verifiable in a static sim; in the browser exercise replace with a simulated scheduler: a 'cron tick' button or time-advance control that re-runs emit_evidence against a mutable simulated cloud state, letting the learner flip a bucket flag in a fake console and watch the next scheduled run fire the alert."
+    }
+  ],
+  "lab_setup_state": "Learner runs `bash labs/setup.sh ./ccm-lab`, which generates ./ccm-lab/ccm-check.sh (a sourceable bash function library defining normalize_buckets, evaluate_control, emit_evidence — pure bash + coreutils + awk, optional bun for JSON parsing, no jq/cloud/network/Docker) and an empty ./ccm-lab/evidence/ directory. Four committed fixtures live at labs/fixtures/: state-compliant.json (3 buckets, all four public-access-block flags true, captured_at 2026-05-20T09:00:00Z), state-drifted.json (same 3 buckets but acme-public-website has all four flags false, captured_at 2026-05-21T09:00:00Z), state-drifted-pretty.json (identical drift but pretty-printed multi-line JSON, captured_at 2026-05-22T09:00:00Z — regression fixture for the fail-open same-line-parsing bug), and state-empty.json (zero buckets, captured_at 2026-05-23T09:00:00Z — must fail closed with exit 2). The control under monitoring is CC6.1-s3-public-access-block: 'every S3 bucket has all four public-access-block flags enabled'. Evidence artifacts produced during the lab: run-<digits-of-captured_at>.evidence records (key=value lines: control_id, captured_at, verdict, exit_code, source_state), append-only ledger.log (one row per run: '<captured_at> <run_id> rc=<n> <verdict line>'), and alert-run-*.txt files only on non-zero runs.",
+  "assessment_artifact": "60-minute unaided competency artifact against a FRESH unseen control claim and a fresh pair of snapshots (assessor copies the lab fixtures then hand-edits so a DIFFERENT bucket drifts and optionally a different flag set is required). Learner delivers: (1) a working CCM loop — check that reads captured state, prints PASS/FAIL, returns correct exit code (0 pass / non-zero drift), emits a dated evidence record on EVERY run; (2) a populated append-only history store with records for both runs plus a dashboard tile (a query over the store) showing current verdict + trailing-30-day trend; (3) a drift alert that fired only on the drifted run naming control, drifted resource, and timestamp; (4) a written walkthrough covering snapshot-vs-monitor, what the exit code drives, the proof-of-the-negative argument for passing evidence, why the trend tile is evidence a status light is not, and a stage-by-stage own-vs-rent decision naming one vendor claim refused as evidence. Rubric: 6 Pass/Not-yet rows (snapshot vs monitor §3/§4.1; five-part loop §3/§4.8; check + exit-code verdict §4.2-4.4; evidence store + dashboard §4.4-4.6; diagnosing drift §4.7/§5.3; build-vs-buy §4.8/§5.4); all rows must Pass; a Not-yet routes to the named section only.",
+  "exercise_design": {
+    "primary_interaction": "mixed",
+    "engines": ["terminal-sim", "code-editor", "dashboard-sim", "structured-builder"],
+    "sim_state": "A simulated lab directory: ./ccm-lab/ccm-check.sh (read-only, the real committed library text), ./ccm-lab/evidence/ (starts empty, mutated by emit_evidence), and labs/fixtures/{state-compliant,state-drifted,state-drifted-pretty,state-empty}.json (exact committed contents). The terminal sim implements bash builtins plus the lab's contract: source, evaluate_control, emit_evidence, echo $?, ls, cat, tail, head, grep, awk, wc, diff. evaluate_control and emit_evidence are pure functions of (fixture name) -> (exact stdout/stderr, exit code, file-system mutations) so every output can be replayed byte-identically from the verified transcript: PASS/FAIL/ERROR lines, run-*.evidence contents, ledger.log appends, alert-*.txt creation. Additionally seed an extended 31-row ledger.log variant (30 rc=0 rows then 1 rc=1 row) for the dashboard-tile task so the 30-day strip is meaningful. A simulated 'scheduler + cloud console' state for the capstone: bucket flag toggles + a time-advance button that re-runs the loop.",
+    "task_count": 9,
+    "notes": "This module is unusually well-suited to high-fidelity simulation because the real lab is already offline-by-construction (committed fixtures, deterministic bash, no cloud). Best design: a 9-step terminal-sim narrative mirroring lab tasks 1-7 plus two additions. Steps: (1) matching/claim-builder — assemble the binary control claim from population/property/predicate parts and click the judging line in a read-only ccm-check.sh viewer; (2) run evaluate_control on the compliant fixture and echo $? (exact verbatim output, exit 0); (3) emit_evidence compliant run — then ls/cat to verify record + ledger row + no alert (filesystem assertions); (4) induce drift with state-drifted.json — read the alert and answer three structured fields (control / resource / timestamp) auto-graded exactly; (5) edge-case step unique to this module's hardening story: run evaluate_control on state-drifted-pretty.json (must still FAIL — teaches the fail-open parsing bug) and state-empty.json (exit 2, fail closed — teaches refusing vacuous green); (6) dashboard tile: free-form awk/tail pipeline over the pre-seeded 31-row ledger graded on output contract (latest verdict + one marker per row, 30 green then 1 red), with a rendered dashboard-sim tile that updates live from the learner's query; (7) determinism: run the drifted evaluation twice and diff; (8) simulated scheduler capstone replacing optional task 8 — toggle a bucket flag in a mini cloud-console panel, advance the clock so the cron tick re-runs emit_evidence, and watch the alert fire; (9) structured-builder build-vs-buy memo: six own/rent rows + refused-vendor-claim field. Every terminal output is replayable verbatim from the real library run, so fidelity is exact."
+  },
+  "fidelity_notes": "All core outputs verified by actually running setup.sh + ccm-check.sh on this host (bash + awk + bun present) — PASS/FAIL/ERROR lines, evidence records, ledger rows, and alert files reproduce byte-identically to module §5 examples, so terminal-sim fidelity can be exact. Caveats: (1) run_id derives from the fixture's captured_at timestamp (run-20260520090000), but for state-empty-like snapshots lacking captured_at the library falls back to wall-clock UTC — sim should pin a fake clock; note state-empty.json DOES carry captured_at 2026-05-23T09:00:00Z so its run_id is deterministic (run-20260523090000). (2) Module §5.1/§5.3 show 'exit_code: 0' / 'exit_code: 1' as a stylized caption — the real command output is just the PASS/FAIL lines; the exit code is only visible via $? or in the evidence record as 'exit_code=0'. (3) The §5.4 dashboard tile (emoji strip, 'held green for 30 days') is authored illustration, not produced by any committed command — lab task 5 has the learner write their own tail/awk one-liner, so grade on output contract rather than exact text, and pre-seed a 31-row ledger to make the strip non-trivial (the real lab only produces 2 rows). (4) The bun parser and the pure-awk fallback produce identical normalized rows for all four fixtures (same-output contract), so the sim need not model both. (5) The empty-snapshot ERROR line goes to stderr while the FAIL line goes to stdout — a sim that merges streams should preserve ordering (ERROR first). (6) Lab task 8 (real cloud + cron + alert channel) cannot be reproduced statically; replace with the simulated scheduler/console interaction. (7) evaluate_control exit code 2 (fail closed) vs 1 (drift) is a deliberate distinction the sim must preserve, including the alert text 'drifted_resource=<none — evaluated 0 resources; snapshot empty, unparsed, or wrong shape>' for rc=2 runs."
+}

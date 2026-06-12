@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Lab tool (module 01 §6 task 5): emits clean data rows on stdout and complains about
+# malformed rows on stderr — the §5.2 stream-separation archetype, made runnable.
+# Exists so the lab's "the parsing step will complain" is producible with taught composition
+# (root ISA ISC-75: the reference solution previously required untaught awk).
+awk -F, '
+  NR == 1 { next }
+  NF != 2 { print "WARN: malformed row: " $0 > "/dev/stderr"; next }
+  { print }
+' "${1:?usage: parse-access-export <export.csv>}"

@@ -1,0 +1,40 @@
+{
+  "id": "m01-collect-both",
+  "module": "01",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m01",
+  "cwd": "/home/analyst/evidence",
+  "pre": [],
+  "cmd": "collect-encryption-status > encryption.txt 2> collection-errors.log",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "cat encryption.txt",
+      "stdout": "laptop-01: encrypted\nlaptop-02: encrypted\nlaptop-03: encrypted\nlaptop-04: encrypted\nlaptop-05: not-encrypted\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat collection-errors.log",
+      "stdout": "WARN: host db-07 unreachable\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_with": "capture.ts v1"
+  }
+}

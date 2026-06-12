@@ -1,0 +1,270 @@
+[
+  {
+    "topic": "Browser/WASM engines for in-browser technical learning simulations on a static Astro site (verified mid-2026)",
+    "findings": [
+      {
+        "claim": "Pyodide latest is 314.0.0 (published 2026-06-09, MPL-2.0). New versioning scheme: 314.x tracks CPython 3.14 (replaces 0.29.x which was Python 3.13); PEP 783 accepted, enabling Pyodide wheels on PyPI.",
+        "source": "https://blog.pyodide.org/posts/314-release/ (found via search; version + date independently verified via https://registry.npmjs.org/pyodide)",
+        "confidence": "high"
+      },
+      {
+        "claim": "Pyodide 314 core payload: pyodide.asm.wasm is 9.61 MB raw / 3.45 MB brotli over jsDelivr, plus python_stdlib.zip 2.55 MB and an 18 KB pyodide.mjs loader — roughly 6-7 MB compressed total before any packages. Official CDN pattern is https://cdn.jsdelivr.net/pyodide/v314.0.0/full/.",
+        "source": "https://cdn.jsdelivr.net/pyodide/v314.0.0/full/pyodide.asm.wasm (HEAD with Accept-Encoding: br returned content-length 3445966) and https://data.jsdelivr.com/v1/packages/npm/pyodide@314.0.0",
+        "confidence": "high"
+      },
+      {
+        "claim": "pytest in-browser is viable: pytest 9.0.2, pytest-asyncio 0.25.3, pluggy 1.6.0, iniconfig 2.3.0 and micropip 0.11.1 are all prebuilt packages in the official Pyodide 314 distribution (loadable via loadPackage/micropip, then pytest.main() against files written to the Emscripten FS).",
+        "source": "https://cdn.jsdelivr.net/pyodide/v314.0.0/full/pyodide-lock.json (fetched and parsed; all listed packages present)",
+        "confidence": "high"
+      },
+      {
+        "claim": "sql.js latest is 1.14.1 (2026-03-04, MIT), actively maintained (13.6k stars). It is real SQLite compiled with Emscripten; loads via initSqlJs({locateFile}) with the wasm hosted anywhere (npm/CDN both fine).",
+        "source": "https://github.com/sql-js/sql.js and https://registry.npmjs.org/sql.js",
+        "confidence": "high"
+      },
+      {
+        "claim": "sql.js browser payload is tiny: sql-wasm.wasm = 660 KB raw / 323 KB brotli + ~46 KB JS loader — small enough to bun-install and self-host in an Astro public/ dir.",
+        "source": "https://data.jsdelivr.com/v1/packages/npm/sql.js@1.14.1 and https://cdn.jsdelivr.net/npm/sql.js@1.14.1/dist/sql-wasm.wasm (brotli content-length 322843)",
+        "confidence": "high"
+      },
+      {
+        "claim": "DuckDB-WASM (@duckdb/duckdb-wasm) latest npm tag is 1.33.1-dev45.0 (2026-04-13; last non-dev release 1.32.0), MIT. Its wasm bundles are huge: duckdb-eh.wasm 35.7 MB raw / 7.1 MB brotli, duckdb-mvp.wasm 41 MB, duckdb-coi.wasm 35.5 MB (coi requires cross-origin isolation). Single-threaded by default, 4 GB wasm memory cap.",
+        "source": "https://registry.npmjs.org/@duckdb/duckdb-wasm, https://data.jsdelivr.com/v1/packages/npm/@duckdb/duckdb-wasm@1.33.1-dev45.0, https://duckdb.org/docs/current/clients/wasm/overview.html",
+        "confidence": "high"
+      },
+      {
+        "claim": "DuckDB's SQL dialect is based on PostgreSQL ('DuckDB tries to closely match PostgreSQL's semantics'), NOT SQLite — so for teaching SQLite-flavored SQL, sql.js is both ~20x lighter over the wire (323 KB vs 7.1 MB brotli) and dialect-correct. DuckDB-WASM only wins for analytics/Parquet/columnar teaching.",
+        "source": "https://duckdb.org/docs/current/sql/dialect/overview.html",
+        "confidence": "high"
+      },
+      {
+        "claim": "@open-policy-agent/opa-wasm 1.10.0 is the official OPA-org JS SDK (Apache-2.0, ~973 KB unpacked, browser + Node, CJS/ESM builds). API: loadPolicy(wasmBuffer) -> policy.setData(data) / policy.evaluate(input). Last release Nov 2024 — slow cadence but functional and still the officially recommended JS path; the policy .wasm itself is produced by current OPA via 'opa build -t wasm -e <entrypoint>'.",
+        "source": "https://github.com/open-policy-agent/npm-opa-wasm and https://www.openpolicyagent.org/docs/latest/wasm/ and https://registry.npmjs.org/@open-policy-agent/opa-wasm",
+        "confidence": "high"
+      },
+      {
+        "claim": "OPA Wasm caveat: core Rego is fully supported in wasm, but some builtins (e.g. http.send) have no native wasm implementation and must be provided by the host — irrelevant for typical policy-teaching exercises.",
+        "source": "https://www.openpolicyagent.org/docs/latest/wasm/",
+        "confidence": "high"
+      },
+      {
+        "claim": "An official Cedar WASM build exists: @cedar-policy/cedar-wasm 4.11.1 (published 2026-06-09 by the AWS cedar-wasm-team, Apache-2.0, repo github.com/cedar-policy/cedar). Ships three subpackages — ESM default (bundler-friendly), /nodejs (CJS), /web (custom wasm loading). cedar_wasm_bg.wasm = 4.26 MB raw / 1.23 MB brotli. Exposes authorization/validation/formatting/version APIs for TS/JS.",
+        "source": "https://registry.npmjs.org/@cedar-policy/cedar-wasm (readme + repository field parsed) and https://cdn.jsdelivr.net/npm/@cedar-policy/cedar-wasm@4.11.1/web/cedar_wasm_bg.wasm (brotli content-length 1230615)",
+        "confidence": "high"
+      },
+      {
+        "claim": "isomorphic-git 1.38.4 (2026-06-02, MIT) is actively maintained; @isomorphic-git/lightning-fs 4.6.2 (2025-05-07, MIT) is the official IndexedDB-backed browser fs. Verified command coverage: init, add, commit, status (+statusMatrix), log, branch, checkout, and merge (with mergeDriver callback and abortMerge) are all supported. There is NO built-in 'diff' command — diff output must be computed client-side (walk()/TREE over blob contents with a JS diff library).",
+        "source": "https://isomorphic-git.org/docs/en/alphabetic and https://registry.npmjs.org/isomorphic-git and https://registry.npmjs.org/@isomorphic-git/lightning-fs",
+        "confidence": "high"
+      },
+      {
+        "claim": "Best-maintained browser jq is jq-wasm 1.1.0-jq-1.8.1 (owenthereal/jq-wasm, MIT, published 2025-07-03): wraps real jq 1.8.1 via Emscripten, explicit browser + Node support, TypeScript types, clean jq.json()/jq.raw() API, ~1.36 MB JS with embedded wasm (439 KB brotli). jq-web 0.6.2 (fiatjaf/jq-web, ISC, 2025-03-19) self-describes as 'a hack that makes jq run in the browser' and lags on jq version.",
+        "source": "https://github.com/owenthereal/jq-wasm and https://registry.npmjs.org/jq-wasm and https://registry.npmjs.org/jq-web",
+        "confidence": "high"
+      },
+      {
+        "claim": "@xterm/xterm 6.0.0 (released 2025-12-22, MIT) is current. Accessibility is opt-in: 'Screen reader mode and minimum contrast ratio support can be turned on.' Production-proven in VS Code, JupyterLab, Replit, Azure Cloud Shell. For a learning app where screen-reader UX is primary, a semantic DOM terminal (aria-live log + native input) is inherently more accessible than xterm's canvas renderer + bolt-on screenReaderMode; xterm is the right choice only when full VT100/ANSI fidelity is needed (e.g. a real REPL).",
+        "source": "https://github.com/xtermjs/xterm.js and https://registry.npmjs.org/@xterm/xterm",
+        "confidence": "high"
+      },
+      {
+        "claim": "v86 (copy/v86, Simplified BSD) is an actively maintained x86 emulator that JITs machine code to WebAssembly and can boot Alpine/Arch/Buildroot Linux in the browser — but it requires multi-MB OS disk images loaded via XHR, has slow cold boots, and offers zero screen-reader accessibility, making it unsuitable as a coreutils teaching engine on a static site.",
+        "source": "https://github.com/copy/v86",
+        "confidence": "high"
+      },
+      {
+        "claim": "WebContainers require a commercial license for 'production usage of the API in a commercial, for-profit setting' (prototypes/POCs exempt), and technically require cross-origin isolation (COOP: same-origin + COEP: require-corp headers) for SharedArrayBuffer — possible on Netlify/Cloudflare Pages but not plain GitHub Pages. It also boots a Node.js environment, not bash/coreutils. No surveyed bash-in-wasm option is light enough or accessible enough to beat a custom TypeScript shell simulator verified against golden fixtures for a static learning site.",
+        "source": "https://webcontainers.io/enterprise and https://webcontainers.io/guides/quickstart",
+        "confidence": "high"
+      },
+      {
+        "claim": "None of the recommended engines (Pyodide, sql.js, opa-wasm, cedar-wasm, isomorphic-git, jq-wasm, xterm.js) require SharedArrayBuffer or COOP/COEP headers, so the whole stack runs on any plain static host; only DuckDB's coi bundle and WebContainers need cross-origin isolation.",
+        "source": "https://webcontainers.io/guides/quickstart (COOP/COEP requirement is specific to SharedArrayBuffer-based engines) and https://duckdb.org/docs/current/clients/wasm/overview.html (single-threaded default)",
+        "confidence": "medium"
+      }
+    ],
+    "recommendations": [
+      "Python lessons: Pyodide 314.0.0 loaded from the official jsDelivr CDN (https://cdn.jsdelivr.net/pyodide/v314.0.0/full/) inside a Web Worker spawned by a React island (client:visible) — at ~6-7 MB brotli it is too big to bundle; pin the exact version in the indexURL and lazy-load on first interaction. Run real pytest in-browser via pyodide.loadPackage('pytest') then pytest.main() over files written to the Emscripten FS (pytest 9.0.2 is in the official package set).",
+      "SQL lessons: sql.js 1.14.1 (bun add sql.js), self-hosting dist/sql-wasm.wasm in Astro public/ with initSqlJs({locateFile}) — 323 KB brotli of genuine SQLite is dialect-correct for teaching SQLite-flavored SQL. Skip DuckDB-WASM (~7 MB brotli, PostgreSQL dialect) unless you later add an analytics/Parquet module.",
+      "Rego lessons: @open-policy-agent/opa-wasm 1.10.0 (bun add) + precompile every exercise policy at build time with 'opa build -t wasm -e <entrypoint>' in CI, serving the small policy.wasm files as static assets; evaluate with loadPolicy/setData/evaluate in the island. Note last SDK release is Nov 2024 — pin the version and smoke-test against your OPA compiler version in CI.",
+      "Cedar lessons: @cedar-policy/cedar-wasm 4.11.1 (official AWS build, bun add) using the default ESM subpackage with a dynamic import() inside the island so Astro/Vite code-splits the 1.23 MB (brotli) wasm; it tracks upstream Cedar releases closely (4.11.1 published this week).",
+      "Git lessons: isomorphic-git 1.38.4 + @isomorphic-git/lightning-fs 4.6.2 (both bun add) — covers init/add/commit/status/log/branch/checkout/merge natively; implement the 'git diff' exercise surface yourself with statusMatrix/readBlob plus a JS diff library (e.g. the 'diff' package), since isomorphic-git has no diff command.",
+      "jq lessons: jq-wasm 1.1.0-jq-1.8.1 (bun add) — real jq 1.8.1, browser-ready, MIT, 439 KB brotli; prefer it over jq-web.",
+      "Terminal UI: build a DOM-based terminal component (semantic output log with aria-live='polite', a real <input> for the prompt, visible focus states) as the default for shell exercises — it beats xterm.js for screen-reader users and costs ~KBs. Reserve @xterm/xterm 6.0.0 with screenReaderMode:true for the one surface that needs real ANSI/VT fidelity (the Pyodide REPL), and document the accessibility trade-off.",
+      "Bash/coreutils lessons: do NOT ship v86 (multi-MB OS images, no a11y) or WebContainers (commercial license for production + COOP/COEP headers + Node-centric). Build a custom TypeScript shell simulator (parser + small command registry over a virtual fs — can reuse lightning-fs) and verify its behavior in CI against golden fixtures generated from real bash/coreutils; this is lighter, deterministic, fully accessible, and grading-friendly.",
+      "Astro integration pattern: every engine lives behind a React island with client:visible/client:only and dynamic import() so the static HTML stays zero-JS by default; bun-install and self-host everything except Pyodide (CDN-only due to size); keep heavy engines in Web Workers to protect main-thread interactivity; no COOP/COEP headers needed for this stack, so it deploys to any static host including GitHub Pages."
+    ]
+  },
+  {
+    "topic": "UX patterns for terminal-based and hands-on technical learning products, with 10 recommended patterns for a GRC engineering bootcamp (simulated terminals + policy/SQL/API labs)",
+    "findings": [
+      {
+        "claim": "OverTheWire Bandit gates progression with earned credentials: each of 34 levels hides a password that unlocks SSH access to the next level, making the artifact itself the completion proof (no honor-system checkboxes). Each level page lists 'commands you may need' and helpful reading material — a built-in first rung of a hint ladder — and the site explicitly coaches stuck learners ('Don't panic!', use man pages, search, community chat) rather than handing out answers.",
+        "source": "https://overthewire.org/wargames/bandit/",
+        "confidence": "high"
+      },
+      {
+        "claim": "killercoda structures labs as markdown steps each paired with a verify.sh; clicking the CHECK button runs the script and the step passes if it exits 0. Scenarios are authored as plain Git repos (index.json + markdown + bash), with foreground/background setup scripts and code blocks that are click-to-execute or click-to-copy — content-as-code that makes labs testable and versionable.",
+        "source": "https://github.com/killercoda/scenario-examples (and https://killercoda.com/creators)",
+        "confidence": "high"
+      },
+      {
+        "claim": "Instruqt formalizes a four-script challenge lifecycle: setup (pre-stage environment), check (runs on the Check button; exit 0 advances, exit 1 keeps the learner on the challenge and surfaces a fail-message hint like 'There is no directory named instruqt, did you create it?'), solve (powers the Skip button AND automated track testing via 'instruqt track test', which simulates a learner solving every challenge), and cleanup. Docs explicitly advise that failure messages explain what went wrong and why without revealing the answer.",
+        "source": "https://docs.instruqt.com/sandboxes/lifecycle-scripts/add-a-script-to-check-challenge-execution",
+        "confidence": "high"
+      },
+      {
+        "claim": "iximiuz Labs pairs disposable Firecracker-microVM playgrounds (fresh Linux/Docker/K8s sandbox in seconds, no setup/cleanup anxiety) with bite-sized challenges featuring auto-grading and hints; its Interactive Content Engine detects user actions in the sandbox in real time and validates solutions automatically, creating a feedback loop between the terminal and the learning material. Stated philosophy: proficiency comes from 'practice in a realistic yet safe environment.'",
+        "source": "https://labs.iximiuz.com/about",
+        "confidence": "high"
+      },
+      {
+        "claim": "Learn Git Branching makes invisible state visible: the commit tree renders and animates after every command. It offers 'undo' and 'reset' for fearless experimentation, 'show goal' to display the target state and 'show solution' to reveal the intended answer, levels grouped into concept 'worlds' (local vs remote), a sandbox mode for free play, and 'git golf' command-count par as an efficiency/mastery signal.",
+        "source": "https://github.com/pcottle/learnGitBranching",
+        "confidence": "high"
+      },
+      {
+        "claim": "SQLBolt ends every lesson with interactive exercises against a real dataset (Pixar movies) run live in the browser; all tasks must be solved to unlock the next lesson, and each task carries an inline escape hatch ('Stuck? Read this task's Solution') so the floor of frustration is bounded per-task, not per-lesson.",
+        "source": "https://sqlbolt.com/lesson/select_queries_introduction",
+        "confidence": "high"
+      },
+      {
+        "claim": "Flexbox Froggy's effectiveness comes from instant feedback (frogs reposition as you type, no Run button), one property introduced per level across 24 levels that build on and interleave earlier properties, and a concrete visual goal (frog on lilypad) standing in for an abstract concept. Its creator notes flexbox was chosen partly because its properties 'make for good gameplay mechanics' — the domain was matched to the game form.",
+        "source": "https://thomaspark.co/2015/11/learning-css-layout-with-flexbox-froggy/",
+        "confidence": "high"
+      },
+      {
+        "claim": "TryHackMe rooms interleave short theory with question/answer checkpoints; questions display an 'Answer Format' mask (e.g., '*********') that constrains the search space without revealing the answer, offer per-question hint buttons set by room authors, and award points scaled by room difficulty (challenge rooms > walkthrough rooms). Curated paths chain rooms so learners never have to decide what to study next.",
+        "source": "https://help.tryhackme.com/en/articles/6563910-points-explained (and https://help.tryhackme.com/en/articles/6633511-creating-your-first-room)",
+        "confidence": "high"
+      },
+      {
+        "claim": "Hack The Box's Guided Mode overlays the same machine with linear task questions, per-question click-to-reveal hints, and deliberately hides upcoming questions so they don't spoil the current one; learners can switch freely between Guided and classic Adventure Mode (just an IP, figure it out) and flag progress is shared between both modes — one lab, two difficulty framings.",
+        "source": "https://help.hackthebox.com/en/articles/8117054-guided-mode-for-machines",
+        "confidence": "high"
+      },
+      {
+        "claim": "MIT Missing Semester deliberately publishes no official exercise solutions, stating the real value 'is the journey of discovering the answers, not the answer itself,' encouraging tangents and 'why' questions, inviting stuck students to email what they've tried, and (2026 edition) noting the exercises work well as initial prompts for an interactive LLM conversation.",
+        "source": "https://missing.csail.mit.edu/2026/course-shell/",
+        "confidence": "high"
+      },
+      {
+        "claim": "Codecademy's lessons are built from checkpoints auto-verified on Run, with errors flagged inline; hints sit at the bottom of the instructions, and a 'Get Unstuck' menu escalates from Concept Review to full Solution Code — a productized hint ladder where conceptual help is offered before the answer.",
+        "source": "https://help.codecademy.com/hc/en-us/articles/1260803449210-Updates-to-our-Learning-Environment",
+        "confidence": "high"
+      },
+      {
+        "claim": "Boot.dev's Training Grounds provides an 'infinite' stream of dynamically generated review challenges, using spaced repetition that surfaces topics the learner is forgetting and weights toward concepts they struggled with — reinforcement is personalized and decoupled from the linear course path.",
+        "source": "https://www.boot.dev/training",
+        "confidence": "medium"
+      },
+      {
+        "claim": "Placement/test-out flows are an established adaptive-learning pattern: Educative generates a diagnostic profile from a short quiz to skip concepts already known and sequence the rest; Study.com's adaptive placement tests let learners test out of lessons, picking each question based on the prior answer to grant maximum course progress.",
+        "source": "https://www.educative.io/blog/learn-to-code-personalized-learning-plans (and https://study.com/academy/about/placement-tests.html)",
+        "confidence": "medium"
+      },
+      {
+        "claim": "Cross-platform consensus on keeping learners unstuck without giving answers: bounded escalation. Every mature platform offers SOME path forward (Bandit: reading material + community; THM/HTB: per-question hints; Codecademy: concept review then solution; SQLBolt: per-task solution; Instruqt: diagnostic fail-messages then Skip via solve script), and the platforms that withhold solutions entirely (Missing Semester, HTB Adventure Mode) explicitly target self-directed or advanced audiences — guidance level is an audience decision, not a virtue.",
+        "source": "Synthesis of all sources above",
+        "confidence": "high"
+      }
+    ],
+    "recommendations": [
+      "1. State-based auto-verification with a Check button (killercoda/Instruqt model). Every lab step ships a verify script that asserts on the RESULT in the environment — the bucket policy now denies public read, the SQL query returns the expected rows, the API call returns 403 — never on the command the learner typed. Exit 0 advances, non-zero holds. This is doubly apt for GRC: verifying control outcomes rather than procedures is literally what auditing is, so the lab mechanic teaches the discipline's core mental model for free.",
+      "2. Diagnostic failure messages that name the gap, not the answer (Instruqt fail-message pattern). Branch the check script on WHICH assertion failed and emit a targeted message ('The policy exists but still allows s3:GetObject to *— look at the Principal block') instead of a generic 'incorrect.' This converts every failed check into a free, contextual micro-hint and is the single cheapest way to keep learners unstuck.",
+      "3. A productized hint ladder: nudge → concept → command → full solution (Codecademy Get Unstuck + TryHackMe hints + SQLBolt per-task solutions). Each step gets 3-4 escalating reveals behind explicit clicks, with conceptual review offered before answer code, and a per-step (not per-lab) solution floor so no one ever dead-ends. Optionally mark assisted completions (THM/HTB-style reduced points) rather than blocking them — finishing with help beats quitting.",
+      "4. Show-goal with a diffable target state (learngitbranching 'show goal'/'show solution'). For policy labs show the target policy evaluation outcome, for SQL show the expected result table (SQLBolt does this implicitly), for API labs show the expected response shape — and let learners diff current vs goal on demand. GRC work is gap analysis; make the lab UI a gap-analysis tool.",
+      "5. Reset and undo affordances on disposable sandboxes (learngitbranching undo/reset + iximiuz disposable microVMs). Per-step 'reset this step' (re-run setup script) and per-lab 'fresh environment' buttons, prominently placed. A learner who can't break anything permanently will experiment; a learner afraid of wedging the lab will copy-paste. For simulated terminals this is cheap — make it one click and instant.",
+      "6. One concept per step, later steps hidden (Flexbox Froggy single-property levels + Bandit one-technique levels + HTB Guided Mode hiding upcoming questions). Keep each step's instruction pane to a few lines introducing exactly one new idea (one SQL clause, one policy element, one API auth concept), interleaving earlier ones, and don't render future questions until the current one passes — they leak spoilers and inflate perceived workload.",
+      "7. Earned evidence artifacts as completion gates (Bandit password gating, adapted). Each lab yields a unique token — a flag in a locked-down file, a hash of the correct query result, a value only returned by the correctly-authenticated API call — submitted to advance. It's tamper-resistant cheap verification, it creates the visceral 'I got in' moment that makes Bandit sticky, and framed as 'evidence collection' it rehearses exactly what GRC engineers do for auditors.",
+      "8. Dual guided/adventure mode on the same labs with shared progress (HTB Guided Mode). Author every lab as an adventure-mode scenario brief ('this vendor's API leaks PII — find and remediate') plus an optional guided overlay of linear checkpointed tasks. Bootcamp cohorts mix career-changers and practicing engineers; this serves both from one content investment and gives you capstone assessments (run guided labs in adventure mode) for free.",
+      "9. Post-success 'why this worked' reinforcement (Codecademy concept review + Missing Semester's journey-over-answer philosophy + git-golf feedback). The moment a check goes green is peak receptivity: show a 3-5 line explanation connecting the action to the control objective and framework citation ('You enforced least privilege — this is what SOC 2 CC6.1 / NIST AC-6 asks for'), optionally with an efficiency note (the one-liner that does what your four commands did). Without this, learners pass labs pattern-matching commands without forming GRC judgment.",
+      "10. Placement test-out at entry, spaced mixed-review after (Educative/Study.com adaptive diagnostics + Boot.dev Training Grounds). Open the bootcamp with a short hands-on diagnostic in the simulated terminal (can you grep a log, write a JOIN, call an authed API?) that lets experienced learners skip foundations module-by-module — adults disengage fast when forced through known material. Then schedule short mixed-review labs that resurface earlier skills (a SQL question inside a later policy lab), weighted toward each learner's past failed checks, since one-shot lab completion decays quickly without interleaved retrieval practice."
+    ]
+  },
+  {
+    "topic": "Exact-output fidelity sources for simulating Windows/PowerShell compliance-evidence commands in a browser",
+    "findings": [
+      {
+        "claim": "Get-BitLockerVolume default output is a wrapped two-line-header table with columns: 'VolumeType | Mount Point | CapacityGB | VolumeStatus | Encryption Percentage | KeyProtector | AutoUnlock Enabled | Protection Status'. Header wraps onto two physical lines ('Mount' over 'Point', 'Encryption' over 'Percentage', etc.) with dashed separator under line 2. Verbatim sample rows from Microsoft Learn: 'Data            D:        931.51 EncryptionInProgress   1          {RecoveryPassword, Pas...            Off' and 'OperatingSystem C:        232.54 FullyDecrypted         0          {Tpm}                                Off'. Note KeyProtector array truncates with '...' and empty cells for AutoUnlock. The doc also gives a verbatim 'Get-BitLockerVolume -MountPoint C | Format-List' block with all 13 properties (ComputerName: DESKTOP-XXXXXXX, EncryptionMethod: XtsAes128, VolumeStatus: FullyEncrypted, ProtectionStatus: On, LockStatus: Unlocked, EncryptionPercentage: 100, KeyProtector: {RecoveryPassword, Tpm}, etc.). VolumeStatus values: FullyDecrypted, FullyEncrypted, EncryptionInProgress. Module: BitLocker (Windows-only).",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/bitlocker/get-bitlockervolume?view=windowsserver2025-ps"
+      },
+      {
+        "claim": "Get-MpComputerStatus default output is a property:value list (left-aligned names padded to a common colon column). Microsoft Learn's verbatim Example 1 shows 32 properties in alphabetical order beginning: 'AMEngineVersion : 1.1.9700.0', 'AMProductVersion : 4.3.9463.0', 'AMRunningMode : Normal', 'AMServiceEnabled : True', then Antispyware*/Antivirus* signature trios (Age 0, LastUpdated as 'M/D/YYYY H:MM:SS AM' datetime, Version like 1.155.1107.0), BehaviorMonitorEnabled, ComputerID (GUID), FullScanAge 4294967295 (sentinel for never), Ioav/NIS/OnAccess/RealTimeProtectionEnabled booleans, QuickScanStart/EndTime, RealTimeScanDirection 0. Empty values render as blank after colon (FullScanEndTime :). Module: Defender (Windows-only, runs in Windows PowerShell 5.1).",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/defender/get-mpcomputerstatus?view=windowsserver2025-ps"
+      },
+      {
+        "claim": "Get-WinEvent is explicitly 'only available on the Windows platform' (PS 7 docs banner). Default record output is a table grouped by provider: a blank-line-separated group header line '   ProviderName: PowerShell' followed by columns 'TimeCreated              Id LevelDisplayName  Message' with dashes, rows like '3/15/2019 13:54:13      403 Information       Engine state is changed from Available to Stopped...' — Message truncated with '...'. The documented Security-log failed-logon query pattern is FilterHashtable: Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=4625 } (doc shows the exact hashtable keys: LogName, ProviderName, Path, Keywords, ID, Level, StartTime, EndTime, UserID, Data, SuppressHashFilter). -MaxEvents limits count; default order newest-to-oldest; non-admin users get access errors on the Security log.",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent?view=powershell-7.5"
+      },
+      {
+        "claim": "Event ID 4625 ('An account failed to log on', Security log, Provider Microsoft-Windows-Security-Auditing, Task Category Logon, Keywords Audit Failure) full field schema with example values is documented verbatim in Microsoft's auditing reference, including the complete Event XML (SubjectUserSid S-1-5-18, SubjectUserName DC01$, TargetUserName, Status 0xc0000234, SubStatus, LogonType 2, LogonProcessName User32, AuthenticationPackageName Negotiate, WorkstationName, ProcessName C:\\Windows\\System32\\winlogon.exe, IpAddress, IpPort), the Logon Type table (2 Interactive, 3 Network, 4 Batch, 5 Service, 7 Unlock, 8 NetworkCleartext, 9 NewCredentials, 10 RemoteInteractive, 11 CachedInteractive) and the Status/SubStatus hex table (0xC0000064 bad username/user enumeration, 0xC000006A bad password, 0xC000006D bad username or auth info, 0xC000006F outside authorized hours, 0xC0000070 unauthorized workstation, 0xC0000072 account disabled, 0xC0000193 expired account, 0xC0000234 locked out, 0xC000015B logon type not granted).",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625"
+      },
+      {
+        "claim": "The rendered 4625 Message text (what Get-WinEvent's Message property contains) is structured as labeled sections with tab-indented 'Label:\\t\\tValue' lines: 'An account failed to log on.' then Subject (Security ID/Account Name/Account Domain/Logon ID), 'Logon Type: 3', Account For Which Logon Failed (Security ID: NULL SID, Account Name: asdf), Failure Information (Failure Reason: Unknown user name or bad password. / Status: 0xc000006d / Sub Status: 0xc0000064), Process Information (Caller Process ID: 0x0, Caller Process Name: -), Network Information (Workstation Name: WIN-R9H529RIO4Y, Source Network Address: 10.42.42.201, Source Port: 53176), Detailed Authentication Information (Logon Process: NtLmSsp, Authentication Package: NTLM, Transited Services: -, Package Name (NTLM only): -, Key Length: 0). Empty/unused fields render as '-'.",
+        "confidence": "high",
+        "source": "https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4625"
+      },
+      {
+        "claim": "gpresult /R syntax and parameters are documented on Microsoft Learn (the page has NO sample output — /r 'Displays RSoP summary data', /v verbose, /z all, /scope {user|computer}, /user, /s remote, output option mandatory). A real captured text output exists at NetworkProGuide, verbatim: banner 'Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0' / '© 2017 Microsoft Corporation. All rights reserved.' / 'Created on 1/8/2022 at 9:45:56 AM' / blank / 'RSOP data for npgdom\\rsanchez on COMPUTER1 : Logging Mode' with dashed underline; then header block 'OS Configuration:            Member Workstation', 'OS Version: 10.0.16299', 'Site Name:', 'Roaming Profile: N/A', 'Local Profile: C:\\Users\\rsanchez', 'Connected over a slow link?: No'; then 'COMPUTER SETTINGS' (dashed underline) containing the DN 'CN=COMPUTER1,OU=Workstations,DC=ad,DC=npgdom,DC=com', 'Last time Group Policy was applied:', 'Group Policy was applied from: DOMCON1.ad.npgdom.com', 'Group Policy slow link threshold: 500 kbps', 'Domain Name:', 'Domain Type: Windows 2012 or later'; then indented subsections 'Applied Group Policy Objects' (GPO names listed one per line), 'The following GPOs were not applied because they were filtered out' (each with 'Filtering: Denied (WMI Filter)' / 'Not Applied (Unknown Reason)' / 'Disabled (Link)'), and 'The computer is a part of the following security groups' (BUILTIN\\Administrators, NT AUTHORITY\\NETWORK, Domain Computers, System Mandatory Level, etc.). A USER SETTINGS section follows the same structure with 'The user is a part of the following security groups'.",
+        "confidence": "high",
+        "source": "https://networkproguide.com/gpresult-command-to-check-group-policy/ (sample output); https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/gpresult (parameters)"
+      },
+      {
+        "claim": "Get-LocalGroupMember -Group \"Administrators\" outputs a 3-column table 'ObjectClass Name PrincipalSource' with dash separators; rows like 'User        CONTOSOPC\\Administrator Local' / 'Group       LAB\\Domain Admins   ActiveDirectory'. Names are always MACHINE\\account or DOMAIN\\account. ObjectClass is User or Group; PrincipalSource is Local, ActiveDirectory, 'Microsoft Entra group', or MicrosoftAccount (per the Learn Notes section; blank on pre-Win10). Module Microsoft.PowerShell.LocalAccounts is Windows-only and 'not available in 32-bit PowerShell on a 64-bit system'; alias glgm. The Learn page itself omits the output block — captured examples are on PDQ and ShellGeek.",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember?view=powershell-5.1 (semantics); https://www.pdq.com/powershell/get-localgroupmember/ and https://shellgeek.com/how-to-get-local-administrators-using-powershell/ (output format)"
+      },
+      {
+        "claim": "Get-Process default display differs by edition — critical for fidelity. Windows PowerShell 5.1 (the edition that runs the compliance cmdlets): columns 'Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName' (verbatim Example 9 output block in the 5.1 doc; rows like '    561      44    47564      40740       6.48   2604   1 powershell'). PowerShell 7.x drops Handles and uses MB: 'NPM(K)    PM(M)      WS(M)     CPU(s)      Id  SI ProcessName' (verbatim Example 9 in the 7.5 doc, rows like '    83    96.21     105.95       4.33    1192  10 pwsh'). Both docs define every column (NPM non-paged KB, PM pageable, WS working set, CPU(s) total seconds, SI session id). Values right-aligned under right-aligned headers.",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process?view=powershell-5.1 and https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-process?view=powershell-7.5"
+      },
+      {
+        "claim": "Get-Service default display is 'Status   Name               DisplayName' with dash separators; verbatim doc rows: 'Running  Spooler            Print Spooler', 'Stopped  stisvc             Windows Image Acquisition (WIA)'; long DisplayName truncates with '...' ('Windows Firewall/Internet Connectio...'). Status sorts as enum (Stopped=1, Running=4). In PowerShell 7 the doc states verbatim 'This cmdlet is only available on the Windows platform.' Canonical Month-of-Lunches-style teaching examples (Get-Service -Name w32time → 'Running  w32time            Windows Time'; filter-left vs Where-Object; Select-Object property lists) appear with verbatim output blocks in Microsoft's PowerShell 101 (authored by Mike F Robbins, of the Month of Lunches lineage).",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-service?view=powershell-7.5 and https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/04-pipelines"
+      },
+      {
+        "claim": "Default PowerShell prompt: about_Prompts documents the built-in prompt function verbatim — \"PS $($ExecutionContext.SessionState.Path.CurrentLocation)$('>' * ($NestedPromptLevel + 1)) \" — producing 'PS C:\\>' on Windows (trailing space after >). Nested prompts add extra '>' ('PS C:\\ps-test>>'), debug mode prepends '[DBG]: ', remoting prepends '[Server01]: ', the fallback prompt when the function errors is 'PS>'. Empirically verified in the Linux container: prompt at / renders 'PS /> ' and (Get-Command prompt).Definition matches the documented source exactly.",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_prompts?view=powershell-7.5 (plus local capture from mcr.microsoft.com/powershell container)"
+      },
+      {
+        "claim": "Format-Table default behavior, documented + empirically verified in real pwsh 7.4.2: (1) 'By default, text that exceeds the column width is truncated' (-Wrap parameter doc); (2) property selection comes from the FIRST object in the pipeline ('the properties that appear in the display depend on the first object's properties'); (3) verified in container: at width 80 a 200-char value truncates with the single-char ellipsis '…' (PS 7.x; Windows PowerShell 5.1 uses three dots '...'), and a third column (Count) that no longer fits is silently DROPPED from the table entirely; (4) verified: objects with 4 or fewer properties default to table view, 5 or more default to list view (corroborated by community formatting references); (5) -AutoSize minimizes truncation, default column widths come from the format view.",
+        "confidence": "high",
+        "source": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/format-table?view=powershell-7.5 (docs); local docker capture in mcr.microsoft.com/powershell:latest pwsh 7.4.2 (empirical); https://thomasrayner.ca/powershell-rules-for-format-table-and-format-list/ (4-vs-5 rule)"
+      },
+      {
+        "claim": "$PSVersionTable shape for PowerShell 7.x, captured verbatim from the real container (pwsh 7.4.2 on Ubuntu 22.04.4): renders as a 'Name / Value' two-column table with rows in this exact order: PSVersion 7.4.2; PSEdition Core; GitCommitId 7.4.2; OS 'Ubuntu 22.04.4 LTS' (on Windows: full Microsoft Windows build string); Platform Unix (Windows: Win32NT); PSCompatibleVersions '{1.0, 2.0, 3.0, 4.0…}' (note ellipsis-truncated array); PSRemotingProtocolVersion 2.3; SerializationVersion 1.1.0.1; WSManStackVersion 3.0. Windows PowerShell 5.1 differs: PSVersion 5.1.x.y, PSEdition Desktop, adds BuildVersion and CLRVersion, no GitCommitId/OS/Platform.",
+        "confidence": "high",
+        "source": "Local capture: docker run --platform linux/amd64 mcr.microsoft.com/powershell:latest pwsh -Command '$PSVersionTable' (documented at https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables)"
+      },
+      {
+        "claim": "YES — PowerShell 7 runs in a Linux Docker container via mcr.microsoft.com/powershell and was successfully exercised on this machine (OrbStack). Two gotchas verified locally: (a) the :latest manifest contains only linux/amd64, linux/arm/v7, and windows/amd64 — NO linux/arm64 — so on Apple Silicon Docker auto-selects arm/v7 which segfaults; you must pass --platform linux/amd64 (runs via Rosetta, works but occasionally flaky on long multi-command scripts — split into separate pwsh invocations). (b) Cmdlet availability verified one-by-one in the container: Get-Process EXISTS (Microsoft.PowerShell.Management); Get-Service, Get-WinEvent, Get-LocalGroupMember, Get-BitLockerVolume, Get-MpComputerStatus, Get-ComputerInfo all NOT AVAILABLE. So the container is excellent for capturing REAL pipeline/formatting-engine behavior (Format-Table truncation/column-dropping, table-vs-list defaults, prompt, $PSVersionTable, Select-Object/Where-Object/Sort-Object semantics) but cannot produce output for ANY of the Windows compliance-evidence cmdlets — those must be simulated from the documented outputs above.",
+        "confidence": "high",
+        "source": "Local empirical testing: docker manifest inspect mcr.microsoft.com/powershell:latest + per-cmdlet Get-Command probes in the container (image docs: https://hub.docker.com/r/microsoft/powershell / https://mcr.microsoft.com/en-us/product/powershell/about)"
+      },
+      {
+        "claim": "Edition mismatch is the #1 fidelity trap: Get-BitLockerVolume, Get-MpComputerStatus, and Get-LocalGroupMember ship in Windows-only modules (BitLocker, Defender, Microsoft.PowerShell.LocalAccounts) that real auditors run under Windows PowerShell 5.1 (or PS 7 on Windows via WinCompat). A faithful browser simulation of a compliance-evidence session should therefore default to the 5.1 environment: prompt 'PS C:\\Users\\admin>', 'Windows PowerShell / Copyright (C) Microsoft Corporation. All rights reserved.' startup banner, Get-Process WITH Handles column and PM(K)/WS(K), and '...' (three-dot) truncation — not the PS 7 '…' single-char ellipsis. If simulating pwsh 7 on Windows instead, use the 7.x Get-Process header and '…'.",
+        "confidence": "high",
+        "source": "Cross-referenced: module platform notes on each Learn page above + verified 5.1-vs-7.5 doc output blocks (get-process?view=powershell-5.1 vs view=powershell-7.5)"
+      }
+    ],
+    "recommendations": [
+      "Build the simulator's golden outputs directly from the verbatim Microsoft Learn example blocks captured above (BitLocker Example 1/3, Defender Example 1, Get-WinEvent Examples 12/13, Get-Service Example 7, Get-Process Example 9 in BOTH 5.1 and 7.5 views) — they are the only Microsoft-authored exact renderings and are safe to reproduce character-for-character.",
+      "Pick ONE simulated environment and stay consistent: recommend Windows PowerShell 5.1 on a domain-joined Windows Server/10 box, since all six compliance cmdlets exist there natively. That fixes the prompt ('PS C:\\Users\\admin> '), the Get-Process header (Handles NPM(K) PM(K) WS(K) CPU(s) Id SI ProcessName), '...' truncation, and $PSVersionTable (PSEdition Desktop, BuildVersion, CLRVersion).",
+      "Implement the formatting engine rules, not per-command string templates, where feasible: right-aligned numeric columns under right-aligned headers, dash separator rows matching header text width, first-object property selection, 4-or-fewer-properties → table / 5-or-more → list, width-based truncation, and silent dropping of columns that don't fit the 80/120-char window — all verified against real pwsh in the container.",
+      "For Get-WinEvent 4625 evidence, compose records from the Microsoft auditing doc's field schema: group header '   ProviderName: Microsoft-Windows-Security-Auditing', table rows 'TimeCreated / Id (4625) / LevelDisplayName (Information — 4625 is an Audit Failure keyword, level displays as Information) / Message' starting 'An account failed to log on.…', and make the full Message expandable using the Ultimate Windows Security rendered text with Status/SubStatus pairs from the documented NTSTATUS table (0xC000006D/0xC0000064 for bad-username brute force, 0xC000006A wrong password, 0xC0000234 lockout).",
+      "Use the mcr.microsoft.com/powershell container as a regression oracle for everything portable: script docker run --platform linux/amd64 invocations that pipe your simulator's planned pipelines (Select-Object, Where-Object, Sort-Object, Format-Table/-List, Measure-Object, ConvertTo-Json) through real pwsh and diff the output. On Apple Silicon always pass --platform linux/amd64 and keep each invocation short — the arm/v7 variant segfaults and long Rosetta sessions are flaky.",
+      "Do NOT attempt to capture Get-Service/Get-WinEvent/BitLocker/Defender/LocalAccounts output from the Linux container — verified absent. If exact live capture is ever needed, the only real options are a Windows VM (e.g., free Windows Server eval ISO in UTM/Parallels) or a Windows GitHub Actions runner (windows-latest) that runs the cmdlets and uploads transcripts as artifacts — the Actions route is scriptable from this Mac with gh.",
+      "For gpresult /R, replicate the NetworkProGuide capture's exact layout (banner, '©' copyright line, 'RSOP data for DOMAIN\\user on HOST : Logging Mode', dashed underlines sized to their heading text, 4-space indented settings, 8-space indented GPO lists) and keep both COMPUTER SETTINGS and USER SETTINGS sections; include a 'filtered out' subsection with 'Filtering: Denied (Security)' / '(WMI Filter)' entries — auditors recognize these instantly.",
+      "Encode the small cross-version details that sell realism: KeyProtector arrays render as '{RecoveryPassword, Tpm}', dates as 'M/D/YYYY h:mm:ss AM', FullScanAge 4294967295 means 'never scanned', empty properties render as blank-after-colon in list view and empty cell in table view, and Get-LocalGroupMember names always carry the MACHINE\\ or DOMAIN\\ prefix."
+    ]
+  }
+]

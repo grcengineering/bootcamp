@@ -15,5 +15,8 @@
     "test": "bun test",
     "test:cov": "bun test --coverage",
     "ci": "bun run lint && bash .ci/lab-repro.sh && bun .ci/link-check.ts && bun dashboard/generate.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
   }
 }

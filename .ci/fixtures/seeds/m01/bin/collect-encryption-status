@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fictional evidence collector from module 01 §5.2 (authored-fixture; stderr line is prose canon).
+# stdout: one line per laptop. stderr: the unreachable-host complaint, verbatim from §5.2.
+cat <<'OUT'
+laptop-01: encrypted
+laptop-02: encrypted
+laptop-03: encrypted
+laptop-04: encrypted
+laptop-05: not-encrypted
+OUT
+echo "WARN: host db-07 unreachable" >&2
