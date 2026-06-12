@@ -1,0 +1,57 @@
+Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0
+(c) Microsoft Corporation. All rights reserved.
+
+Created on 5/27/2026 at 9:20:14 PM
+
+RSOP data for WIN-LAB04\labuser on WIN-LAB04 : Logging Mode
+-----------------------------------------------------------
+
+OS Configuration:            Standalone Workstation
+OS Version:                  10.0.26100
+Site Name:                   N/A
+Roaming Profile:             N/A
+Local Profile:               C:\Users\labuser
+Connected over a slow link?: No
+
+USER SETTINGS
+--------------
+    Last time Group Policy was applied: 5/27/2026 at 8:00:03 PM
+    Group Policy was applied from:      N/A
+    Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WIN-LAB04
+    Domain Type:                        <Local Computer>
+
+    Applied Group Policy Objects
+    -----------------------------
+        Local Group Policy
+        Workstation Screen Lock Policy
+
+    The user is a part of the following security groups
+    ----------------------------------------------------
+        Everyone
+        BUILTIN\Users
+        NT AUTHORITY\INTERACTIVE
+        CONSOLE LOGON
+        NT AUTHORITY\Authenticated Users
+        This Organization
+        Local account
+        LOCAL
+
+COMPUTER SETTINGS
+------------------
+    Last time Group Policy was applied: 5/27/2026 at 8:00:01 PM
+    Group Policy was applied from:      N/A
+    Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WIN-LAB04
+    Domain Type:                        <Local Computer>
+
+    Applied Group Policy Objects
+    -----------------------------
+        Local Group Policy
+        Workstation Screen Lock Policy
+
+    The computer is a part of the following security groups
+    ---------------------------------------------------------
+        BUILTIN\Administrators
+        Everyone
+        NT AUTHORITY\Authenticated Users

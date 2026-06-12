@@ -20,13 +20,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ExerciseSpec } from "../../lib/exercise-spec";
 import type {
   SeedSpec,
-  SessionSnapshot,
   ShellEngine,
-  ShellSession,
   ShellSessionOptions,
   ShellVariant,
 } from "../../engines/shell/types";
-import { runCheck, type AnyCheckParams } from "../../verifiers/registry";
+import type {
+  PowerShellEngine,
+  WindowsSeed,
+} from "../../engines/powershell/types";
+import { runCheck, type AnyCheckParams, type ProbeSession, type VerifyContext } from "../../verifiers/registry";
 import {
   appendEvidence,
   loadState,
@@ -37,24 +39,46 @@ import {
 import { loadPersisted, persist, removePersisted, type PersistFailure } from "../../lib/persist";
 import Terminal, { type TerminalHandle } from "./Terminal";
 import EditorPanel from "./EditorPanel";
+import ApiInspector from "./ApiInspector";
+import EditorConsole, { type ConsoleEngineId } from "./EditorConsole";
+import BuilderSurface from "./BuilderSurface";
+import type { LabSession } from "./sessions/types";
+import { seedToFileMap } from "./sessions/types";
+import { ApiLabSession, type ApiExchange } from "./sessions/api-exchange";
+import { GitTerminalSession, type GitSessionSnapshot } from "./sessions/git-session";
+import { ConsoleHost, type ConsoleSnapshot } from "./sessions/console-host";
+import { BuilderHost, type BuilderSnapshot } from "./sessions/builder-host";
 
-// Resolves to {} while the engine package is still landing — the page builds either way;
-// once src/engines/shell/index.ts exists this picks it up with no code change.
+// Engines resolve lazily (none of them ship on reading pages — ISC-100); a glob that
+// resolves to {} keeps the page building while an engine package lands in parallel.
 const ENGINE_MODULES = import.meta.glob<{ createShellEngine: () => ShellEngine }>(
   "../../engines/shell/index.ts",
 );
 const ENGINE_KEY = "../../engines/shell/index.ts";
+const PS_MODULES = import.meta.glob<{ createPowerShellEngine: () => PowerShellEngine }>(
+  "../../engines/powershell/index.ts",
+);
+const PS_KEY = "../../engines/powershell/index.ts";
+const GIT_MODULES = import.meta.glob<typeof import("../../engines/git")>(
+  "../../engines/git/index.ts",
+);
+const GIT_KEY = "../../engines/git/index.ts";
 
 interface LabPlayerProps {
   spec: ExerciseSpec;
   seed: SeedSpec;
   epoch: string;
   expectations: Record<string, string>;
+  /** PowerShell engine seed (engine: powershell bundles only). */
+  windowsSeed?: unknown;
 }
 
 interface SavedLab {
   v: 1;
-  snapshot: SessionSnapshot;
+  /** Terminal-class engine snapshot (shell SessionSnapshot / Ps snapshot / git wrapper). */
+  snapshot?: unknown;
+  console?: ConsoleSnapshot;
+  builder?: BuilderSnapshot;
   tasks: Record<string, TaskRecord>;
   hints: Record<string, number>; // rungs opened per task
   reflections: Record<string, string>;
@@ -63,9 +87,34 @@ interface SavedLab {
 
 type Phase = "intro" | "loading" | "running" | "engine-missing" | "engine-unsupported";
 
+/** Engine → surface dispatch (the heart of the spec.engine wiring). */
+type SurfaceKind = "terminal" | "console" | "builder" | "unsupported";
+
+function surfaceKindOf(engine: ExerciseSpec["engine"]): SurfaceKind {
+  switch (engine) {
+    case "shell-linux":
+    case "shell-macos":
+    case "powershell":
+    case "api":
+    case "git":
+      return "terminal";
+    case "python":
+    case "sql":
+    case "policy":
+    case "jq":
+      return "console";
+    case "builder":
+      return "builder";
+    default:
+      return "unsupported"; // "mixed" ships in a later wave
+  }
+}
+
 const VARIANTS: Partial<Record<ExerciseSpec["engine"], ShellVariant>> = {
   "shell-linux": "bash-linux",
   "shell-macos": "zsh-macos",
+  api: "bash-linux", // the module-06 lab box is the Linux container + curl (ISC-78)
+  git: "bash-linux", // the module-05 lab box is the Linux container + git porcelain
 };
 
 /** Render `code spans` in instruction/hint text without a markdown dependency. */
@@ -105,9 +154,12 @@ const STORAGE_WARNINGS: Record<PersistFailure, string> = {
   unavailable: "Local storage isn't available in this browser — progress won't survive a reload.",
 };
 
-export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayerProps) {
+export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed }: LabPlayerProps) {
   const persistKey = `grcb.lab.${spec.id}`;
   const variant = VARIANTS[spec.engine] ?? null;
+  const kind = surfaceKindOf(spec.engine);
+  /** bash-world terminals get nano + the shell editor panel; PowerShell does not. */
+  const bashWorld = spec.engine === "shell-linux" || spec.engine === "shell-macos" || spec.engine === "api" || spec.engine === "git";
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [hasSaved, setHasSaved] = useState(false);
@@ -126,8 +178,13 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
   const [termEpoch, setTermEpoch] = useState(0);
   const [tick, setTick] = useState(0); // bumps after activity → debounced save
 
-  const engineRef = useRef<ShellEngine | null>(null);
-  const sessionRef = useRef<ShellSession | null>(null);
+  const sessionRef = useRef<LabSession | null>(null);
+  const apiRef = useRef<ApiLabSession | null>(null);
+  const gitRef = useRef<GitTerminalSession | null>(null);
+  const consoleRef = useRef<ConsoleHost | null>(null);
+  const builderRef = useRef<BuilderHost | null>(null);
+  /** Fresh-surface factory captured at start() — reset re-runs it (any engine class). */
+  const recreateRef = useRef<(() => Promise<void> | void) | null>(null);
   const termRef = useRef<TerminalHandle>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -144,57 +201,177 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
       user: spec.seed.home.split("/").filter(Boolean).pop() ?? "analyst",
       host: variant === "zsh-macos" ? "mac" : "workstation",
       home: spec.seed.home,
+      ...(spec.engine === "api" ? { apiLab: {} } : {}),
     }),
-    [variant, seed, epoch, spec.seed.home],
+    [variant, seed, epoch, spec.seed.home, spec.engine],
   );
 
-  const start = useCallback(
-    async (resume: boolean) => {
-      if (!variant) {
-        setPhase("engine-unsupported");
-        return;
-      }
-      setPhase("loading");
-      const loader = ENGINE_MODULES[ENGINE_KEY];
-      if (!loader) {
-        setPhase("engine-missing");
-        return;
-      }
-      const engine = (await loader()).createShellEngine();
-      engineRef.current = engine;
-      let restored = false;
-      if (resume) {
-        try {
-          const raw = loadPersisted(persistKey);
-          if (raw) {
-            const saved = JSON.parse(raw) as SavedLab;
-            if (saved.v === 1) {
-              sessionRef.current = engine.restore(saved.snapshot, sessionOptions());
-              setTaskRecords(saved.tasks);
-              setHintsOpen(saved.hints);
-              setReflections(saved.reflections);
-              setCoachDismissed(saved.coachDismissed);
-              setCompletionRecorded(Object.keys(loadState().completions).includes(spec.id));
-              restored = true;
-            }
-          }
-        } catch {
-          restored = false; // corrupted save: fall through to a fresh session, never crash
-        }
-      }
-      if (!restored) {
-        sessionRef.current = engine.create(sessionOptions());
+  const loadSaved = useCallback((): SavedLab | null => {
+    try {
+      const raw = loadPersisted(persistKey);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as SavedLab;
+      return saved.v === 1 ? saved : null;
+    } catch {
+      return null; // corrupted save: fall through to a fresh surface, never crash
+    }
+  }, [persistKey]);
+
+  const applySavedPlayerState = useCallback(
+    (saved: SavedLab | null) => {
+      if (saved) {
+        setTaskRecords(saved.tasks);
+        setHintsOpen(saved.hints);
+        setReflections(saved.reflections);
+        setCoachDismissed(saved.coachDismissed);
+        setCompletionRecorded(Object.keys(loadState().completions).includes(spec.id));
+      } else {
         setTaskRecords({});
         setHintsOpen({});
         setReflections({});
         setCompletionRecorded(false);
+      }
+    },
+    [spec.id],
+  );
+
+  // ---- per-engine surface construction (THE spec.engine dispatch) -------------------
+
+  const startTerminal = useCallback(
+    async (resume: boolean) => {
+      const saved = resume ? loadSaved() : null;
+      apiRef.current = null;
+      gitRef.current = null;
+
+      if (spec.engine === "powershell") {
+        const loader = PS_MODULES[PS_KEY];
+        if (!loader || !windowsSeed) throw new Error("powershell engine/seed not bundled");
+        const engine = (await loader()).createPowerShellEngine();
+        const opts = {
+          seed: windowsSeed as WindowsSeed,
+          epoch,
+          cols: 80,
+          user: "labuser",
+          home: "C:\\Users\\labuser",
+        };
+        sessionRef.current =
+          saved?.snapshot !== undefined
+            ? (engine.restore(saved.snapshot as never, opts) as unknown as LabSession)
+            : (engine.create(opts) as unknown as LabSession);
+        recreateRef.current = () => {
+          sessionRef.current = engine.create(opts) as unknown as LabSession;
+        };
+        applySavedPlayerState(saved);
+        return;
+      }
+
+      const loader = ENGINE_MODULES[ENGINE_KEY];
+      if (!loader) throw new Error("shell engine not bundled");
+      const engine = (await loader()).createShellEngine();
+
+      if (spec.engine === "git") {
+        const gitLoader = GIT_MODULES[GIT_KEY];
+        if (!gitLoader) throw new Error("git engine not bundled");
+        const gitMod = await gitLoader();
+        const makeGit = async (snap: GitSessionSnapshot | null) => {
+          const shell = snap
+            ? engine.restore(snap.shell as never, sessionOptions())
+            : engine.create(sessionOptions());
+          const adapter = new gitMod.GitEngineAdapter({ dir: `${spec.seed.home}/lab05` });
+          await adapter.load();
+          const session = new GitTerminalSession(shell, adapter, { epoch }, () => setTick((n) => n + 1));
+          if (snap) await session.restoreGit(snap);
+          gitRef.current = session;
+          sessionRef.current = session;
+        };
+        await makeGit((saved?.snapshot as GitSessionSnapshot | undefined) ?? null);
+        recreateRef.current = () => makeGit(null);
+        applySavedPlayerState(saved);
+        return;
+      }
+
+      // shell-linux / shell-macos / api ride the same shell engine
+      const makeShell = (snap: unknown | null): ApiLabSession | null => {
+        const shell = snap
+          ? engine.restore(snap as never, sessionOptions())
+          : engine.create(sessionOptions());
+        if (spec.engine === "api") {
+          const wrapped = new ApiLabSession(shell, () => setTick((n) => n + 1));
+          apiRef.current = wrapped;
+          sessionRef.current = wrapped;
+          return wrapped;
+        }
+        sessionRef.current = shell as unknown as LabSession;
+        return null;
+      };
+      if (spec.engine === "api" && saved?.snapshot !== undefined) {
+        const snap = saved.snapshot as { shell: unknown; exchanges: ApiExchange[] };
+        makeShell(snap.shell)?.restoreLog(snap.exchanges ?? []);
+      } else {
+        makeShell(saved?.snapshot ?? null);
+      }
+      recreateRef.current = () => {
+        makeShell(null);
+      };
+      applySavedPlayerState(saved);
+    },
+    [spec.engine, spec.seed.home, windowsSeed, epoch, sessionOptions, loadSaved, applySavedPlayerState],
+  );
+
+  const startConsole = useCallback(
+    (resume: boolean) => {
+      const saved = resume ? loadSaved() : null;
+      const make = () => {
+        const host = new ConsoleHost({
+          files: seedToFileMap(seed),
+          mainFile: spec.console?.main_file,
+          assets: spec.console?.assets?.length ? spec.console.assets : undefined,
+        });
+        consoleRef.current = host;
+      };
+      make();
+      if (saved?.console) consoleRef.current!.restore(saved.console);
+      recreateRef.current = make;
+      applySavedPlayerState(saved);
+    },
+    [seed, spec.console, loadSaved, applySavedPlayerState],
+  );
+
+  const startBuilder = useCallback(
+    (resume: boolean) => {
+      const saved = resume ? loadSaved() : null;
+      const make = () => {
+        builderRef.current = new BuilderHost(spec.builder!, seedToFileMap(seed));
+      };
+      make();
+      if (saved?.builder) builderRef.current!.restore(saved.builder);
+      recreateRef.current = make;
+      applySavedPlayerState(saved);
+    },
+    [seed, spec.builder, loadSaved, applySavedPlayerState],
+  );
+
+  const start = useCallback(
+    async (resume: boolean) => {
+      if (kind === "unsupported" || (kind === "builder" && !spec.builder)) {
+        setPhase("engine-unsupported");
+        return;
+      }
+      setPhase("loading");
+      try {
+        if (kind === "terminal") await startTerminal(resume);
+        else if (kind === "console") startConsole(resume);
+        else startBuilder(resume);
+      } catch {
+        setPhase("engine-missing");
+        return;
       }
       setGap(null);
       setInteracted(false);
       setTermEpoch((n) => n + 1);
       setPhase("running");
     },
-    [variant, persistKey, sessionOptions, spec.id],
+    [kind, spec.builder, startTerminal, startConsole, startBuilder],
   );
 
   // ---- task verification (ISC-90) -------------------------------------------------
@@ -210,8 +387,22 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
   );
 
   const verifyTasks = useCallback(() => {
-    const session = sessionRef.current;
+    // Probe + context per surface kind: terminals are their own probe; console/builder
+    // hosts expose one (same closed registry drives every engine class).
+    const session: ProbeSession | null =
+      kind === "terminal"
+        ? sessionRef.current
+        : kind === "console"
+          ? (consoleRef.current?.probeSession() ?? null)
+          : (builderRef.current?.probeSession() ?? null);
     if (!session) return;
+    const extras: Omit<VerifyContext, "expectations" | "expectationKey"> = {
+      engineResult: consoleRef.current?.lastResult() ?? null,
+      validatorRun: builderRef.current?.lastValidatorRun() ?? null,
+      mappingScore: builderRef.current?.lastMappingScore() ?? null,
+      apiExchanges: apiRef.current?.probes() ?? [],
+      repoState: gitRef.current?.repoState() ?? null,
+    };
     setTaskRecords((prev) => {
       const next = { ...prev };
       let newGap: { taskId: string; text: string } | null = null;
@@ -225,6 +416,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
             const out = runCheck(session, task.verify[i] as AnyCheckParams, {
               expectations,
               expectationKey: `${task.id}:${i}`,
+              ...extras,
             });
             if (!out.pass) {
               failed = out.gap;
@@ -250,7 +442,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
       setGap(newGap);
       return next;
     });
-  }, [spec.tasks, expectations, revealsUsedFor]);
+  }, [kind, spec.tasks, expectations, revealsUsedFor]);
 
   const onCommandComplete = useCallback(() => {
     setInteracted(true);
@@ -358,14 +550,14 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
   // ---- persistence (debounced 500ms; size-guarded — ISC-124) -----------------------
 
   useEffect(() => {
-    if (phase !== "running" || !sessionRef.current) return;
+    if (phase !== "running") return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      const session = sessionRef.current;
-      if (!session) return;
       const saved: SavedLab = {
         v: 1,
-        snapshot: session.snapshot(),
+        ...(kind === "terminal" && sessionRef.current ? { snapshot: sessionRef.current.snapshot() } : {}),
+        ...(kind === "console" && consoleRef.current ? { console: consoleRef.current.snapshot() } : {}),
+        ...(kind === "builder" && builderRef.current ? { builder: builderRef.current.snapshot() } : {}),
         tasks: taskRecords,
         hints: hintsOpen,
         reflections,
@@ -378,11 +570,25 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [phase, tick, taskRecords, hintsOpen, reflections, coachDismissed, persistKey]);
+  }, [phase, kind, tick, taskRecords, hintsOpen, reflections, coachDismissed, persistKey]);
 
   // ---- restore / reset (ISC-117 / ISC-92) -------------------------------------------
 
   const restoreLabFiles = useCallback(() => {
+    if (kind === "console" && consoleRef.current) {
+      consoleRef.current.restoreSeedFiles();
+      setToast("Lab files restored from seed. Your run history and completed tasks are untouched.");
+      setTermEpoch((n) => n + 1); // remount the console so the buffer reflects the seed
+      setTick((n) => n + 1);
+      return;
+    }
+    if (kind === "builder" && builderRef.current) {
+      builderRef.current.workspace.resetAll();
+      setToast("Workspace files restored from seed. Completed tasks are untouched.");
+      setTermEpoch((n) => n + 1);
+      setTick((n) => n + 1);
+      return;
+    }
     const session = sessionRef.current;
     if (!session) return;
     const ext = session as unknown as {
@@ -401,24 +607,25 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
     }
     setToast("Lab files restored from seed. Your history and completed tasks are untouched.");
     setTick((n) => n + 1);
-  }, [seed]);
+  }, [kind, seed]);
 
   const resetExercise = useCallback(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
+    const recreate = recreateRef.current;
+    if (!recreate) return;
     removePersisted(persistKey);
-    sessionRef.current = engine.create(sessionOptions());
-    setTaskRecords({});
-    setHintsOpen({});
-    setReflections({});
-    setGap(null);
-    setEditorFile(null);
-    setResetConfirm(false);
-    setCompletionRecorded(false);
-    setInteracted(false);
-    setTermEpoch((n) => n + 1);
-    setToast("Exercise reset to its seed state.");
-  }, [persistKey, sessionOptions]);
+    void Promise.resolve(recreate()).then(() => {
+      setTaskRecords({});
+      setHintsOpen({});
+      setReflections({});
+      setGap(null);
+      setEditorFile(null);
+      setResetConfirm(false);
+      setCompletionRecorded(false);
+      setInteracted(false);
+      setTermEpoch((n) => n + 1);
+      setToast("Exercise reset to its seed state.");
+    });
+  }, [persistKey]);
 
   // ---- progressive disclosure ------------------------------------------------------
 
@@ -688,7 +895,10 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
         </section>
 
         {/* ---- terminal / editor ---- */}
-        <section aria-label="Simulated terminal" className="order-2 min-w-0">
+        <section
+          aria-label={kind === "terminal" ? "Simulated terminal" : kind === "console" ? "Code console" : "Guided builder"}
+          className="order-2 min-w-0"
+        >
           {/* coach layer — OUTSIDE the terminal stream (ISC-115/116) */}
           {spec.walkthrough_first_input && !coachDismissed && !interacted && (
             <div className="glass-card p-4 mb-4 flex items-start gap-3">
@@ -718,7 +928,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
             </div>
           )}
 
-          {sessionRef.current && (
+          {kind === "terminal" && sessionRef.current && (
             <>
               <div className={editorFile ? "hidden" : undefined}>
                 <Terminal
@@ -726,8 +936,16 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
                   ref={termRef}
                   session={sessionRef.current}
                   onCommandComplete={onCommandComplete}
-                  onOpenEditor={(fileArg) => setEditorFile(fileArg)}
+                  onOpenEditor={bashWorld ? (fileArg) => setEditorFile(fileArg) : undefined}
                   onActivity={() => setInteracted(true)}
+                  promptMode={spec.engine === "powershell" ? "ps" : "bash"}
+                  label={
+                    spec.engine === "powershell"
+                      ? "labuser@WIN-LAB04 — Windows PowerShell 5.1"
+                      : spec.engine === "shell-macos"
+                        ? "analyst@mac"
+                        : "analyst@workstation"
+                  }
                 />
               </div>
               {editorFile && (
@@ -742,11 +960,32 @@ export default function LabPlayer({ spec, seed, epoch, expectations }: LabPlayer
                   }}
                 />
               )}
+              {spec.engine === "api" && <ApiInspector exchange={apiRef.current?.last() ?? null} />}
             </>
           )}
+
+          {kind === "console" && consoleRef.current && (
+            <EditorConsole
+              key={termEpoch}
+              engineId={spec.engine as ConsoleEngineId}
+              flavor={spec.console?.flavor}
+              host={consoleRef.current}
+              runLabel={spec.console?.run_label}
+              onRan={onCommandComplete}
+            />
+          )}
+
+          {kind === "builder" && builderRef.current && (
+            <BuilderSurface key={termEpoch} host={builderRef.current} spec={spec} onChanged={onCommandComplete} />
+          )}
+
           <p className="mt-3 text-xs text-ink-dim">
-            This simulated machine runs the same seed files and tools the real capture container ran. Output is
-            verified against reality, never invented. Paste works; there are no run-it-for-me buttons on purpose.
+            {kind === "terminal" &&
+              "This simulated machine runs the same seed files and tools the real capture container ran. Output is verified against reality, never invented. Paste works; there are no run-it-for-me buttons on purpose."}
+            {kind === "console" &&
+              "This is the real engine, compiled to WebAssembly and served from this site — your code genuinely runs. Output is the engine's own, never invented."}
+            {kind === "builder" &&
+              "Every verdict here comes from the module's own validator, ported byte-for-byte from the repo's lab checks — the UI never re-implements a check."}
           </p>
         </section>
       </div>

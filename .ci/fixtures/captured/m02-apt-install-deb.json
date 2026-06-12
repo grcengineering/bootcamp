@@ -1,0 +1,39 @@
+{
+  "id": "m02-apt-install-deb",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "echo labpass | sudo -S apt install -y ./evidence-collector_1.0.0_all.deb",
+  "sim_equiv": {
+    "cmd": "sudo apt install -y ./evidence-collector_1.0.0_all.deb",
+    "dialogue": [
+      "labpass"
+    ]
+  },
+  "pipe_context": true,
+  "citation": null,
+  "notes": "real apt transcript for the baked scenario .deb (no network; deterministic for the pinned image)",
+  "holes": null,
+  "post_holes": null,
+  "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  evidence-collector\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 0 B/992 B of archives.\nAfter this operation, 0 B of additional disk space will be used.\nGet:1 /home/grcops/evidence-collector_1.0.0_all.deb evidence-collector all 1.0.0 [992 B]\nSelecting previously unselected package evidence-collector.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 5827 files and directories currently installed.)\r\nPreparing to unpack .../evidence-collector_1.0.0_all.deb ...\r\nUnpacking evidence-collector (1.0.0) ...\r\nSetting up evidence-collector (1.0.0) ...\r\n",
+  "stderr": "[sudo] password for grcops: \nWARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\ndebconf: delaying package configuration, since apt-utils is not installed\n",
+  "exit": 0,
+  "stderr_interactive": "[sudo] password for grcops: \nWARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\ndebconf: delaying package configuration, since apt-utils is not installed\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:59:08.971Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

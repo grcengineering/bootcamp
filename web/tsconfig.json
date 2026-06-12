@@ -7,5 +7,5 @@
     "types": ["astro/client", "bun"]
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "node_modules", "scripts"]
+  "exclude": ["dist", "node_modules", "scripts", "public"]
 }

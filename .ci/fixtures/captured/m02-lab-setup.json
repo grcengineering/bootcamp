@@ -1,0 +1,41 @@
+{
+  "id": "m02-lab-setup",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "lab-setup 02",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": "canon-locked to modules/02-linux-system-fundamentals/labs/setup.sh fixture bytes",
+  "holes": null,
+  "post_holes": null,
+  "stdout": "lab02 fixtures written to /home/grcops/lab02-fixtures/ (sshd_config, id-grcops.txt, id-intern.txt)\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "cat lab02-fixtures/id-grcops.txt",
+      "stdout": "uid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:12:17.038Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

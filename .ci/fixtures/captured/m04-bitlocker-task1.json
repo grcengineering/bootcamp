@@ -1,0 +1,25 @@
+{
+  "id": "m04-bitlocker-task1",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus",
+  "tty_equiv": null,
+  "citation": "module 04 §6 lab task 1 invocation; cmdlet surface per Microsoft Learn Get-BitLockerVolume (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume); layout rule-derived from the same Format-Table defaults the §5.1 byte canon pins (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/format-table)",
+  "notes": null,
+  "stdout": "MountPoint VolumeStatus\n---------- ------------\nC:         FullyEncrypted\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

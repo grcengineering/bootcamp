@@ -1,0 +1,46 @@
+{
+  "id": "m02-harden-tee",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [
+    "echo labpass | sudo -S true"
+  ],
+  "cmd": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config",
+  "sim_equiv": {
+    "cmd": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config",
+    "dialogue": []
+  },
+  "pipe_context": false,
+  "citation": null,
+  "notes": "the no-root-redirect idiom — sudo cache primed first so the pipe carries data, not a password",
+  "holes": null,
+  "post_holes": null,
+  "stdout": "PasswordAuthentication no\nPermitRootLogin no\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "sudo tail -2 /etc/ssh/sshd_config",
+      "stdout": "PasswordAuthentication no\nPermitRootLogin no\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:16:23.430Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

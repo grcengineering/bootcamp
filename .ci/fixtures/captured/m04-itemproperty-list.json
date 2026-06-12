@@ -1,0 +1,25 @@
+{
+  "id": "m04-itemproperty-list",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-ItemProperty (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty) — documented list output with PSPath/PSParentPath/PSChildName/PSDrive/PSProvider note properties of the registry provider",
+  "notes": null,
+  "stdout": "ScreenSaveTimeOut : 600\nPSPath            : Microsoft.PowerShell.Core\\Registry::HKEY_CURRENT_USER\\Control Panel\\Desktop\nPSParentPath      : Microsoft.PowerShell.Core\\Registry::HKEY_CURRENT_USER\\Control Panel\nPSChildName       : Desktop\nPSDrive           : HKCU\nPSProvider        : Microsoft.PowerShell.Core\\Registry\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

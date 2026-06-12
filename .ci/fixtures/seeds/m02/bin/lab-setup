@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Lab provisioning tool (module 02 §6 setup). The fixture bytes are canon-locked to
+# modules/02-linux-system-fundamentals/labs/setup.sh — a CI drift check asserts equality.
+set -euo pipefail
+case "${1:-}" in
+  02)
+    DEST="$HOME/lab02-fixtures"
+    mkdir -p "$DEST"
+    cat > "$DEST/sshd_config" <<'CFG'
+# Managed sshd_config — host web-01 (evidence snapshot)
+Port 22
+#PasswordAuthentication yes        ← decoy: commented, MUST be ignored
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+CFG
+    cat > "$DEST/id-grcops.txt" <<'IDOUT'
+uid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)
+IDOUT
+    cat > "$DEST/id-intern.txt" <<'IDOUT'
+uid=1002(intern) gid=1002(intern) groups=1002(intern)
+IDOUT
+    echo "lab02 fixtures written to $DEST/ (sshd_config, id-grcops.txt, id-intern.txt)"
+    ;;
+  *)
+    echo "usage: lab-setup <module-number>" >&2
+    exit 1
+    ;;
+esac

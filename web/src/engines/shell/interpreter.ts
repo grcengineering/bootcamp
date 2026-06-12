@@ -54,7 +54,13 @@ export const BUDGET_EXIT = 124;
 export const SIM_BOUNDARY_EXIT = 64;
 
 export class PendingStdinSignal extends Error {
-  constructor(public echoCat: boolean) {
+  /**
+   * `lines`: dialogue mode (module-02 admin-ext) — the session auto-resumes after exactly N
+   * input lines instead of waiting for EOF, re-running the line with the collected stdin
+   * (the resumed impl sees Machine.dialogueResume and skips re-emitting prompts).
+   * `prompts[i]`: stderr prompt to emit after the i-th line is collected (multi-step dialogues).
+   */
+  constructor(public echoCat: boolean, public lines?: number, public prompts?: string[]) {
     super("pending stdin");
   }
 }
@@ -107,6 +113,8 @@ export class Machine {
   currentLine = "";
   interactive = false;
   emittedAnything = false;
+  /** True while a line is re-run with dialogue-collected stdin (prompts already shown). */
+  dialogueResume = false;
   /** commands completed during the current exec() — pending stdin only allowed at 0 */
   execCount = 0;
   steps = 0;

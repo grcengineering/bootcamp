@@ -11,10 +11,11 @@
  * through the public exec/feedStdin contract when the extension isn't there.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ShellSession } from "../../engines/shell/types";
+import { isThenable, type LabSession } from "./sessions/types";
 
 interface EditorPanelProps {
-  session: ShellSession;
+  /** Any bash-world terminal session (shell, api wrapper, git wrapper). */
+  session: LabSession;
   /** The filename exactly as typed after `nano ` (may be relative). */
   fileArg: string;
   /** Called when the editor closes; `wrote` is true if the buffer was saved at least once. */
@@ -22,7 +23,7 @@ interface EditorPanelProps {
 }
 
 /** Resolve a nano argument against the session's cwd (parsed from the prompt — public API only). */
-export function resolveEditorPath(fileArg: string, session: ShellSession): string {
+export function resolveEditorPath(fileArg: string, session: LabSession): string {
   if (fileArg.startsWith("/") || fileArg.startsWith("~")) return fileArg;
   const p = session.prompt();
   const m = p.match(/:([^$]*)\$\s*$/) ?? p.match(/ ([^ %]*) %\s*$/);
@@ -32,7 +33,7 @@ export function resolveEditorPath(fileArg: string, session: ShellSession): strin
 
 const HEREDOC_EOF = "__GRCB_NANO_EOF__";
 
-function writeViaSession(session: ShellSession, path: string, content: string, fileArg: string): boolean {
+function writeViaSession(session: LabSession, path: string, content: string, fileArg: string): boolean {
   const ext = session as unknown as {
     writeFileAs?: (path: string, content: string, producedBy: string) => void;
   };
@@ -40,16 +41,21 @@ function writeViaSession(session: ShellSession, path: string, content: string, f
     ext.writeFileAs(path, content, `nano ${fileArg}`);
     return true;
   }
-  // Contract-only fallback: heredoc through exec/feedStdin (provenance becomes the cat line).
+  // Contract-only fallback: heredoc through exec/feedStdin (provenance becomes the cat
+  // line). Async sessions all provide writeFileAs, so a thenable here is a bail-out.
   let r = session.exec(`cat > ${path} << '${HEREDOC_EOF}'`);
+  if (isThenable(r)) return false;
   if (r.state !== "pending") return false;
   for (const line of content.replace(/\n$/, "").split("\n")) {
-    r = session.feedStdin(line + "\n");
+    const fed = session.feedStdin(line + "\n");
+    if (isThenable(fed)) return false;
+    r = fed;
     if (r.state === "done") return false; // engine closed early — bail honestly
   }
-  r = session.feedStdin(HEREDOC_EOF + "\n");
-  if (r.state === "pending") session.interrupt();
-  return r.state === "done";
+  const closed = session.feedStdin(HEREDOC_EOF + "\n");
+  if (isThenable(closed)) return false;
+  if (closed.state === "pending") session.interrupt();
+  return closed.state === "done";
 }
 
 export default function EditorPanel({ session, fileArg, onClose }: EditorPanelProps) {

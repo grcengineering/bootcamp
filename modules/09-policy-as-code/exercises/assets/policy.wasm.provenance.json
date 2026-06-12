@@ -1,0 +1,17 @@
+{
+  "artifact": "policy.wasm",
+  "sha256": "a55b7f8bb557cf21598ce8fc96749158fd83894c370da0bf9b8c66869287f7eb",
+  "source_policy": "modules/09-policy-as-code/labs/fixtures/policy.rego",
+  "source_sha256": "47d51b823d52402f344401c11bef0748259345b9e2bd84de9684563e6a17bbf5",
+  "compiler": {
+    "tool": "opa build -t wasm -e access/deny",
+    "opa_version": "1.17.1",
+    "rego_version": "v1",
+    "image": "openpolicyagent/opa@sha256:c29f8ee8dbe66608a1c04e9be84b04efc46877625e6b0877e559954565209efc",
+    "image_tag": "openpolicyagent/opa:latest-static",
+    "platform": "linux/arm64"
+  },
+  "entrypoints": { "access/deny": 0 },
+  "built_at": "2026-06-12",
+  "notes": "Precompiled Rego for in-browser evaluation via @open-policy-agent/opa-wasm (web ISA ISC-71: opa-wasm cannot compile learner source in-browser; exercises mutate input JSON against this fixed policy). Rebuild: docker run --rm -v $(pwd):/src openpolicyagent/opa:latest-static build -t wasm -e access/deny -o /src/bundle.tar.gz /src/policy.rego && tar xzf bundle.tar.gz /policy.wasm. Smoke-tested at build: {action:grantRole, resource:{role:legacy-admin}} -> deny non-empty; {action:revokeRole, ...} -> deny empty (matches labs/fixtures/check.sh semantics)."
+}

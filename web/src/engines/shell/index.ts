@@ -32,13 +32,20 @@ import { UnexpectedEof } from "./lexer";
 import { UnboundVarError, VarAssertError, NoGlobMatchError } from "./expand";
 import { BUILTINS } from "./builtins";
 import { INSTALLED_COMMANDS, MACOS_EXTRA_COMMANDS } from "./installed";
+import { registerCurl, attachAcmeRouter } from "./curl-ext";
+import { registerAdminCommands, attachAdminLab, ADMIN_EXTRA_COMMANDS } from "./admin-ext";
 
 export type * from "./types";
+
+// curl dispatch entry (reachable only on apiLab boxes — see buildVfs; web ISA ISC-78)
+registerCurl();
+// module-02 admin family (reachable only on adminLab boxes — see buildVfs; web ISA ISC-60)
+registerAdminCommands();
 
 const DEFAULT_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
 type Pending =
-  | { kind: "stdin"; line: string; chunks: string[]; echoCat: boolean }
+  | { kind: "stdin"; line: string; chunks: string[]; echoCat: boolean; lines?: number; prompts?: string[] }
   | { kind: "continuation"; src: string; heredocDelim: string | null };
 
 interface EngineVfsBlob {
@@ -102,6 +109,11 @@ class ShellSessionImpl implements ShellSession {
       });
     }
     this.historyCursor = this.m.history.length;
+    // module-06 lab box: attach the mock vendor router on this machine's sim clock
+    // (fresh on restore too — tokens/rate window are short-lived per-session state)
+    if (opts.apiLab) attachAcmeRouter(this.m, { rateLimit: opts.apiLab.rateLimit });
+    // module-02 lab box: attach the Linux-admin system model (units/journal/users/apt)
+    if (opts.adminLab) attachAdminLab(this.m, opts.adminLab);
   }
 
   prompt(): string {
@@ -175,7 +187,7 @@ class ShellSessionImpl implements ShellSession {
       exit = m.runList(list, io);
     } catch (e) {
       if (e instanceof PendingStdinSignal) {
-        this.pending = { kind: "stdin", line: src, chunks: [], echoCat: e.echoCat };
+        this.pending = { kind: "stdin", line: src, chunks: [], echoCat: e.echoCat, lines: e.lines, prompts: e.prompts };
         return { state: "pending", events };
       }
       if (e instanceof ScriptExitSignal) {
@@ -202,8 +214,23 @@ class ShellSessionImpl implements ShellSession {
     if (p === null) return { state: "done", events: [], exit: this.m.lastExit };
     if (p.kind === "stdin") {
       p.chunks.push(text);
+      // dialogue mode (admin-ext): auto-resume once the declared line count is collected;
+      // the impl sees dialogueResume and skips re-emitting prompts it already showed
+      if (p.lines !== undefined && p.chunks.length >= p.lines) {
+        this.pending = null;
+        this.m.dialogueResume = true;
+        try {
+          return this.runLine(p.line, p.chunks.join(""), false);
+        } finally {
+          this.m.dialogueResume = false;
+        }
+      }
       // bare interactive `cat` echoes input back as it arrives
       const events: ExecEvent[] = p.echoCat ? [{ stream: "stdout", text }] : [];
+      // multi-step dialogue: emit the next prompt after this line
+      if (p.prompts && p.prompts[p.chunks.length] !== undefined) {
+        events.push({ stream: "stderr", text: p.prompts[p.chunks.length]! });
+      }
       return { state: "pending", events };
     }
     // continuation: accumulate source until it parses
@@ -231,6 +258,15 @@ class ShellSessionImpl implements ShellSession {
         // output already echoed incrementally; EOF just finishes with status 0
         this.m.lastExit = 0;
         return { state: "done", events: [], exit: 0 };
+      }
+      if (p.lines !== undefined) {
+        // dialogue cut short by Ctrl+D: resume with whatever was collected (impl handles EOF)
+        this.m.dialogueResume = true;
+        try {
+          return this.runLine(p.line, p.chunks.join(""), false);
+        } finally {
+          this.m.dialogueResume = false;
+        }
       }
       return this.runLine(p.line, p.chunks.join(""), false);
     }
@@ -477,6 +513,8 @@ function buildVfs(opts: ShellSessionOptions): VFS {
   // simulated binaries (declared installed set, ISC-120) live at /usr/bin
   const usrBin = vfs.lookup("/usr/bin")!;
   const names = [...INSTALLED_COMMANDS, ...(opts.variant === "zsh-macos" ? MACOS_EXTRA_COMMANDS : [])];
+  if (opts.apiLab) names.push("curl"); // the m06 lab box ships curl (web ISA ISC-78)
+  if (opts.adminLab) names.push(...ADMIN_EXTRA_COMMANDS); // the m02 booted box (web ISA ISC-60)
   for (const name of names) {
     usrBin.children!.set(name, {
       t: "file",
@@ -499,15 +537,20 @@ function seedInto(vfs: VFS, seed: SeedSpec, opts: ShellSessionOptions): void {
   for (const f of seed.files) {
     const abs = normalize(f.path, opts.home, opts.home);
     if (f.dir === true) {
-      vfs.mkdir(abs, { parents: true, owner: opts.user, now: epochMs });
+      vfs.mkdir(abs, { parents: true, owner: f.owner ?? opts.user, now: epochMs });
       const node = vfs.lookup(abs)!;
       if (f.mode !== undefined) node.mode = f.mode;
+      if (f.owner !== undefined) { node.owner = f.owner; node.group = f.group ?? f.owner; }
+      else if (f.group !== undefined) node.group = f.group;
+      if (f.mtimeMs !== undefined) node.mtime = f.mtimeMs;
       continue;
     }
     vfs.mkdir(abs.slice(0, abs.lastIndexOf("/")) || "/", { parents: true, owner: opts.user, now: epochMs });
-    vfs.writeFile(abs, f.content ?? "", { owner: opts.user, now: epochMs, mode: f.mode ?? 0o644 });
+    vfs.writeFile(abs, f.content ?? "", { owner: f.owner ?? opts.user, now: epochMs, mode: f.mode ?? 0o644 });
     const node = vfs.lookup(abs)!;
-    node.mtime = epochMs;
+    node.mtime = f.mtimeMs ?? epochMs;
+    if (f.owner !== undefined) { node.owner = f.owner; node.group = f.group ?? f.owner; }
+    else if (f.group !== undefined) node.group = f.group;
   }
   for (const [name, source] of Object.entries(seed.tools)) {
     vfs.writeFile(`/usr/local/bin/${name}`, source, { owner: "root", now: epochMs, mode: 0o755 });

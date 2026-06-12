@@ -1,0 +1,43 @@
+{
+  "id": "m02-ssh-hostkey-ask",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "ssh grcops@web-01 true < /dev/null",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": "default StrictHostKeyChecking asks; with stdin closed the answer is empty → verification fails. Pins the authenticity-prompt wording the sim's interactive dialogue replays.",
+  "holes": [
+    {
+      "name": "fingerprint",
+      "find": "SHA256:[A-Za-z0-9+/]{43}",
+      "pattern": "SHA256:[A-Za-z0-9+/]{43}",
+      "source": "key entropy (sim derives from structured session entropy)"
+    }
+  ],
+  "post_holes": null,
+  "stdout": "",
+  "stderr": "Host key verification failed.\r\n",
+  "exit": 255,
+  "stderr_interactive": "Host key verification failed.\r\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:18:07.142Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "fingerprint"
+    ]
+  }
+}

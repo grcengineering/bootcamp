@@ -1,0 +1,795 @@
+{
+  "meta": {
+    "captured_at": "2026-06-12T15:42:40.964Z",
+    "method": "web/scripts/capture-builder-fixtures.ts — real `bash`/`bun` runs of the committed lab validators",
+    "sources": "modules/{00,08,10,11,12,13,14,15}-*/labs/",
+    "platform": "darwin bash=$(bash --version | head -1)"
+  },
+  "m00": {
+    "seed": {
+      "legacy-vs-engineered-laptop-encryption.md": "# Legacy-vs-Engineered Analysis: Laptop Encryption\n\n## Control as a claim\nClaim: Every employee laptop has full-disk encryption enabled.\nTruth lives today in: the MDM device API (per-device encryption status), reachable right now.\n\n## Five-problem scorecard (legacy)\n- Manual toil, trivial output: an analyst collects a handful of encryption screenshots each quarter.\n- Transactional relationship: IT is chased for evidence near audit time, treated as an evidence source.\n- Whack-a-mole: a single drifted laptop is fixed once it is noticed, not the enrollment gap that caused it.\n- Closed-framework focus: effort optimizes the SOC 2 binder wording rather than actual fleet encryption.\n- Commoditized compliance: prior \"automation\" just emailed one screenshot faster, adding no assurance.\n\n## Legacy arrow\nVerified today as framework -> controls -> implementation -> evidence -> audit: reality is consulted\nLAST, by hand, once a quarter, on a small sample.\n\n## Engineered arrow (seven-stage loop)\n- UNDERSTAND: the claim is \"every laptop is encrypted, right now.\"\n- LOCATE: the truth lives in the MDM device API.\n- QUERY: authenticated, fully paginated call listing every enrolled device.\n- EVALUATE: encryption flag == on for every device, expressed as policy-as-code.\n- EVIDENCE: the full API response plus the pass/fail verdict, written to a versioned store.\n- MONITOR: re-run on a schedule; alert the owner when any device flips to non-compliant.\n- OWN: a named owner, with time-to-remediate-drift as the product metric.\n\n## Inversion statement\nReality -> policy: instead of asking the binder whether the fleet complied, we ask the fleet\ncontinuously and let what it reports drive the policy and the proof.\n"
+    },
+    "nonConforming": "# Encryption control\nWe confirm laptops are encrypted by collecting screenshots each quarter for the auditor.\nThat is all we do.\n",
+    "cases": [
+      {
+        "id": "conforming",
+        "argv": [
+          "lab00/legacy-vs-engineered-laptop-encryption.md"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "non-conforming",
+        "argv": [
+          "lab00/non-conforming.md"
+        ],
+        "run": {
+          "stdout": "  missing legacy problem: manual toil\n  missing legacy problem: transactional\n  missing legacy problem: whack-a-mole\n  missing legacy problem: closed-framework\n  missing legacy problem: commoditized\n  missing loop stage: UNDERSTAND\n  missing loop stage: LOCATE\n  missing loop stage: QUERY\n  missing loop stage: EVALUATE\n  missing loop stage: EVIDENCE\n  missing loop stage: MONITOR\n  missing loop stage: OWN\n  missing reality->policy inversion statement\n",
+          "stderr": "",
+          "exit": 1
+        }
+      }
+    ]
+  },
+  "m08": {
+    "seed": {
+      "checkov-compliant.json": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": []\n  },\n  \"summary\": {\n    \"passed\": 4,\n    \"failed\": 0,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n",
+      "checkov-noncompliant.json": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_19\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [6, 9],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_20\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_21\"\n      }\n    ]\n  },\n  \"summary\": {\n    \"passed\": 1,\n    \"failed\": 3,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n",
+      "control-map.csv": "check_id,control_id,control_title,fail_severity_floor\nCKV_AWS_18,AU-9,Protection of Audit Information,HIGH\nCKV_AWS_19,SC-28,Protection of Information at Rest,HIGH\nCKV_AWS_20,AC-3,Access Enforcement,HIGH\nCKV_AWS_21,CP-9,System Backup,HIGH\n",
+      "gate.sh": "#!/usr/bin/env bash\n# gate.sh — the CORE LOGIC of the §6 lab, isolated for testing.\n#\n# Reads a Checkov-shaped JSON scan result and a control map, applies a severity\n# floor, maps every failed check to the control it enforces, decides PASS/FAIL,\n# and emits a machine- and auditor-readable evidence record on stdout.\n#\n# This is the EVALUATE step of the loop expressed as code. It is deliberately\n# free of network, cloud, and scanner dependencies: it consumes a scan result\n# that some scanner already produced. In the real pipeline the scanner runs\n# first; here we prove the gate decision against committed fixtures.\n#\n# Usage:   gate.sh <checkov-result.json> <control-map.csv> [severity-floor]\n# Default severity-floor: HIGH\n# Exit:    0 = control set PASSES (build proceeds)\n#          1 = control set FAILS  (build blocked)\n#          2 = usage / input error\n#\n# Dependencies: bash + coreutils + awk only. No jq, no network.\nset -euo pipefail\n\nRESULT=\"${1:-}\"\nCONTROL_MAP=\"${2:-}\"\nFLOOR=\"${3:-HIGH}\"\n\nif [ -z \"$RESULT\" ] || [ -z \"$CONTROL_MAP\" ]; then\n  echo \"usage: gate.sh <checkov-result.json> <control-map.csv> [severity-floor]\" >&2\n  exit 2\nfi\n[ -f \"$RESULT\" ]      || { echo \"ERROR: scan result not found: $RESULT\" >&2; exit 2; }\n[ -f \"$CONTROL_MAP\" ] || { echo \"ERROR: control map not found: $CONTROL_MAP\" >&2; exit 2; }\n\n# Rank severities so the floor is a numeric comparison, not a string match.\nsev_rank() {\n  case \"$1\" in\n    CRITICAL) echo 4 ;;\n    HIGH)     echo 3 ;;\n    MEDIUM)   echo 2 ;;\n    LOW)      echo 1 ;;\n    *)        echo 0 ;;\n  esac\n}\nFLOOR_RANK=\"$(sev_rank \"$FLOOR\")\"\n[ \"$FLOOR_RANK\" -gt 0 ] || { echo \"ERROR: unknown severity floor: $FLOOR\" >&2; exit 2; }\n\n# Extract failed checks from the JSON. We do NOT require jq: the relevant fields\n# (check_id, check_name, severity) appear as quoted \"key\": \"value\" pairs, and\n# every failed check is an object inside the \"failed_checks\" array. A single awk\n# pass tracks bracket/brace depth so it isolates exactly the failed_checks array\n# (correctly stepping over nested arrays like \"file_line_range\": [1, 4]), then\n# emits one tab-separated record per object: check_id, severity, check_name.\n#\n# This is a pragmatic parser for THIS well-formed, machine-generated shape, not\n# a general JSON parser. The real lab pipes real scanner output through jq; the\n# fixture parser keeps the happy path dependency-free.\nextract_failed() {\n  awk '\n    BEGIN { instr = 0; arm = 0; depth = 0; arraydepth = 0; objbuf = \"\" }\n    {\n      line = $0\n      # If this line names the failed_checks key, arm so the next \"[\" opens\n      # our array. The \"[\" can be on the same line, so arm before scanning.\n      if (line ~ /\"failed_checks\"[ \\t]*:/) arm = 1\n      n = length(line)\n      for (i = 1; i <= n; i++) {\n        c = substr(line, i, 1)\n        prev = (i > 1) ? substr(line, i-1, 1) : \"\"\n        # String-literal tracking so structural chars inside strings dont count.\n        if (c == \"\\\"\" && prev != \"\\\\\") { instr = !instr }\n\n        # Buffer EVERY char while we are inside a top-level object of the array,\n        # including string content (we need the field values).\n        if (collecting) objbuf = objbuf c\n\n        if (instr) continue   # only structure decisions below ignore strings\n\n        if (c == \"[\") {\n          depth++\n          if (arm == 1) { arraydepth = depth; arm = 0 }\n        } else if (c == \"]\") {\n          if (arraydepth && depth == arraydepth) arraydepth = 0\n          depth--\n        } else if (c == \"{\") {\n          if (arraydepth && depth == arraydepth && !collecting) {\n            collecting = 1; objbuf = \"{\"; objlevel = 0\n          }\n          if (collecting) objlevel++\n        } else if (c == \"}\") {\n          if (collecting) {\n            objlevel--\n            if (objlevel == 0) {\n              cid = field(objbuf, \"check_id\")\n              sev = field(objbuf, \"severity\")\n              nm  = field(objbuf, \"check_name\")\n              if (cid != \"\") {\n                if (sev == \"\") sev = \"UNKNOWN\"\n                if (nm  == \"\") nm  = \"unknown\"\n                printf \"%s\\t%s\\t%s\\n\", cid, sev, nm\n              }\n              collecting = 0; objbuf = \"\"\n            }\n          }\n        }\n      }\n      if (collecting) objbuf = objbuf \"\\n\"\n    }\n    function field(s, key,   re, m) {\n      re = \"\\\"\" key \"\\\"[ \\t]*:[ \\t]*\\\"[^\\\"]*\\\"\"\n      if (match(s, re)) {\n        m = substr(s, RSTART, RLENGTH)\n        sub(/^.*:[ \\t]*\"/, \"\", m)\n        sub(/\"$/, \"\", m)\n        return m\n      }\n      return \"\"\n    }\n  ' \"$RESULT\"\n}\n\n# Look a check_id up in the control map; print \"control_id|control_title\" or \"UNMAPPED\".\nmap_control() {\n  awk -F, -v want=\"$1\" '\n    NR == 1 { next }                      # skip header\n    $1 == want { print $2 \"|\" $3; found=1; exit }\n    END { if (!found) print \"UNMAPPED|unmapped check (no control owner)\" }\n  ' \"$CONTROL_MAP\"\n}\n\necho \"=== GRC IaC Gate — evidence record ===\"\necho \"scan_result: $RESULT\"\necho \"control_map: $CONTROL_MAP\"\necho \"severity_floor: $FLOOR\"\necho \"evaluated_at: ${GATE_FAKE_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)}\"\necho \"---\"\n\nBLOCKING=0\nEVALUATED=0\nwhile IFS=$'\\t' read -r cid sev name; do\n  [ -n \"${cid:-}\" ] || continue\n  EVALUATED=$((EVALUATED + 1))\n  rank=\"$(sev_rank \"$sev\")\"\n  mapping=\"$(map_control \"$cid\")\"\n  control_id=\"${mapping%%|*}\"\n  control_title=\"${mapping#*|}\"\n  if [ \"$rank\" -ge \"$FLOOR_RANK\" ]; then\n    verdict=\"BLOCK\"\n    BLOCKING=$((BLOCKING + 1))\n  else\n    verdict=\"below-floor (not blocking)\"\n  fi\n  echo \"FAILED  $cid  [$sev]  -> $control_id ($control_title)  : $verdict\"\n  echo \"        $name\"\ndone < <(extract_failed)\n\necho \"---\"\necho \"failed_checks_evaluated: $EVALUATED\"\necho \"blocking_at_or_above_${FLOOR}: $BLOCKING\"\n\nif [ \"$BLOCKING\" -gt 0 ]; then\n  echo \"GATE_DECISION: FAIL  (build blocked — $BLOCKING control(s) violated at/above $FLOOR)\"\n  exit 1\nfi\n\necho \"GATE_DECISION: PASS  (no violations at/above $FLOOR — build proceeds, evidence emitted)\"\nexit 0\n",
+      "main-compliant.tf": "# Compliant remediation. This is what produces checkov-compliant.json.\n# Encrypted at rest, private ACL, versioning on, access logging configured.\nresource \"aws_s3_bucket\" \"evidence\" {\n  bucket = \"grc-evidence-store\"\n}\n\nresource \"aws_s3_bucket_acl\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  acl    = \"private\"\n}\n\nresource \"aws_s3_bucket_server_side_encryption_configuration\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm = \"aws:kms\"\n    }\n  }\n}\n\nresource \"aws_s3_bucket_versioning\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  versioning_configuration {\n    status = \"Enabled\"\n  }\n}\n\nresource \"aws_s3_bucket_logging\" \"evidence\" {\n  bucket        = aws_s3_bucket.evidence.id\n  target_bucket = \"grc-access-logs\"\n  target_prefix = \"evidence/\"\n}\n",
+      "main-noncompliant.tf": "# Deliberately non-compliant. This is what produces checkov-noncompliant.json.\n# No server-side encryption, public-read ACL, no versioning. Three controls violated.\nresource \"aws_s3_bucket\" \"evidence\" {\n  bucket = \"grc-evidence-store\"\n}\n\nresource \"aws_s3_bucket_acl\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  acl    = \"public-read\"\n}\n"
+    },
+    "cases": [
+      {
+        "id": "noncompliant-HIGH",
+        "argv": [
+          "checkov-noncompliant.json",
+          "control-map.csv",
+          "HIGH"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "=== GRC IaC Gate — evidence record ===\nscan_result: checkov-noncompliant.json\ncontrol_map: control-map.csv\nseverity_floor: HIGH\nevaluated_at: ci\n---\nFAILED  CKV_AWS_19  [HIGH]  -> SC-28 (Protection of Information at Rest)  : BLOCK\n        Ensure all data stored in the S3 bucket is securely encrypted at rest\nFAILED  CKV_AWS_20  [HIGH]  -> AC-3 (Access Enforcement)  : BLOCK\n        Ensure the S3 bucket does not allow public read access\nFAILED  CKV_AWS_21  [MEDIUM]  -> CP-9 (System Backup)  : below-floor (not blocking)\n        Ensure the S3 bucket has versioning enabled\n---\nfailed_checks_evaluated: 3\nblocking_at_or_above_HIGH: 2\nGATE_DECISION: FAIL  (build blocked — 2 control(s) violated at/above HIGH)\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "compliant-HIGH",
+        "argv": [
+          "checkov-compliant.json",
+          "control-map.csv",
+          "HIGH"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "=== GRC IaC Gate — evidence record ===\nscan_result: checkov-compliant.json\ncontrol_map: control-map.csv\nseverity_floor: HIGH\nevaluated_at: ci\n---\n---\nfailed_checks_evaluated: 0\nblocking_at_or_above_HIGH: 0\nGATE_DECISION: PASS  (no violations at/above HIGH — build proceeds, evidence emitted)\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "noncompliant-MEDIUM",
+        "argv": [
+          "checkov-noncompliant.json",
+          "control-map.csv",
+          "MEDIUM"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "=== GRC IaC Gate — evidence record ===\nscan_result: checkov-noncompliant.json\ncontrol_map: control-map.csv\nseverity_floor: MEDIUM\nevaluated_at: ci\n---\nFAILED  CKV_AWS_19  [HIGH]  -> SC-28 (Protection of Information at Rest)  : BLOCK\n        Ensure all data stored in the S3 bucket is securely encrypted at rest\nFAILED  CKV_AWS_20  [HIGH]  -> AC-3 (Access Enforcement)  : BLOCK\n        Ensure the S3 bucket does not allow public read access\nFAILED  CKV_AWS_21  [MEDIUM]  -> CP-9 (System Backup)  : BLOCK\n        Ensure the S3 bucket has versioning enabled\n---\nfailed_checks_evaluated: 3\nblocking_at_or_above_MEDIUM: 3\nGATE_DECISION: FAIL  (build blocked — 3 control(s) violated at/above MEDIUM)\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "noncompliant-default-floor",
+        "argv": [
+          "checkov-noncompliant.json",
+          "control-map.csv"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "=== GRC IaC Gate — evidence record ===\nscan_result: checkov-noncompliant.json\ncontrol_map: control-map.csv\nseverity_floor: HIGH\nevaluated_at: ci\n---\nFAILED  CKV_AWS_19  [HIGH]  -> SC-28 (Protection of Information at Rest)  : BLOCK\n        Ensure all data stored in the S3 bucket is securely encrypted at rest\nFAILED  CKV_AWS_20  [HIGH]  -> AC-3 (Access Enforcement)  : BLOCK\n        Ensure the S3 bucket does not allow public read access\nFAILED  CKV_AWS_21  [MEDIUM]  -> CP-9 (System Backup)  : below-floor (not blocking)\n        Ensure the S3 bucket has versioning enabled\n---\nfailed_checks_evaluated: 3\nblocking_at_or_above_HIGH: 2\nGATE_DECISION: FAIL  (build blocked — 2 control(s) violated at/above HIGH)\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "usage-no-args",
+        "argv": [],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "",
+          "stderr": "usage: gate.sh <checkov-result.json> <control-map.csv> [severity-floor]\n",
+          "exit": 2
+        }
+      },
+      {
+        "id": "missing-result-file",
+        "argv": [
+          "nope.json",
+          "control-map.csv"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: scan result not found: nope.json\n",
+          "exit": 2
+        }
+      },
+      {
+        "id": "missing-map-file",
+        "argv": [
+          "checkov-noncompliant.json",
+          "nope.csv"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: control map not found: nope.csv\n",
+          "exit": 2
+        }
+      },
+      {
+        "id": "unknown-floor",
+        "argv": [
+          "checkov-noncompliant.json",
+          "control-map.csv",
+          "BANANA"
+        ],
+        "env": {
+          "GATE_FAKE_TIME": "ci"
+        },
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: unknown severity floor: BANANA\n",
+          "exit": 2
+        }
+      }
+    ]
+  },
+  "m10": {
+    "seed": {
+      "crosswalk-bad.csv": "profile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,CM-8,broader\nHIPAA,164.312,ZZ-1,exact\n",
+      "crosswalk-badheader.csv": "a,b,c,d\nSOC2,CC6.1,AC-2,broader\n",
+      "crosswalk-badrel.csv": "profile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,CM-8,broader\nSOC2,CC1.1,AC-3,sorta\n",
+      "crosswalk-empty.csv": "profile,profile_control,spine_control,relationship\n",
+      "crosswalk-resolved.csv": "profile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,CM-8,broader\n",
+      "crosswalk.csv": "profile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,,orphan\n",
+      "spine-families.txt": "AC\nAT\nAU\nCA\nCM\nCP\nIA\nIR\nMA\nMP\nPE\nPL\nPM\nPS\nPT\nRA\nSA\nSC\nSI\nSR\n"
+    },
+    "cases": [
+      {
+        "id": "seed-orphan-FAIL",
+        "argv": [
+          "work/crosswalk.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "profiles: 4 | rows: 4 | spine families referenced: 2/20\n",
+          "stderr": "FAIL: 1 orphan(s) — profile requirement maps to no spine control:\n  - PCI4 6.3.2 (relationship=orphan)\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "resolved-PASS",
+        "argv": [
+          "work/crosswalk-resolved.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "profiles: 4 | rows: 4 | spine families referenced: 3/20\nPASS: every profile requirement maps to a real spine family; no orphans; all relationships valid.\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "default-families-path",
+        "argv": [
+          "work/crosswalk-resolved.csv"
+        ],
+        "run": {
+          "stdout": "profiles: 4 | rows: 4 | spine families referenced: 3/20\nPASS: every profile requirement maps to a real spine family; no orphans; all relationships valid.\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "unknown-family-FAIL",
+        "argv": [
+          "work/crosswalk-bad.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "profiles: 5 | rows: 5 | spine families referenced: 3/20\n",
+          "stderr": "FAIL: 1 row(s) map to a non-spine family:\n  - HIPAA 164.312 -> 'ZZ-1' (family 'ZZ' not in spine)\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "bad-relationship-FAIL",
+        "argv": [
+          "work/crosswalk-badrel.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "profiles: 4 | rows: 5 | spine families referenced: 3/20\n",
+          "stderr": "FAIL: 1 row(s) carry an invalid relationship label:\n  - SOC2 CC1.1 -> 'AC-3' has relationship 'sorta' (allowed: exact|broader|narrower|partial)\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "no-data-rows",
+        "argv": [
+          "work/crosswalk-empty.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: crosswalk has no data rows\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "bad-header",
+        "argv": [
+          "work/crosswalk-badheader.csv",
+          "work/spine-families.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: header must be 'profile,profile_control,spine_control,relationship', got 'a,b,c,d'\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "usage",
+        "argv": [],
+        "run": {
+          "stdout": "",
+          "stderr": "usage: validate-crosswalk.ts <crosswalk.csv> [spine-families.txt]\n",
+          "exit": 1
+        }
+      }
+    ]
+  },
+  "m11": {
+    "seed": {
+      "controls-in-scope.txt": "# The controls the team actually RUNS (Module 11 lab fixture).\n# One control identifier per line. These are the RIGHT column — every control here costs real\n# effort to operate, so every one must earn its place by mapping to a prioritized threat (§4.4).\n# The validator asserts that each in-scope control appears on at least one coverage-map line to a\n# prioritized threat; a control here that maps to nothing is the ZERO-THREAT defect (§4.4/§4.5).\nCTRL-MFA-01\nCTRL-ACCESS-REVIEW-02\nCTRL-BUCKET-ENC-03\nCTRL-DLP-AGENT-04\n",
+      "controls-resolved.txt": "# The controls the team actually RUNS (Module 11 lab fixture).\n# One control identifier per line. These are the RIGHT column — every control here costs real\n# effort to operate, so every one must earn its place by mapping to a prioritized threat (§4.4).\n# The validator asserts that each in-scope control appears on at least one coverage-map line to a\n# prioritized threat; a control here that maps to nothing is the ZERO-THREAT defect (§4.4/§4.5).\nCTRL-MFA-01\nCTRL-ACCESS-REVIEW-02\nCTRL-BUCKET-ENC-03\nCTRL-BACKUP-RESTORE-05\n",
+      "coverage-map-bad.csv": "threat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,detects\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\nT-1110,Brute-force of credentials,CTRL-MFA-01,eliminates-totally\n",
+      "coverage-map-badheader.csv": "a,b,c,d\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\n",
+      "coverage-map-empty.csv": "threat_id,threat_name,control_id,mitigation\n",
+      "coverage-map-resolved.csv": "threat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,detects\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\n",
+      "coverage-map-unknown.csv": "threat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,detects\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\nT-9999,Invented threat,CTRL-MFA-01,partial\n",
+      "coverage-map.csv": "threat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,,\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\n",
+      "prioritized-threats.txt": "# The team's OWNED top-threat list for a SaaS environment (Module 11 lab fixture).\n# One stable threat identifier per line. These are the LEFT column of the coverage map —\n# the handful of techniques the team decided it actually faces (§4.2). Comments and blank\n# lines are ignored by the validator. Identifiers are illustrative, modeled on a public\n# adversary-technique taxonomy; a real list cites the official current numbering.\nT-1566\nT-1078\nT-1530\nT-1486\nT-1110\n",
+      "validate-coverage.ts": "#!/usr/bin/env bun\n// Module 11 threat->control coverage-map validator (original lab asset).\n// Asserts the GRC-relevant core logic of threat-informed control evaluation:\n//   1. COVERAGE GAP: every prioritized threat maps to at least one control. A prioritized threat\n//      with no mapped control fails the build — it is a threat you face with nothing run against it.\n//   2. ZERO-THREAT CONTROL: every in-scope control appears on at least one map line to a\n//      prioritized threat. A control that mitigates none of the prioritized threats fails the\n//      build — it is unpriced toil and a candidate for removal/downgrade (§4.4/§4.5). This is the\n//      defect frameworks are blind to, because they never ask you to remove a control.\n//   3. HONEST MITIGATION LABEL: every mapped row carries a mitigation strength from the allowed\n//      vocabulary (prevents|detects|partial), forcing a deliberate honesty call instead of a\n//      default claim of full mitigation (the false-confidence defect).\n//\n// Usage: bun validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]\n// Exit 0 = verified (no gaps, no zero-threat controls, all rows honest); non-zero = FAIL w/ defects.\n//\n// Deliberately schema-light and dependency-free, mirroring Module 10's crosswalk validator: this\n// flat CSV is the artifact the capstone (Module 15) expects per control.\n\nimport { readFileSync, existsSync } from \"node:fs\";\nimport { dirname, join } from \"node:path\";\n\nconst ALLOWED_MITIGATIONS = new Set([\"prevents\", \"detects\", \"partial\"]);\n\nfunction fail(msg: string): never {\n  console.error(msg);\n  process.exit(1);\n}\n\nfunction readList(path: string): Set<string> {\n  return new Set(\n    readFileSync(path, \"utf8\")\n      .split(\"\\n\")\n      .map((l) => l.replace(/#.*$/, \"\").trim())\n      .filter((l) => l.length > 0),\n  );\n}\n\nconst csvPath = process.argv[2];\nif (!csvPath) {\n  fail(\"usage: validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]\");\n}\n\nconst threatsPath = process.argv[3] ?? join(dirname(csvPath), \"prioritized-threats.txt\");\nconst controlsPath = process.argv[4] ?? join(dirname(csvPath), \"controls-in-scope.txt\");\n\nif (!existsSync(threatsPath)) fail(`FAIL: prioritized-threats file not found: ${threatsPath}`);\nif (!existsSync(controlsPath)) fail(`FAIL: controls-in-scope file not found: ${controlsPath}`);\n\nconst prioritizedThreats = readList(threatsPath);\nconst inScopeControls = readList(controlsPath);\n\nconst lines = readFileSync(csvPath, \"utf8\")\n  .split(\"\\n\")\n  .map((l) => l.trim())\n  .filter((l) => l.length > 0);\n\nif (lines.length < 2) fail(\"FAIL: coverage map has no data rows\");\n\nconst header = lines[0].split(\",\").map((c) => c.trim());\nconst expected = [\"threat_id\", \"threat_name\", \"control_id\", \"mitigation\"];\nif (header.join(\",\") !== expected.join(\",\")) {\n  fail(`FAIL: header must be '${expected.join(\",\")}', got '${header.join(\",\")}'`);\n}\n\n// Threats that have at least one real control line, and controls that touch at least one\n// prioritized threat. We build both so we can report BOTH defects in one pass.\nconst threatsWithControl = new Set<string>();\nconst controlsThatMitigateSomething = new Set<string>();\nconst badMitigation: string[] = [];\nconst unknownThreat: string[] = [];\nlet dataRows = 0;\n\nfor (let i = 1; i < lines.length; i++) {\n  const [threatId, , controlId, mitigation] = lines[i].split(\",\").map((c) => c.trim());\n  dataRows++;\n\n  // A row with no control is just a placeholder for a known gap — record nothing, the gap check\n  // below will catch the threat if it is prioritized.\n  if (controlId === \"\") continue;\n\n  // The threat on this line must be one the team actually prioritized; a line to a non-prioritized\n  // threat is noise that can hide a zero-threat control behind a phantom mapping.\n  if (!prioritizedThreats.has(threatId)) {\n    unknownThreat.push(`${controlId} -> '${threatId}' (threat is not on the prioritized list)`);\n    continue;\n  }\n\n  threatsWithControl.add(threatId);\n  controlsThatMitigateSomething.add(controlId);\n\n  if (!ALLOWED_MITIGATIONS.has(mitigation)) {\n    badMitigation.push(\n      `${threatId} -> ${controlId} has mitigation '${mitigation || \"missing\"}' (allowed: prevents|detects|partial)`,\n    );\n  }\n}\n\n// DEFECT 1 — coverage gaps: prioritized threats with no mapped control.\nconst coverageGaps = [...prioritizedThreats].filter((t) => !threatsWithControl.has(t)).sort();\n\n// DEFECT 2 — zero-threat controls: in-scope controls that map to no prioritized threat.\nconst zeroThreatControls = [...inScopeControls]\n  .filter((c) => !controlsThatMitigateSomething.has(c))\n  .sort();\n\nconsole.log(\n  `prioritized threats: ${prioritizedThreats.size} | in-scope controls: ${inScopeControls.size} | map rows: ${dataRows} | threats covered: ${threatsWithControl.size}/${prioritizedThreats.size}`,\n);\n\nlet failed = false;\n\nif (coverageGaps.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${coverageGaps.length} coverage gap(s) — prioritized threat with no mapped control:`);\n  for (const t of coverageGaps) console.error(`  - ${t}`);\n}\n\nif (zeroThreatControls.length > 0) {\n  failed = true;\n  console.error(\n    `FAIL: ${zeroThreatControls.length} zero-threat control(s) — in-scope control mitigates no prioritized threat (kill/downgrade candidate):`,\n  );\n  for (const c of zeroThreatControls) console.error(`  - ${c}`);\n}\n\nif (unknownThreat.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${unknownThreat.length} row(s) map a control to a non-prioritized threat:`);\n  for (const u of unknownThreat) console.error(`  - ${u}`);\n}\n\nif (badMitigation.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${badMitigation.length} row(s) carry an invalid mitigation label:`);\n  for (const b of badMitigation) console.error(`  - ${b}`);\n}\n\nif (failed) {\n  console.error(\"exit: 1\");\n  process.exit(1);\n}\n\nconsole.log(\n  \"PASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid.\",\n);\nprocess.exit(0);\n"
+    },
+    "cases": [
+      {
+        "id": "seed-two-defects-FAIL",
+        "argv": [
+          "work/coverage-map.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-in-scope.txt"
+        ],
+        "run": {
+          "stdout": "prioritized threats: 5 | in-scope controls: 4 | map rows: 6 | threats covered: 4/5\n",
+          "stderr": "FAIL: 1 coverage gap(s) — prioritized threat with no mapped control:\n  - T-1486\nFAIL: 1 zero-threat control(s) — in-scope control mitigates no prioritized threat (kill/downgrade candidate):\n  - CTRL-DLP-AGENT-04\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "resolved-PASS",
+        "argv": [
+          "work/coverage-map-resolved.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-resolved.txt"
+        ],
+        "run": {
+          "stdout": "prioritized threats: 5 | in-scope controls: 4 | map rows: 6 | threats covered: 5/5\nPASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid.\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "default-paths",
+        "argv": [
+          "work/coverage-map.csv"
+        ],
+        "run": {
+          "stdout": "prioritized threats: 5 | in-scope controls: 4 | map rows: 6 | threats covered: 4/5\n",
+          "stderr": "FAIL: 1 coverage gap(s) — prioritized threat with no mapped control:\n  - T-1486\nFAIL: 1 zero-threat control(s) — in-scope control mitigates no prioritized threat (kill/downgrade candidate):\n  - CTRL-DLP-AGENT-04\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "bad-mitigation-FAIL",
+        "argv": [
+          "work/coverage-map-bad.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-resolved.txt"
+        ],
+        "run": {
+          "stdout": "prioritized threats: 5 | in-scope controls: 4 | map rows: 7 | threats covered: 5/5\n",
+          "stderr": "FAIL: 1 row(s) carry an invalid mitigation label:\n  - T-1110 -> CTRL-MFA-01 has mitigation 'eliminates-totally' (allowed: prevents|detects|partial)\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "unknown-threat-FAIL",
+        "argv": [
+          "work/coverage-map-unknown.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-resolved.txt"
+        ],
+        "run": {
+          "stdout": "prioritized threats: 5 | in-scope controls: 4 | map rows: 7 | threats covered: 5/5\n",
+          "stderr": "FAIL: 1 row(s) map a control to a non-prioritized threat:\n  - CTRL-MFA-01 -> 'T-9999' (threat is not on the prioritized list)\nexit: 1\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "no-data-rows",
+        "argv": [
+          "work/coverage-map-empty.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-in-scope.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: coverage map has no data rows\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "bad-header",
+        "argv": [
+          "work/coverage-map-badheader.csv",
+          "work/prioritized-threats.txt",
+          "work/controls-in-scope.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: header must be 'threat_id,threat_name,control_id,mitigation', got 'a,b,c,d'\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "usage",
+        "argv": [],
+        "run": {
+          "stdout": "",
+          "stderr": "usage: validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "threats-file-missing",
+        "argv": [
+          "work/coverage-map.csv",
+          "work/nope.txt",
+          "work/controls-in-scope.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: prioritized-threats file not found: work/nope.txt\n",
+          "exit": 1
+        }
+      },
+      {
+        "id": "controls-file-missing",
+        "argv": [
+          "work/coverage-map.csv",
+          "work/prioritized-threats.txt",
+          "work/nope.txt"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "FAIL: controls-in-scope file not found: work/nope.txt\n",
+          "exit": 1
+        }
+      }
+    ]
+  },
+  "m12": {
+    "seed": {
+      "acme-catalog-broken.json": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine (BROKEN - control id removed)\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+      "acme-catalog.json": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"ac-2\",\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+      "acme-component.json": "{\n  \"component-definition\": {\n    \"uuid\": \"33333333-3333-4333-8333-333333333333\",\n    \"metadata\": {\n      \"title\": \"Acme IAM Service - Control Implementation\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"components\": [\n      {\n        \"uuid\": \"44444444-4444-4444-8444-444444444444\",\n        \"type\": \"service\",\n        \"title\": \"IAM Service\",\n        \"description\": \"The identity and access management service that enforces account-management controls.\",\n        \"control-implementations\": [\n          {\n            \"uuid\": \"55555555-5555-4555-8555-555555555555\",\n            \"source\": \"acme-profile.json\",\n            \"description\": \"Implementation of the SOC 2 - Acme profile by the IAM service.\",\n            \"implemented-requirements\": [\n              {\n                \"uuid\": \"66666666-6666-4666-8666-666666666666\",\n                \"control-id\": \"ac-2\",\n                \"description\": \"Account management is enforced in CI: any change granting the legacy-admin role is denied by policy, and a structured evidence record is emitted on every run.\",\n                \"links\": [\n                  {\n                    \"rel\": \"policy\",\n                    \"href\": \"#policy-ac-2-account-management\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"back-matter\": {\n      \"resources\": [\n        {\n          \"uuid\": \"77777777-7777-4777-8777-777777777777\",\n          \"title\": \"Policy: ac-2-account-management (Module 09 policy-as-code)\",\n          \"props\": [\n            {\n              \"name\": \"policy-id\",\n              \"value\": \"ac-2-account-management\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}\n",
+      "acme-profile-dangling.json": "{\n  \"profile\": {\n    \"uuid\": \"22222222-2222-4222-8222-222222222222\",\n    \"metadata\": {\n      \"title\": \"SOC 2 Security - Acme Profile\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"imports\": [\n      {\n        \"href\": \"acme-catalog.json\",\n        \"include-controls\": [\n          {\n            \"with-ids\": [\n              \"ac-9\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+      "acme-profile.json": "{\n  \"profile\": {\n    \"uuid\": \"22222222-2222-4222-8222-222222222222\",\n    \"metadata\": {\n      \"title\": \"SOC 2 Security - Acme Profile\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"imports\": [\n      {\n        \"href\": \"acme-catalog.json\",\n        \"include-controls\": [\n          {\n            \"with-ids\": [\n              \"ac-2\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+      "not-json.json": "{ nope\n",
+      "validate-oscal.ts": "#!/usr/bin/env bun\n// validate-oscal.ts — the CORE LOGIC of the Module 12 §6 lab, isolated for testing.\n//\n// Reads a minimal OSCAL catalog, profile, and component-definition (JSON) and\n// asserts the load-bearing minimum that makes a compliance-as-code package\n// *machine-real* rather than machine-shaped prose:\n//\n//   1. The catalog carries required metadata and at least one control with a\n//      stable `id` — without an id, nothing can reference the control.\n//   2. The profile imports a catalog and includes only control ids the catalog\n//      actually defines — an include of an undefined id is a DANGLING reference\n//      (the OSCAL form of a Module-10 crosswalk orphan).\n//   3. The component-definition's implemented-requirements name real control\n//      ids, and at least one implemented control carries a RESOLVABLE link to a\n//      policy identifier (the Compliance-to-Policy linkage from Module 09).\n//\n// This is the EVALUATE/EVIDENCE step of the loop expressed as code. It is\n// deliberately free of network, schema-download, and trestle dependencies: a\n// real OSCAL validator (compliance-trestle) checks the full schema; this gate\n// proves the minimum the artifact requires against committed fixtures.\n//\n// Usage:  bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\n// Exit:   0 = the OSCAL set is valid for this module's contract\n//         1 = a required field is missing, a reference dangles, or the policy\n//             link does not resolve (the document is NOT audit-ready)\n//         2 = usage / input error (file missing or not parseable JSON)\n\nconst FAIL = (msg: string, consumer?: string): never => {\n  console.log(`FAIL: ${msg}`);\n  if (consumer) console.log(`  -> ${consumer}`);\n  console.log(\"exit: 1\");\n  process.exit(1);\n};\n\nconst USAGE = (msg: string): never => {\n  console.error(`ERROR: ${msg}`);\n  console.error(\"usage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\");\n  process.exit(2);\n};\n\nasync function loadJson(path: string | undefined): Promise<any> {\n  if (!path) return USAGE(\"missing file argument\");\n  const f = Bun.file(path);\n  if (!(await f.exists())) return USAGE(`file not found: ${path}`);\n  try {\n    return JSON.parse(await f.text());\n  } catch {\n    return USAGE(`file is not valid JSON: ${path}`);\n  }\n}\n\nconst [, , catalogPath, profilePath, componentPath] = process.argv;\n\nconst catalogDoc = await loadJson(catalogPath);\nconst profileDoc = await loadJson(profilePath);\nconst componentDoc = await loadJson(componentPath);\n\n// --- 1. Catalog: required metadata + at least one control with an id. ---\nconst catalog = catalogDoc?.catalog;\nif (!catalog) FAIL('catalog document missing top-level \"catalog\" object',\n  \"an importer that expects an OSCAL catalog cannot read this file at all\");\nif (!catalog.uuid) FAIL('catalog missing required \"uuid\"',\n  \"the document has no stable identity; exchange tools cannot reference this version\");\nconst cm = catalog.metadata;\nif (!cm || !cm.title || !cm.version || !cm[\"oscal-version\"]) {\n  FAIL('catalog metadata missing a required field (title / version / oscal-version)',\n    \"a consumer cannot tell which catalog, version, or schema this is\");\n}\nconst controls: any[] = Array.isArray(catalog.controls) ? catalog.controls : [];\nif (controls.length === 0) FAIL(\"catalog defines no controls\",\n  \"an empty spine selects nothing; every profile importing it would be vacuous\");\n\nconst controlIds = new Set<string>();\nfor (const c of controls) {\n  if (!c || typeof c.id !== \"string\" || c.id.length === 0) {\n    FAIL('catalog control missing required \"id\"',\n      \"a control with no id cannot be referenced by a profile or a policy link; \" +\n      \"this would break any importer (an auditor's tool, a FedRAMP pipeline) downstream.\");\n  }\n  controlIds.add(c.id);\n}\n\n// --- 2. Profile: imports a catalog and includes only defined control ids. ---\nconst profile = profileDoc?.profile;\nif (!profile) FAIL('profile document missing top-level \"profile\" object',\n  \"a baseline consumer cannot read this as an OSCAL profile\");\nconst imports: any[] = Array.isArray(profile.imports) ? profile.imports : [];\nif (imports.length === 0) FAIL(\"profile imports no catalog\",\n  \"a profile that imports nothing selects from nothing; it is not a baseline\");\n\nconst inScope: string[] = [];\nconst dangling: string[] = [];\nfor (const imp of imports) {\n  if (!imp.href) FAIL('profile import missing \"href\" to a catalog',\n    \"a profile that does not point at a catalog cannot be resolved\");\n  const includeBlocks: any[] = Array.isArray(imp[\"include-controls\"]) ? imp[\"include-controls\"] : [];\n  for (const block of includeBlocks) {\n    const ids: string[] = Array.isArray(block[\"with-ids\"]) ? block[\"with-ids\"] : [];\n    for (const id of ids) {\n      inScope.push(id);\n      if (!controlIds.has(id)) dangling.push(id);\n    }\n  }\n}\nif (inScope.length === 0) FAIL(\"profile includes no control ids\",\n  \"a profile that selects no controls satisfies no framework requirement\");\nif (dangling.length > 0) {\n  FAIL(`profile references control id(s) the catalog does not define: ${dangling.join(\", \")}`,\n    \"this is the OSCAL form of a Module-10 crosswalk orphan: the profile claims a \" +\n    \"control that has no home in the spine, so the selection cannot be resolved.\");\n}\n\n// --- 3. Component-definition: real control ids + a resolvable policy link. ---\nconst compDef = componentDoc?.[\"component-definition\"];\nif (!compDef) FAIL('component document missing top-level \"component-definition\" object',\n  \"an implementation consumer cannot read this as an OSCAL component-definition\");\n\n// Build the set of policy-id values declared in back-matter resources so a link\n// can be checked as RESOLVABLE, not merely present.\nconst policyIds = new Set<string>();\nconst resources: any[] = compDef[\"back-matter\"]?.resources ?? [];\nfor (const r of resources) {\n  for (const p of r.props ?? []) {\n    if (p.name === \"policy-id\" && typeof p.value === \"string\") policyIds.add(p.value);\n  }\n}\n\nconst components: any[] = Array.isArray(compDef.components) ? compDef.components : [];\nlet implementedCount = 0;\nlet policyLinkedCount = 0;\nconst lines: string[] = [];\n\nfor (const comp of components) {\n  for (const ci of comp[\"control-implementations\"] ?? []) {\n    for (const ir of ci[\"implemented-requirements\"] ?? []) {\n      const cid = ir[\"control-id\"];\n      if (typeof cid !== \"string\" || cid.length === 0) {\n        FAIL(\"implemented-requirement missing required \\\"control-id\\\"\",\n          \"an implementation that names no control cannot be joined to the catalog or a policy\");\n      }\n      if (!controlIds.has(cid)) {\n        FAIL(`implemented-requirement names control \"${cid}\" the catalog does not define`,\n          \"the implementation claims a control with no home in the spine; the claim is unverifiable\");\n      }\n      implementedCount++;\n      // A C2P policy link: rel \"policy\" whose href resolves to a declared policy-id.\n      let linked = false;\n      for (const l of ir.links ?? []) {\n        if (l.rel === \"policy\" && typeof l.href === \"string\") {\n          const ref = l.href.startsWith(\"#\") ? l.href.slice(1) : l.href;\n          // The href points into back-matter (#policy-<id>) or names the id directly.\n          const matches = [...policyIds].some(\n            (pid) => ref === pid || ref === `policy-${pid}`,\n          );\n          if (matches) {\n            linked = true;\n            const pid = [...policyIds].find(\n              (p) => ref === p || ref === `policy-${p}`,\n            );\n            lines.push(`  ${cid} -> policy \"${pid}\"  [link resolves]`);\n          }\n        }\n      }\n      if (linked) policyLinkedCount++;\n    }\n  }\n}\n\nif (implementedCount === 0) FAIL(\"component-definition implements no controls\",\n  \"a component that implements nothing proves no control is satisfied\");\nif (policyLinkedCount === 0) {\n  FAIL(\"no implemented control carries a resolvable policy link (C2P)\",\n    \"without a link from the OSCAL claim to the enforcing policy, the document only \" +\n    \"ASSERTS the control is implemented; it does not WIRE the claim to the enforcement.\");\n}\n\n// --- PASS report (machine- and human-readable). ---\nconsole.log(`catalog: \"${cm.title}\" | controls: ${controls.length} (${[...controlIds].join(\", \")})`);\nconsole.log(\n  `profile: imports ${imports[0].href} | in-scope: ${inScope.length} (${inScope.join(\", \")}) | dangling: ${dangling.length}`,\n);\nconsole.log(`component: implemented-requirements: ${implementedCount} | policy-linked: ${policyLinkedCount}`);\nfor (const l of lines) console.log(l);\nconsole.log(\"PASS: required fields present, profile references resolve, control is implemented and policy-linked\");\nconsole.log(\"exit: 0\");\nprocess.exit(0);\n"
+    },
+    "cases": [
+      {
+        "id": "valid-PASS",
+        "argv": [
+          "lab12/acme-catalog.json",
+          "lab12/acme-profile.json",
+          "lab12/acme-component.json"
+        ],
+        "run": {
+          "stdout": "catalog: \"Acme Internal Control Spine\" | controls: 2 (ac-2, sc-28)\nprofile: imports acme-catalog.json | in-scope: 1 (ac-2) | dangling: 0\ncomponent: implemented-requirements: 1 | policy-linked: 1\n  ac-2 -> policy \"ac-2-account-management\"  [link resolves]\nPASS: required fields present, profile references resolve, control is implemented and policy-linked\nexit: 0\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "broken-catalog-FAIL",
+        "argv": [
+          "lab12/acme-catalog-broken.json",
+          "lab12/acme-profile.json",
+          "lab12/acme-component.json"
+        ],
+        "run": {
+          "stdout": "FAIL: catalog control missing required \"id\"\n  -> a control with no id cannot be referenced by a profile or a policy link; this would break any importer (an auditor's tool, a FedRAMP pipeline) downstream.\nexit: 1\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "dangling-profile-FAIL",
+        "argv": [
+          "lab12/acme-catalog.json",
+          "lab12/acme-profile-dangling.json",
+          "lab12/acme-component.json"
+        ],
+        "run": {
+          "stdout": "FAIL: profile references control id(s) the catalog does not define: ac-9\n  -> this is the OSCAL form of a Module-10 crosswalk orphan: the profile claims a control that has no home in the spine, so the selection cannot be resolved.\nexit: 1\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "usage-no-args",
+        "argv": [],
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: missing file argument\nusage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\n",
+          "exit": 2
+        }
+      },
+      {
+        "id": "file-not-found",
+        "argv": [
+          "lab12/nope.json",
+          "lab12/acme-profile.json",
+          "lab12/acme-component.json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: file not found: lab12/nope.json\nusage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\n",
+          "exit": 2
+        }
+      },
+      {
+        "id": "not-json",
+        "argv": [
+          "lab12/not-json.json",
+          "lab12/acme-profile.json",
+          "lab12/acme-component.json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR: file is not valid JSON: lab12/not-json.json\nusage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\n",
+          "exit": 2
+        }
+      }
+    ]
+  },
+  "m13": {
+    "library": "#!/usr/bin/env bash\n# Module 13 control-check library. Offline by construction: no network, no cloud SDK, no jq.\n# JSON parsing uses `bun` when it is on PATH (a real parser, robust to any formatting) and falls\n# back to pure bash + coreutils + awk on a bare machine — same output contract either way.\n#\n# CONTROL: CC6.1-s3-public-access-block\n#   Claim: \"every S3 bucket has all four public-access-block settings enabled.\"\n#\n# The check reads a captured state snapshot (JSON) and returns a verdict a machine can act on:\n#   stdout    = a single PASS/FAIL line, then one \"NONCOMPLIANT <name>\" line per drifted bucket\n#   exit code = 0 when the control PASSES, 1 when it FAILS (drift), 2 when it could evaluate ZERO\n#               resources and therefore FAILS CLOSED (refuses to report a green verdict it cannot\n#               justify). That exit code is the hinge that turns a check into automation — no human\n#               has to read the output, and a non-zero is never silently treated as healthy.\n#\n# Design note: this library never calls `set -e`. It is sourced by callers that may or may not\n# run under errexit, so it preserves the caller's shell options and signals only through return\n# codes. (An earlier version forced `set -e` and leaked it into the caller — fixed.)\n\n# normalize_buckets <state-json-file>\n# Flattens a captured-state snapshot to ONE LINE PER BUCKET — the form the evaluator judges.\n# Each emitted line is: \"<name>\\t<block_public_acls>\\t<block_public_policy>\\t<ignore_public_acls>\\t<restrict_public_buckets>\"\n# with each flag rendered as the literal \"true\" or \"false\".\n#\n# This MUST work on PRETTY-PRINTED JSON. Real `aws ... --output json`, `jq .`, and AWS Config\n# exports are multi-line — the bucket name and its flags land on DIFFERENT physical lines. An\n# earlier version matched a bucket only when \"name\" AND \"restrict_public_buckets\" appeared on the\n# SAME line, so every pretty-printed snapshot parsed to zero buckets and silently PASSED a public\n# bucket. Fixed: we normalise first (parse the whole document), then evaluate the normalised rows.\n#\n# Two parsers, same output contract, both OFFLINE (no network, no cloud SDK):\n#   1) bun, if present — a real JSON parser, robust to any whitespace, key order, or nesting.\n#   2) a pure-awk fallback for a bare machine — walks the \"buckets\" array brace-by-brace, so a\n#      bucket object spread across many lines is collapsed into one normalised row.\nnormalize_buckets() {\n  local state=\"$1\"\n  if command -v bun >/dev/null 2>&1; then\n    bun -e '\n      const fs = require(\"fs\");\n      const doc = JSON.parse(fs.readFileSync(process.argv[1], \"utf8\"));\n      const buckets = Array.isArray(doc.buckets) ? doc.buckets : [];\n      const flag = (b, k) => (b[k] === true ? \"true\" : \"false\");\n      for (const b of buckets) {\n        const name = typeof b.name === \"string\" ? b.name : \"\";\n        process.stdout.write([name,\n          flag(b, \"block_public_acls\"), flag(b, \"block_public_policy\"),\n          flag(b, \"ignore_public_acls\"), flag(b, \"restrict_public_buckets\")].join(\"\\t\") + \"\\n\");\n      }\n    ' \"$state\"\n    return 0\n  fi\n  # Pure-awk fallback for a bare machine (bash + coreutils + awk, no bun). Read the WHOLE document\n  # as one record (RS=\"\"), then walk only the \"buckets\" array brace-by-brace, collapsing each\n  # {...} object — however it is wrapped across lines — into one normalised row. A bucket is\n  # recognised by its \"name\" key, NEVER by the accident of which keys share a physical line.\n  awk 'BEGIN { RS = \"\\0\" }\n    # val(buf,key): the literal value of \"key\" in object text buf — \"true\"/\"false\" for booleans,\n    # the unquoted string for string values, or \"\" when the key is absent.\n    function val(buf, key,   re, m) {\n      re = \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\"\n      if (match(buf, re \"true\"))  return \"true\"\n      if (match(buf, re \"false\")) return \"false\"\n      if (match(buf, \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\\"\")) {\n        m = substr(buf, RSTART + RLENGTH); sub(/\".*$/, \"\", m); return m\n      }\n      return \"\"\n    }\n    function emit(buf,   nm) {\n      nm = val(buf, \"name\")\n      if (nm == \"\") return            # not a bucket object (no name) — skip\n      printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", nm,\n        (val(buf,\"block_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"block_public_policy\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"ignore_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"restrict_public_buckets\")==\"true\"?\"true\":\"false\")\n    }\n    {\n      doc = $0\n      # Locate the \"buckets\" array and scan only from there, so a stray bracket elsewhere in the\n      # document cannot be mistaken for the bucket list.\n      if (!match(doc, /\"buckets\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\[/)) exit 0\n      i = RSTART + RLENGTH        # first char inside the [ ... ] array\n      depth = 0; obj = \"\"; inobj = 0\n      n = length(doc)\n      for (; i <= n; i++) {\n        c = substr(doc, i, 1)\n        if (depth == 0 && c == \"]\") break       # end of the buckets array\n        if (c == \"{\") { depth++; if (depth == 1) { obj = \"\"; inobj = 1; continue } }\n        if (c == \"}\") { depth--; if (depth == 0) { emit(obj); inobj = 0; continue } }\n        if (inobj) obj = obj c\n      }\n    }\n  ' \"$state\"\n}\n\n# evaluate_control <state-json-file>\n# Emits a machine-readable verdict on stdout. Returns 0 (pass) / 1 (fail/drift) / 2 (no resources).\n# Deterministic: the same snapshot always yields the same verdict.\n#\n# FAIL CLOSED: if the snapshot parses to ZERO buckets (empty list, wrong shape, unparseable),\n# this does NOT emit a green verdict — it refuses to pass and returns non-zero. A monitor that\n# silently passes when it evaluated nothing is worse than no monitor: it manufactures evidence\n# of compliance from the absence of data.\nevaluate_control() {\n  local state=\"$1\"\n  # Normalise to one row per bucket FIRST, then judge the rows. A bucket is COMPLIANT only when\n  # all four public-access-block flags are true; otherwise it is NONCOMPLIANT (drift).\n  # rows: \"<name>\\t<acls>\\t<policy>\\t<ignore>\\t<restrict>\"\n  local rows total noncompliant\n  rows=\"$(normalize_buckets \"$state\")\"\n  total=\"$(printf '%s' \"$rows\" | grep -c . || true)\"\n\n  # Refuse to pass on an empty evaluation — fail closed.\n  if [ \"$total\" -eq 0 ]; then\n    echo \"ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\" >&2\n    echo \"FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\"\n    return 2\n  fi\n\n  # A row is NONCOMPLIANT unless every one of its four flags is exactly \"true\".\n  noncompliant=\"$(printf '%s\\n' \"$rows\" | awk -F'\\t' '\n    NF>=5 && !($2==\"true\" && $3==\"true\" && $4==\"true\" && $5==\"true\") { print $1 }\n  ')\"\n\n  if [ -z \"$noncompliant\" ]; then\n    echo \"PASS control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=0\"\n    return 0\n  fi\n  echo \"FAIL control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=$(printf '%s\\n' \"$noncompliant\" | grep -c .)\"\n  printf 'NONCOMPLIANT %s\\n' $noncompliant\n  return 1\n}\n\n# emit_evidence <state-json-file> <evidence-dir>\n# Runs the check, writes a timestamped immutable evidence record, appends one row to the\n# append-only ledger (the 30-day-history substrate a dashboard tile reads), and — only on drift —\n# writes an alert file. Returns the check's exit code so the caller can branch on PASS/FAIL.\nemit_evidence() {\n  local state=\"$1\" evdir=\"$2\"\n  mkdir -p \"$evdir\"\n  local captured run_id verdict_line rc full record\n  captured=\"$(awk -F'\"' '/\"captured_at\"/{print $4; exit}' \"$state\")\"\n  # Fall back to a wall-clock stamp when the snapshot carries no captured_at (e.g. a malformed or\n  # empty state) so the fail-closed record + alert still get a stable, unique filename.\n  [ -n \"$captured\" ] || captured=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n  run_id=\"run-$(printf '%s' \"$captured\" | tr -cd '0-9')\"\n  record=\"$evdir/${run_id}.evidence\"\n\n  # Capture the verdict WITHOUT toggling shell options. `if cmd; then …` neutralises errexit for\n  # this one call, so a FAIL (return 1) does not abort an errexit-enabled caller mid-function.\n  if full=\"$(evaluate_control \"$state\")\"; then rc=0; else rc=$?; fi\n  verdict_line=\"$(printf '%s\\n' \"$full\" | head -1)\"\n\n  # Immutable per-run evidence record — generated by the same code that did the evaluating,\n  # so it cannot drift from what was actually checked.\n  {\n    echo \"control_id=CC6.1-s3-public-access-block\"\n    echo \"captured_at=${captured}\"\n    echo \"verdict=${verdict_line}\"\n    echo \"exit_code=${rc}\"\n    echo \"source_state=$(basename \"$state\")\"\n  } > \"$record\"\n\n  # Append-only ledger: one row per run. This is the history a dashboard tile reads to draw\n  # \"current state + 30-day trend\". Append-only because evidence you can rewrite is not evidence.\n  echo \"${captured} ${run_id} rc=${rc} ${verdict_line}\" >> \"$evdir/ledger.log\"\n\n  # Alert fires ONLY on drift (non-zero exit). A PASS leaves no alert behind — silence is the\n  # signal that the control is holding. A fail-closed \"no resources evaluated\" (rc=2) is also a\n  # drift the responder must see: the monitor could not confirm the control, so it must not be\n  # mistaken for healthy silence.\n  if [ \"$rc\" -ne 0 ]; then\n    {\n      echo \"ALERT control=CC6.1-s3-public-access-block captured_at=${captured}\"\n      echo \"${verdict_line}\"\n      if [ \"$rc\" -eq 2 ]; then\n        echo \"drifted_resource=<none — evaluated 0 resources; snapshot empty, unparsed, or wrong shape>\"\n      else\n        printf '%s\\n' \"$full\" | awk '/^NONCOMPLIANT /{print \"drifted_resource=\" $2}'\n      fi\n    } > \"$evdir/alert-${run_id}.txt\"\n  fi\n  return \"$rc\"\n}\n",
+    "fixtures": {
+      "state-compliant.json": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-20T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    { \"name\": \"acme-evidence-store\",   \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-audit-logs\",        \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-public-website\",    \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true }\n  ]\n}\n",
+      "state-drifted.json": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-21T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    { \"name\": \"acme-evidence-store\",   \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-audit-logs\",        \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-public-website\",    \"block_public_acls\": false, \"block_public_policy\": false, \"ignore_public_acls\": false, \"restrict_public_buckets\": false }\n  ]\n}\n",
+      "state-drifted-pretty.json": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-22T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    {\n      \"name\": \"acme-evidence-store\",\n      \"block_public_acls\": true,\n      \"block_public_policy\": true,\n      \"ignore_public_acls\": true,\n      \"restrict_public_buckets\": true\n    },\n    {\n      \"name\": \"acme-audit-logs\",\n      \"block_public_acls\": true,\n      \"block_public_policy\": true,\n      \"ignore_public_acls\": true,\n      \"restrict_public_buckets\": true\n    },\n    {\n      \"name\": \"acme-public-website\",\n      \"block_public_acls\": false,\n      \"block_public_policy\": false,\n      \"ignore_public_acls\": false,\n      \"restrict_public_buckets\": false\n    }\n  ]\n}\n",
+      "state-empty.json": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-23T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": []\n}\n"
+    },
+    "normCases": [
+      {
+        "id": "normalize_buckets:state-compliant.json",
+        "argv": [
+          "state-compliant.json"
+        ],
+        "run": {
+          "stdout": "acme-evidence-store\ttrue\ttrue\ttrue\ttrue\nacme-audit-logs\ttrue\ttrue\ttrue\ttrue\nacme-public-website\ttrue\ttrue\ttrue\ttrue\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "normalize_buckets:state-drifted.json",
+        "argv": [
+          "state-drifted.json"
+        ],
+        "run": {
+          "stdout": "acme-evidence-store\ttrue\ttrue\ttrue\ttrue\nacme-audit-logs\ttrue\ttrue\ttrue\ttrue\nacme-public-website\tfalse\tfalse\tfalse\tfalse\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "normalize_buckets:state-drifted-pretty.json",
+        "argv": [
+          "state-drifted-pretty.json"
+        ],
+        "run": {
+          "stdout": "acme-evidence-store\ttrue\ttrue\ttrue\ttrue\nacme-audit-logs\ttrue\ttrue\ttrue\ttrue\nacme-public-website\tfalse\tfalse\tfalse\tfalse\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "normalize_buckets:state-empty.json",
+        "argv": [
+          "state-empty.json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "",
+          "exit": 0
+        }
+      }
+    ],
+    "evalCases": [
+      {
+        "id": "evaluate_control:state-compliant.json",
+        "argv": [
+          "state-compliant.json"
+        ],
+        "run": {
+          "stdout": "PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "evaluate_control:state-drifted.json",
+        "argv": [
+          "state-drifted.json"
+        ],
+        "run": {
+          "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nNONCOMPLIANT acme-public-website\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "evaluate_control:state-drifted-pretty.json",
+        "argv": [
+          "state-drifted-pretty.json"
+        ],
+        "run": {
+          "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nNONCOMPLIANT acme-public-website\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "evaluate_control:state-empty.json",
+        "argv": [
+          "state-empty.json"
+        ],
+        "run": {
+          "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\n",
+          "stderr": "ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\n",
+          "exit": 2
+        }
+      }
+    ],
+    "emitCases": [
+      {
+        "id": "emit_evidence:state-compliant.json",
+        "argv": [
+          "state-compliant.json",
+          "evidence-state-compliant-json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "",
+          "exit": 0
+        },
+        "evidence": {
+          "ledger.log": "2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\n",
+          "run-20260520090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-20T09:00:00Z\nverdict=PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\nexit_code=0\nsource_state=state-compliant.json\n"
+        }
+      },
+      {
+        "id": "emit_evidence:state-drifted.json",
+        "argv": [
+          "state-drifted.json",
+          "evidence-state-drifted-json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "",
+          "exit": 1
+        },
+        "evidence": {
+          "alert-run-20260521090000.txt": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-21T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\ndrifted_resource=acme-public-website\n",
+          "ledger.log": "2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+          "run-20260521090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-21T09:00:00Z\nverdict=FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nexit_code=1\nsource_state=state-drifted.json\n"
+        }
+      },
+      {
+        "id": "emit_evidence:state-drifted-pretty.json",
+        "argv": [
+          "state-drifted-pretty.json",
+          "evidence-state-drifted-pretty-json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "",
+          "exit": 1
+        },
+        "evidence": {
+          "alert-run-20260522090000.txt": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-22T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\ndrifted_resource=acme-public-website\n",
+          "ledger.log": "2026-05-22T09:00:00Z run-20260522090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+          "run-20260522090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-22T09:00:00Z\nverdict=FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nexit_code=1\nsource_state=state-drifted-pretty.json\n"
+        }
+      },
+      {
+        "id": "emit_evidence:state-empty.json",
+        "argv": [
+          "state-empty.json",
+          "evidence-state-empty-json"
+        ],
+        "run": {
+          "stdout": "",
+          "stderr": "ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\n",
+          "exit": 2
+        },
+        "evidence": {
+          "alert-run-20260523090000.txt": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-23T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\ndrifted_resource=<none — evaluated 0 resources; snapshot empty, unparsed, or wrong shape>\n",
+          "ledger.log": "2026-05-23T09:00:00Z run-20260523090000 rc=2 FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\n",
+          "run-20260523090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-23T09:00:00Z\nverdict=FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\nexit_code=2\nsource_state=state-empty.json\n"
+        }
+      }
+    ],
+    "seq": {
+      "run1": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "run2": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 1
+      },
+      "evidence": {
+        "alert-run-20260521090000.txt": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-21T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\ndrifted_resource=acme-public-website\n",
+        "ledger.log": "2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\n2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+        "run-20260520090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-20T09:00:00Z\nverdict=PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\nexit_code=0\nsource_state=state-compliant.json\n",
+        "run-20260521090000.evidence": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-21T09:00:00Z\nverdict=FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nexit_code=1\nsource_state=state-drifted.json\n"
+      }
+    }
+  },
+  "m14": {
+    "seed": {
+      "risk-input.json": "{\n  \"control\": \"prod-db-access-least-privilege\",\n  \"gap\": \"12 standing prod-db access grants that never expire\",\n  \"loss_event\": \"a standing grant is abused or compromised, causing a data incident\",\n  \"frequency\": { \"min\": 0.1, \"max\": 0.6, \"unit\": \"events/year\" },\n  \"magnitude\": { \"min\": 300000, \"max\": 2500000, \"unit\": \"USD/event\" },\n  \"iterations\": 10000,\n  \"tail_percentile\": 95,\n  \"seed\": 42\n}\n",
+      "risk-alt.json": "{\n  \"frequency\": {\n    \"min\": 0.5,\n    \"max\": 2\n  },\n  \"magnitude\": {\n    \"min\": 1000,\n    \"max\": 50000\n  },\n  \"iterations\": 5000,\n  \"tail_percentile\": 90,\n  \"seed\": 7\n}\n",
+      "risk-defaults.json": "{\n  \"frequency\": {\n    \"min\": 0.1,\n    \"max\": 0.6\n  },\n  \"magnitude\": {\n    \"min\": 300000,\n    \"max\": 2500000\n  }\n}\n"
+    },
+    "cases": [
+      {
+        "id": "fixture",
+        "argv": [
+          "fixtures/risk-input.json"
+        ],
+        "run": {
+          "stdout": "{\n  \"mean\": 493516,\n  \"tailPercentile\": 95,\n  \"tailValue\": 1133873,\n  \"iterations\": 10000\n}\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "alt-input",
+        "argv": [
+          "fixtures/risk-alt.json"
+        ],
+        "run": {
+          "stdout": "{\n  \"mean\": 32170,\n  \"tailPercentile\": 90,\n  \"tailValue\": 64616,\n  \"iterations\": 5000\n}\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "defaults",
+        "argv": [
+          "fixtures/risk-defaults.json"
+        ],
+        "run": {
+          "stdout": "{\n  \"mean\": 493516,\n  \"tailPercentile\": 95,\n  \"tailValue\": 1133873,\n  \"iterations\": 10000\n}\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "usage-no-args",
+        "argv": [],
+        "run": {
+          "stdout": "",
+          "stderr": "usage: bun expected_loss.ts <path/to/risk-input.json>\n",
+          "exit": 2
+        }
+      }
+    ]
+  },
+  "m15": {
+    "seed": {
+      ".github/": "<dir>",
+      ".github/workflows/": "<dir>",
+      ".github/workflows/ccm.yml": "# MONITOR: scheduled re-run of collect -> evaluate -> evidence, alert on drift (placeholder).\nname: ccm\non: { schedule: [{ cron: \"0 */6 * * *\" }] }\n",
+      "README.md": "# OWN — control as a product\nCustomers: auditor, gating engineer, posture-reporting exec.\nOwner: a.engineer@example.com (single accountable name).\nBacklog: (1) hook bucket-creation so new buckets are caught before next run [known gap];\n         (2) extend to cross-account buckets; (3) reduce alert false positives.\nMetric: % of evidence collected with zero manual touch (target 100%).\nUX: evidence is a by-product of the scheduled check, not extra audit-season work.\n",
+      "before-after.md": "# Before / After — same control, legacy vs engineered\n| Dimension | Before (legacy) | After (engineered) |\n|---|---|---|\n| Evidence effort | ~4 hrs human, annual | seconds, machine, every run |\n| Check frequency | once/year at audit | every 6 hrs + on change |\n| Drift detection | none until next audit | alert within one schedule cycle |\n| Evidence durability | screenshot in a drive | versioned JSON, full history |\nLegacy problems addressed: #1 toil (eliminated), #5 checkbox (now continuous).\nResidual gap (honest): new buckets covered only at next run — see README backlog.\n",
+      "capstone-manifest-incomplete.yaml": "# Sample INCOMPLETE capstone manifest (committed fixture, negative-case).\n# MONITOR is missing from loop_coverage and there is no before_after pointer.\n# The validator MUST reject this (name the gaps, exit non-zero) — proving the\n# coverage gate actually gates, instead of rubber-stamping. This is the §5.4\n# \"weak capstone\" failure mode made machine-detectable.\ncontrol: \"S3 buckets block public access (SOC 2 CC6.1)\"\nowner: \"a.engineer@example.com\"\nloop_coverage:\n  UNDERSTAND: control-statement.md\n  LOCATE:     control-statement.md\n  QUERY:      collect.sh\n  EVALUATE:   policy/public_access.rego\n  EVIDENCE:   evidence/\n  OWN:        README.md\n",
+      "capstone-manifest.yaml": "# Sample capstone manifest (committed fixture).\n# Maps each of the seven irreducible-loop stages to the artifact that discharges it,\n# plus a pointer to the before/after writeup of the SAME control. The validator\n# (validate-capstone.sh, generated by setup.sh) asserts all 7 stages are covered\n# and the before/after file is present. This is the curriculum proving its own\n# coverage the same way a control proves its own compliance.\ncontrol: \"S3 buckets block public access (SOC 2 CC6.1)\"\nowner: \"a.engineer@example.com\"\nloop_coverage:\n  UNDERSTAND: control-statement.md\n  LOCATE:     control-statement.md\n  QUERY:      collect.sh\n  EVALUATE:   policy/public_access.rego\n  EVIDENCE:   evidence/\n  MONITOR:    .github/workflows/ccm.yml\n  OWN:        README.md\nbefore_after: before-after.md\n",
+      "collect.sh": "#!/usr/bin/env bash\n# QUERY: fetch each bucket's public-access-block config (placeholder).\necho '{\"buckets\":[]}'\n",
+      "control-statement.md": "# Control Statement (UNDERSTAND + LOCATE)\nClaim: All S3 buckets block public access (SOC 2 CC6.1).\nThreat (Module 11): public exposure of data at rest via a misconfigured bucket.\nGround truth (LOCATE): the four public-access-block fields on each bucket's\nconfig — BlockPublicAcls, BlockPublicPolicy, IgnorePublicAcls, RestrictPublicBuckets.\n",
+      "evidence/": "<dir>",
+      "evidence/.keep": "EVIDENCE: durable, versioned run records land here (run-<timestamp>.json).\n",
+      "policy/": "<dir>",
+      "policy/public_access.rego": "# EVALUATE: pass only if all four public-access-block fields are true (placeholder).\npackage capstone.public_access\ndefault allow := false\n",
+      "validate-capstone.sh": "#!/usr/bin/env bash\n# Capstone coverage validator. Asserts the manifest covers all 7 loop stages\n# (each mapped to an existing artifact) and the before/after writeup is present.\n# Pure bash + coreutils + awk. Exits 0 on full coverage, non-zero otherwise.\nset -euo pipefail\nMANIFEST=\"${1:?usage: validate-capstone.sh <capstone-manifest.yaml>}\"\nROOT=\"$(cd \"$(dirname \"$MANIFEST\")\" && pwd)\"\ntest -f \"$MANIFEST\" || { echo \"FAIL: manifest not found: $MANIFEST\"; exit 2; }\n\nSTAGES=\"UNDERSTAND LOCATE QUERY EVALUATE EVIDENCE MONITOR OWN\"\nfail=0\n\n# Pull \"key: value\" pairs from the indented loop_coverage block only.\ncoverage_value() {\n  awk -v key=\"$1\" '\n    /^loop_coverage:/ { inblk=1; next }\n    inblk && /^[^[:space:]]/ { inblk=0 }\n    inblk {\n      line=$0\n      sub(/^[[:space:]]+/, \"\", line)\n      n=index(line, \":\")\n      if (n>0) {\n        k=substr(line,1,n-1)\n        v=substr(line,n+1)\n        sub(/^[[:space:]]+/, \"\", v); sub(/[[:space:]]+$/, \"\", v)\n        if (k==key) { print v; exit }\n      }\n    }\n  ' \"$MANIFEST\"\n}\n\necho \"checking loop coverage...\"\nfor stage in $STAGES; do\n  artifact=\"$(coverage_value \"$stage\")\"\n  if [ -z \"$artifact\" ]; then\n    printf \"  %-11s MISSING (no artifact mapped)\\n\" \"$stage\"\n    fail=1\n    continue\n  fi\n  if [ -e \"$ROOT/$artifact\" ]; then\n    printf \"  %-11s ok  -> %s\\n\" \"$stage\" \"$artifact\"\n  else\n    printf \"  %-11s MISSING (artifact not found: %s)\\n\" \"$stage\" \"$artifact\"\n    fail=1\n  fi\ndone\n\necho \"checking before/after...\"\nba=\"$(awk -F: '/^before_after:/ { v=$2; sub(/^[[:space:]]+/,\"\",v); sub(/[[:space:]]+$/,\"\",v); print v; exit }' \"$MANIFEST\")\"\nif [ -n \"$ba\" ] && [ -e \"$ROOT/$ba\" ]; then\n  echo \"  before/after ok -> $ba\"\nelse\n  echo \"  before/after MISSING (no before_after pointer or file not found)\"\n  fail=1\nfi\n\nif [ \"$fail\" -ne 0 ]; then\n  echo \"FAIL: capstone coverage incomplete — close the named gaps before shipping\"\n  exit 1\nfi\necho \"PASS: all 7 loop stages covered; before/after present\"\n"
+    },
+    "cases": [
+      {
+        "id": "complete-PASS",
+        "argv": [
+          "capstone-manifest.yaml"
+        ],
+        "run": {
+          "stdout": "checking loop coverage...\n  UNDERSTAND  ok  -> control-statement.md\n  LOCATE      ok  -> control-statement.md\n  QUERY       ok  -> collect.sh\n  EVALUATE    ok  -> policy/public_access.rego\n  EVIDENCE    ok  -> evidence/\n  MONITOR     ok  -> .github/workflows/ccm.yml\n  OWN         ok  -> README.md\nchecking before/after...\n  before/after ok -> before-after.md\nPASS: all 7 loop stages covered; before/after present\n",
+          "stderr": "",
+          "exit": 0
+        }
+      },
+      {
+        "id": "incomplete-FAIL",
+        "argv": [
+          "capstone-manifest-incomplete.yaml"
+        ],
+        "run": {
+          "stdout": "checking loop coverage...\n  UNDERSTAND  ok  -> control-statement.md\n  LOCATE      ok  -> control-statement.md\n  QUERY       ok  -> collect.sh\n  EVALUATE    ok  -> policy/public_access.rego\n  EVIDENCE    ok  -> evidence/\n  MONITOR     MISSING (no artifact mapped)\n  OWN         ok  -> README.md\nchecking before/after...\n  before/after MISSING (no before_after pointer or file not found)\nFAIL: capstone coverage incomplete — close the named gaps before shipping\n",
+          "stderr": "",
+          "exit": 1
+        }
+      },
+      {
+        "id": "manifest-not-found",
+        "argv": [
+          "nope.yaml"
+        ],
+        "run": {
+          "stdout": "FAIL: manifest not found: nope.yaml\n",
+          "stderr": "",
+          "exit": 2
+        }
+      }
+    ]
+  }
+}

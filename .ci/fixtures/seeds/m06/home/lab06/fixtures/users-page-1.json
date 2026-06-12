@@ -1,0 +1,15 @@
+{
+  "data": [
+    { "id": "u_001", "email": "alice@acme.example", "mfa_enabled": true,  "status": "active" },
+    { "id": "u_002", "email": "bob@acme.example",   "mfa_enabled": false, "status": "active" },
+    { "id": "u_003", "email": "carol@acme.example", "mfa_enabled": true,  "status": "active" },
+    { "id": "u_004", "email": "dave@acme.example",  "mfa_enabled": false, "status": "suspended" },
+    { "id": "u_005", "email": "erin@acme.example",  "mfa_enabled": true,  "status": "active" }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 5,
+    "total": 8,
+    "next_cursor": "eyJwYWdlIjoyfQ=="
+  }
+}

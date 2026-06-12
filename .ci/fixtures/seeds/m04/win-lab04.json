@@ -1,0 +1,110 @@
+{
+  "_notes": [
+    "Module 04 simulated endpoint WIN-LAB04 (compliant posture) — typed object stores per",
+    "subsystem, per module 04 prose (§3-§5) and the committed lab fixture",
+    "modules/04-windows-fundamentals/labs/sample-bundle-compliant.json (THE canon):",
+    "BitLocker C: FullyEncrypted 100; Defender enabled, signature age 1; screen-lock 600s;",
+    "exactly three Security-log 4625 events at 5/27/2026 9:13:50/9:13:58/9:14:03 PM;",
+    "local Administrators = [WIN-LAB04\\Administrator].",
+    "ScreenSaveTimeOut is seeded NUMERIC per the module's canonical bundle (real REG_SZ is a",
+    "string '600' — documented divergence, DESIGN-INPUTS fidelity note 6).",
+    "Defender property set beyond the module's three taught properties carries names from the",
+    "Microsoft Learn Get-MpComputerStatus reference (representative values), so the bare cmdlet",
+    "honestly renders as a >4-property list. Event Message strings are the documented event",
+    "summaries (4624/4625/4672). gpresultReportFile resolves to the authored RSoP fixture;",
+    "loaders strip its single trailing newline when seeding gpresultReport."
+  ],
+  "hostname": "WIN-LAB04",
+  "gpresultReportFile": "gpresult-r.txt",
+  "bitlockerVolumes": [
+    {
+      "MountPoint": "C:",
+      "VolumeType": "OperatingSystem",
+      "VolumeStatus": "FullyEncrypted",
+      "EncryptionPercentage": 100
+    }
+  ],
+  "defenderStatus": {
+    "AMServiceEnabled": true,
+    "AntispywareEnabled": true,
+    "AntivirusEnabled": true,
+    "AntivirusSignatureAge": 1,
+    "AntivirusSignatureLastUpdated": "2026-05-26T06:12:44",
+    "RealTimeProtectionEnabled": true
+  },
+  "registry": {
+    "HKCU:\\Control Panel\\Desktop": {
+      "ScreenSaveActive": "1",
+      "ScreenSaverIsSecure": "1",
+      "ScreenSaveTimeOut": 600
+    }
+  },
+  "securityLog": [
+    {
+      "TimeCreated": "2026-05-27T08:02:11",
+      "Id": 4624,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account was successfully logged on."
+    },
+    {
+      "TimeCreated": "2026-05-27T08:02:11",
+      "Id": 4672,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "Special privileges assigned to new logon."
+    },
+    {
+      "TimeCreated": "2026-05-27T13:30:05",
+      "Id": 4624,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account was successfully logged on."
+    },
+    {
+      "TimeCreated": "2026-05-27T21:13:50",
+      "Id": 4625,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account failed to log on."
+    },
+    {
+      "TimeCreated": "2026-05-27T21:13:58",
+      "Id": 4625,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account failed to log on."
+    },
+    {
+      "TimeCreated": "2026-05-27T21:14:03",
+      "Id": 4625,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account failed to log on."
+    },
+    {
+      "TimeCreated": "2026-05-27T21:14:21",
+      "Id": 4624,
+      "LevelDisplayName": "Information",
+      "ProviderName": "Microsoft-Windows-Security-Auditing",
+      "Message": "An account was successfully logged on."
+    }
+  ],
+  "localGroups": {
+    "Administrators": [
+      {
+        "ObjectClass": "User",
+        "Name": "WIN-LAB04\\Administrator",
+        "PrincipalSource": "Local"
+      }
+    ],
+    "Users": [
+      {
+        "ObjectClass": "User",
+        "Name": "WIN-LAB04\\labuser",
+        "PrincipalSource": "Local"
+      }
+    ]
+  },
+  "files": []
+}

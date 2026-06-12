@@ -1,0 +1,42 @@
+{
+  "id": "m02-ps-bare",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "ps",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": null,
+  "holes": [
+    {
+      "name": "ps_bare_row",
+      "pattern": "(suite: per-row format check)",
+      "source": "kernel pids — suite compares header byte-exact and sim rows against the captured row grammar (capture shows the harness runuser/bash context, the sim shows its login shell)"
+    }
+  ],
+  "post_holes": null,
+  "stdout": "    PID TTY          TIME CMD\n    123 ?        00:00:00 bash\n    124 ?        00:00:00 ps\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:16:26.045Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "ps_bare_row"
+    ]
+  }
+}

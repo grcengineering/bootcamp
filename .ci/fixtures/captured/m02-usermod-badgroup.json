@@ -1,0 +1,41 @@
+{
+  "id": "m02-usermod-badgroup",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [
+    "useradd -m intern"
+  ],
+  "pre": [],
+  "cmd": "echo labpass | sudo -S usermod -aG auditors intern",
+  "sim_equiv": {
+    "cmd": "sudo usermod -aG auditors intern",
+    "dialogue": [
+      "labpass"
+    ]
+  },
+  "pipe_context": false,
+  "citation": null,
+  "notes": null,
+  "holes": null,
+  "post_holes": null,
+  "stdout": "",
+  "stderr": "[sudo] password for grcops: usermod: group 'auditors' does not exist\n",
+  "exit": 6,
+  "stderr_interactive": "[sudo] password for grcops: usermod: group 'auditors' does not exist\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:11:38.913Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

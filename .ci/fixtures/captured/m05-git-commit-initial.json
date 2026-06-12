@@ -1,0 +1,37 @@
+{
+  "id": "m05-git-commit-initial",
+  "module": "05",
+  "source": "wasm-engine",
+  "match": "synthesized-porcelain",
+  "seed": null,
+  "cwd": "~/lab05",
+  "pre": [
+    "git init",
+    "git status",
+    "git status",
+    "git add validator.py",
+    "git status"
+  ],
+  "cmd": "git commit -m \"Start with an empty validator on main\"",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "REAL local-git capture (synthesized-porcelain ground truth for the isomorphic-git engine). Pinned identity/dates make commit SHAs deterministic; init.defaultBranch=main pinned to module-prose canon.",
+  "stdout": "[main (root-commit) 97095e6] Start with an empty validator on main\n 1 file changed, 0 insertions(+), 0 deletions(-)\n create mode 100644 validator.py\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "local-real-git",
+    "ground_truth": "git version 2.50.1 (Apple Git-155)",
+    "platform": "darwin-arm64",
+    "identity": "analyst <analyst@workstation>",
+    "author_date_initial": "1780304400 +0000",
+    "author_date_feature": "1780304700 +0000",
+    "config_isolation": "GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_NOSYSTEM=1 LC_ALL=C TZ=UTC",
+    "default_branch_pin": "git -c init.defaultBranch=main",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T15:43:18.615Z",
+    "captured_with": "capture-git.ts v1"
+  }
+}

@@ -31,8 +31,24 @@ meta:
       hostname: web-01
       user: grcops
       uid: 1001
+      home: /home/grcops
+      shell: /bin/bash
+      locale: C.UTF-8
+      cols: 80
+      password: labpass         # scenario constant baked into the image (sudo/ssh dialogues)
       run_flags: "--privileged --cgroupns=host"
-      notes: systemd as PID 1; module 02 family only. Manifest lint rejects systemd commands on userland.
+      notes: >
+        systemd as PID 1; module 02 family only (manifest lint rejects systemd commands on
+        userland). dbus is installed so non-root systemctl reaches PID 1 exactly as on a real
+        server. The fictional evidence-collector ships as a REAL .deb baked at /home/grcops and
+        is NOT installed at boot — the §6 apt→start→enable flow is captured real. Volatile
+        spans (wall-clock timestamps, ago-durations, kernel PIDs, ephemeral ports, key
+        fingerprints, the capture container's cgroup id) are normalized to {{hole}} markers at
+        capture time via each structured entry's holes[].find regexes; systemd-under-faketime
+        was rejected (PID-1 timer instability), so the sim pins module-canon scenario times
+        inside those holes (ISC-132). sudo/passwd entries use piped `… | sudo -S` in the
+        harness (no tty); the interactive sim equivalent (prompt + typed secret) is declared
+        per-entry as sim_equiv and the byte contract is the concatenated streams.
     macos-host:
       script: env/macos-contract.sh
       shell: zsh -f
@@ -43,6 +59,45 @@ seeds:
   m01:
     home: seeds/m01/home          # copied to /home/analyst (ownership analyst:analyst)
     path_bin: seeds/m01/bin       # installed to /usr/local/bin (mode 0755)
+  m02:
+    home: seeds/m02/home          # overlaid onto /home/grcops (committed 411-byte scenario keypair, baked-.deb stand-in)
+    path_bin: seeds/m02/bin       # lab tools (lab-setup 02 — canon-locked to modules/02 labs/setup.sh)
+    system: seeds/m02/system      # /etc passwd+group+skel+hostname, scenario sshd_config (3243 B), ssh.service unit, apt-installed.txt
+    apply: seeds/m02/apply-seed.sh  # root overlay applied in the booted container before each session
+    epoch: "2026-05-27T09:45:00Z" # module 02 scenario clock — canon May 27 mtimes render in ls -l recent format
+  m04:                            # PowerShell sim (module 04): typed object stores, not a home-dir copy
+    object_store: seeds/m04/win-lab04.json
+    object_store_noncompliant: seeds/m04/win-lab04-noncompliant.json
+    notes: >
+      WIN-LAB04 subsystem stores (BitLocker, Defender, registry, Security log, local groups);
+      gpresultReportFile fields name the authored RSoP fixtures alongside; loaders strip the
+      report file trailing newline when seeding gpresultReport.
+  m06:
+    home: seeds/m06/home          # ~/lab06/: byte-identical copies of modules/06-api-fundamentals/labs/*
+    path_bin: seeds/m06/bin       # no PATH tools — the lab's scripts live in ~/lab06
+
+# Reusable hole definitions for booted structured captures (module 02 family): `find` is the
+# capture-time scrub regex (matches in captured streams are replaced with {{name}}), `pattern`
+# is what the fidelity suite accepts inside that hole, `source` names the entropy (ISC-56).
+hole_defs:
+  - &h_since { name: since_ts, find: "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} UTC", pattern: "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} UTC", source: "capture wall clock — sim pins module-canon scenario times (ISC-132)" }
+  - &h_ago { name: ago, find: "; [0-9][^;\\n]{0,24} ago", pattern: "; [0-9][^;\\n]{0,24} ago", source: "capture-relative duration" }
+  - &h_jts { name: journal_ts, find: "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 0-3][0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}", pattern: "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 0-3][0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}", source: "capture wall clock — sim renders sim-clock times" }
+  - &h_pid { name: pid, find: "\\[[0-9]+\\]", pattern: "\\[[0-9]+\\]", source: "kernel pid allocation — sim pins scenario pids (sshd 742)" }
+  - &h_mainpid { name: main_pid, find: "Main PID: [0-9]+", pattern: "Main PID: [0-9]+", source: "kernel pid allocation" }
+  - &h_procpid { name: proc_pid, find: "Process: [0-9]+", pattern: "Process: [0-9]+", source: "kernel pid allocation" }
+  - &h_tasks { name: tasks, find: "Tasks: [0-9]+ \\(limit: [0-9]+\\)", pattern: "Tasks: [0-9]+ \\(limit: [0-9]+\\)", source: "host cpu/memory limits" }
+  - &h_mem { name: memory, find: "Memory: [0-9.]+[KMG] \\(peak: [0-9.]+[KMG]\\)", pattern: "Memory: [0-9.]+[KMG] \\(peak: [0-9.]+[KMG]\\)", source: "runtime memory usage" }
+  - &h_cpu { name: cpu, find: "CPU: [0-9.]+m?s", pattern: "CPU: [0-9.]+m?s", source: "runtime cpu usage" }
+  - &h_cgroup { name: cgroup_prefix, find: "/docker/[0-9a-f]{64}", pattern: "(?:/docker/[0-9a-f]{64})?", source: "capture container id — absent on the simulated host" }
+  - &h_cgpid { name: cgroup_pid, find: "─[0-9]+", pattern: "─[0-9]+", source: "kernel pid allocation" }
+  - &h_port { name: port, find: "port [0-9]{4,5}", pattern: "port [0-9]{4,5}", source: "ephemeral client port" }
+  - &h_fp { name: fingerprint, find: "SHA256:[A-Za-z0-9+/]{43}", pattern: "SHA256:[A-Za-z0-9+/]{43}", source: "key entropy (sim derives from structured session entropy)" }
+  - &h_art { name: randomart, find: "^\\|.{17}\\|$", pattern: "\\|.{17}\\|", source: "key entropy randomart (drunken-bishop over the key hash)" }
+  - &h_pspid { name: ps_pid, find: " +[0-9]+ sshd", pattern: " +[0-9]+ sshd", source: "kernel pid allocation (right-aligned column absorbs digit count)" }
+  - &h_duration { name: duration, find: "Duration: [0-9.]+(?:ms|s|min)", pattern: "Duration: [0-9.]+(?:ms|s|min)", source: "runtime active-period duration" }
+  - &h_clientip { name: client_ip, find: "(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?= port)|(?<=user [a-z]+ )(?:[0-9]{1,3}\\.){3}[0-9]{1,3}|::1(?= port)|(?<=user [a-z]+ )::1", pattern: "(?:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}|::1)", source: "capture-network client address — sim pins the module-canon workstation address 10.0.0.5 (§4.7)" }
+  - &h_lsdate { name: ls_date, find: "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}", pattern: "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}", source: "capture mtime — sim renders sim-clock mtimes" }
 
 entries:
   # ---- module 01 — §5.1 orientation (prose canon transcripts) ----
@@ -345,3 +400,912 @@ entries:
     cwd: /tmp
     cmd: "fdesetup status"
     notes: captures the real "FileVault is On." line shape; the sim's scenario parameterizes On/Off using module 03's committed fixture strings
+
+  # ---- module 05 — git porcelain (REAL local-git captures; ground truth for the
+  #      isomorphic-git engine, web ISA ISC-66; source wasm-engine = the git-engine suite
+  #      owns replay — tests/engines-git.test.ts byte-diffs porcelain AND commit SHAs) ----
+  - id: m05-git-init
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git init"
+  - id: m05-git-status-empty
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git status"
+  - id: m05-git-status-untracked
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git status"
+  - id: m05-git-add
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git add validator.py"
+  - id: m05-git-status-staged
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git status"
+  - id: m05-git-commit-initial
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git commit -m \"Start with an empty validator on main\""
+  - id: m05-git-log-oneline-initial
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git log --oneline"
+  - id: m05-git-switch-create
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git switch -c handle-malformed"
+  - id: m05-git-status-mixed
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git status"
+  - id: m05-git-add-multi
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git add validator.py test_validator.py"
+  - id: m05-git-commit-feature
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git commit -m \"Record malformed evidence files as errors instead of crashing\""
+  - id: m05-git-log-oneline-feature
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git log --oneline"
+  - id: m05-git-log-graph
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git log --oneline --graph"
+  - id: m05-git-branch
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git branch"
+  - id: m05-git-switch-main
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git switch main"
+  - id: m05-git-merge-ff
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git merge handle-malformed"
+  - id: m05-git-status-clean
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git status"
+  - id: m05-git-log-graph-merged
+    module: "05"
+    source: wasm-engine
+    match: synthesized-porcelain
+    cwd: ~/lab05
+    cmd: "git log --oneline --graph"
+
+  # ---- module 04 — PowerShell evidence surface (pwsh-authored; web ISA ISC-63/64) ----
+  # No PowerShell engine exists for the browser: every fixture below is AUTHORED, with the
+  # canon hierarchy module-04 §5 prose + labs/* committed fixtures + Microsoft Learn rules;
+  # each entry carries its citation and the sim is pinned to PS 5.1 / en-US / WIN-LAB04.
+  - id: m04-bitlocker-bare
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-BitLockerVolume
+    citation: Microsoft Learn Get-BitLockerVolume (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume) — object properties (MountPoint, VolumeType, VolumeStatus, EncryptionPercentage); 4-property default table per the documented 4-vs-5 rule (https://learn.microsoft.com/powershell/scripting/samples/using-format-commands-to-change-output-view)
+    notes: Sim object shape is the 4 properties the module teaches; a real box renders a custom format view with more columns — the simulated store is the declared truth here.
+  - id: m04-bitlocker-select
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus, EncryptionPercentage"
+    citation: module 04 §5.1 worked example (byte canon); cmdlet surface per Microsoft Learn Get-BitLockerVolume (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume); table layout per PS 5.1 default Format-Table rules (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/format-table, https://learn.microsoft.com/powershell/scripting/samples/using-format-commands-to-change-output-view)
+  - id: m04-bitlocker-task1
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus"
+    citation: module 04 §6 lab task 1 invocation; cmdlet surface per Microsoft Learn Get-BitLockerVolume (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume); layout rule-derived from the same Format-Table defaults the §5.1 byte canon pins (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/format-table)
+  - id: m04-defender-bare
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-MpComputerStatus
+    citation: Microsoft Learn Get-MpComputerStatus (https://learn.microsoft.com/powershell/module/defender/get-mpcomputerstatus) — property names; representative values authored for the WIN-LAB04 scenario; >4 properties render as Format-List per the documented 4-vs-5 rule (https://learn.microsoft.com/powershell/scripting/samples/using-format-commands-to-change-output-view)
+    notes: Six-property seed store (names from the Defender module reference) so the bare cmdlet honestly exercises the list-view rule; a real box exposes many more properties.
+  - id: m04-defender-select
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge
+    citation: module 04 §5.2 worked example (byte canon); cmdlet surface per Microsoft Learn Get-MpComputerStatus (https://learn.microsoft.com/powershell/module/defender/get-mpcomputerstatus); right-aligned boolean/numeric columns per Format-Table defaults (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/format-table)
+  - id: m04-export-csv
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    pre:
+      - |-
+        [pscustomobject]@{
+          Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus
+          Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled
+          Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut
+          Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+          Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name
+        } | Export-Csv bundle.csv -NoTypeInformation
+    cmd: Get-Content bundle.csv
+    citation: 'module 04 §6 lab task 6 (bundle.csv deliverable); Export-Csv per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/export-csv) — all fields quoted, -NoTypeInformation drops the #TYPE header, and an array-valued property genuinely exports as "System.Object[]" (documented Export-Csv behavior; deliberate teach-by-failure beat, DESIGN-INPUTS fidelity note 4)'
+  - id: m04-gpresult-badsyntax
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: gpresult
+    citation: Microsoft Learn gpresult command reference (https://learn.microsoft.com/windows-server/administration/windows-commands/gpresult) — the tool requires a scope/switch; invalid-syntax error shape per the command-line reference
+  - id: m04-gpresult-r
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: gpresult /R
+    citation: "Microsoft Learn gpresult command reference (https://learn.microsoft.com/windows-server/administration/windows-commands/gpresult) — RSoP summary-scope report structure; representative report authored for the WIN-LAB04 scenario (module 04 §4.4: gpresult shows the INTENDED policy; the registry holds the effective value)"
+    notes: "Authored representative fixture: gpresult output is machine-specific and never shown in module prose (DESIGN-INPUTS fidelity note 5)."
+  - id: m04-itemproperty-list
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut
+    citation: Microsoft Learn Get-ItemProperty (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty) — documented list output with PSPath/PSParentPath/PSChildName/PSDrive/PSProvider note properties of the registry provider
+  - id: m04-itemproperty-screensave
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: (Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut
+    citation: module 04 §5.4 worked example (ScreenLockTimeoutSeconds = 600, byte canon) and §6 lab task 3; Get-ItemProperty surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty)
+    notes: Seeded numeric per the module's canonical bundle; the real registry value is REG_SZ '600' (documented divergence, DESIGN-INPUTS fidelity note 6).
+  - id: m04-json-redirect
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    pre:
+      - |-
+        [pscustomobject]@{
+          Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus
+          Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled
+          Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut
+          Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+          Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name
+        } | ConvertTo-Json > bundle.json
+    cmd: Get-Content bundle.json
+    citation: module 04 §6 lab task 6 (bundle.json deliverable); Get-Content surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-content); content is the §5.4 byte-canon JSON
+    notes: Files are written with CRLF line endings (Windows); Get-Content enumerates lines.
+  - id: m04-localgroup-members
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-LocalGroupMember -Group Administrators
+    citation: Microsoft Learn Get-LocalGroupMember (https://learn.microsoft.com/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember) — documented example output shape (ObjectClass/Name/PrincipalSource default table); membership values from the module's canonical compliant bundle (labs/sample-bundle-compliant.json)
+  - id: m04-localgroup-names
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: (Get-LocalGroupMember -Group Administrators).Name
+    citation: module 04 §5.4 worked example (Control_CC6_3_LocalAdmins value, byte canon); Get-LocalGroupMember surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember)
+  - id: m04-not-recognized
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: frobnicate
+    citation: real Windows PowerShell 5.1 CommandNotFoundException text (Microsoft Learn cmdlet docs and the "term is not recognized" troubleshooting guidance, https://learn.microsoft.com/powershell/scripting/developer/cmdlet/cmdlet-overview); negative space per web ISA ISC-120
+  - id: m04-pscustomobject-json
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: |-
+      [pscustomobject]@{
+        Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus
+        Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled
+        Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut
+        Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+        Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name
+      } | ConvertTo-Json
+    citation: module 04 §5.4 worked example (byte canon); ConvertTo-Json surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/convertto-json)
+    notes: Canon JSON shape = the module's §5.4 block and the committed lab bundles (2-space indent, inline arrays). Real PS 5.1 ConvertTo-Json emits 4-space indentation and exploded arrays — matches neither canon source; the module itself labels its output representative (DESIGN-INPUTS fidelity note 2). Collection-semantics property access keeps LocalAdmins an array, as the lab's happy-path evaluator requires.
+  - id: m04-readonly-boundary
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Set-MpPreference -DisableRealtimeMonitoring 1
+    citation: "module 04 §4.8 (read-only by construction) — an honest SIM-BOUNDARY message, not simulated Windows output: the lab box refuses mutating verbs by design and says so"
+    notes: "Deliberately labeled [sim boundary]: a real box would accept this cmdlet; the lab's evidence session is all Get- by construction."
+  - id: m04-winevent-4625-select
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: |-
+      Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 |
+              Select-Object TimeCreated, Id
+    citation: module 04 §5.3 worked example (byte canon); cmdlet surface per Microsoft Learn Get-WinEvent (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent); TimeCreated rendered in pinned culture en-US
+  - id: m04-winevent-count
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count
+    citation: module 04 §5.4 worked example (FailedLogonCount = 3, byte canon) and §4.5 .Count note; Get-WinEvent surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent)
+  - id: m04-winevent-nomatch
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=9999 } -MaxEvents 20
+    citation: Microsoft Learn Get-WinEvent reference (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent) — documented "No events were found that match the specified selection criteria." non-terminating error
+
+  # ---- module 02 — booted captures (systemd as PID 1; web ISA ISC-60) -------------------
+  # All entries: source docker-linux-booted, seed m02 (apply-seed.sh overlays the scenario
+  # world), session user grcops (uid 1001) unless `user:` overrides, cwd /home/grcops.
+  # `pre_root` runs as root (container setup); `pre` runs inside the learner session.
+  # `sim_equiv` declares the interactive line + dialogue lines the learner types in the sim
+  # where the harness needed piped `sudo -S` (byte contract = concatenated streams).
+
+  # -- identity & least privilege (§4.4 / §5.1 canon) --
+  - id: m02-id-self
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "id"
+  - id: m02-id-grcops
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "id grcops"
+    notes: §5.1 canon line — uid=1001(grcops) … 27(sudo)
+  - id: m02-id-intern
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "id intern"
+    notes: §5.1 canon negative case — no privileged groups
+  - id: m02-id-nouser
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "id intern"
+    notes: negative space — intern does not exist until the learner creates it
+
+  # -- user management (§6 tasks 1–2) --
+  - id: m02-useradd-nonroot
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "useradd -m intern"
+    notes: the permission wall that motivates sudo
+  - id: m02-sudo-useradd
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S useradd -m intern"
+    sim_equiv: { cmd: "sudo useradd -m intern", dialogue: ["labpass"] }
+    post: ["id intern", "sudo ls -a -C -w80 /home/intern", "grep intern /etc/passwd", "stat -c \"%A %U %G\" /home/intern"]
+  - id: m02-useradd-exists
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "echo labpass | sudo -S useradd -m intern"
+    sim_equiv: { cmd: "sudo useradd -m intern", dialogue: ["labpass"] }
+  - id: m02-sudo-usermod
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "echo labpass | sudo -S usermod -aG sudo intern"
+    sim_equiv: { cmd: "sudo usermod -aG sudo intern", dialogue: ["labpass"] }
+    post: ["id intern"]
+  - id: m02-usermod-badgroup
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "echo labpass | sudo -S usermod -aG auditors intern"
+    sim_equiv: { cmd: "sudo usermod -aG auditors intern", dialogue: ["labpass"] }
+  - id: m02-sudo-passwd
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "printf 'labpass\\nSrv!2026\\nSrv!2026\\n' | sudo -S passwd intern"
+    sim_equiv: { cmd: "sudo passwd intern", dialogue: ["labpass", "Srv!2026", "Srv!2026"] }
+  - id: m02-passwd-mismatch
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "printf 'labpass\\nSrv!2026\\nDIFFERENT\\n' | sudo -S passwd intern"
+    sim_equiv: { cmd: "sudo passwd intern", dialogue: ["labpass", "Srv!2026", "DIFFERENT"] }
+  - id: m02-passwd-nonroot
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "passwd intern"
+
+  # -- sudo boundary (§4.4) --
+  - id: m02-sudo-whoami
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S whoami"
+    sim_equiv: { cmd: "sudo whoami", dialogue: ["labpass"] }
+  - id: m02-sudo-wrongpw
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "printf 'bad1\\nbad2\\nbad3\\n' | sudo -S whoami"
+    sim_equiv: { cmd: "sudo whoami", dialogue: ["bad1", "bad2", "bad3"] }
+  - id: m02-sudo-nopw-eof
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "sudo -S whoami < /dev/null"
+    sim_equiv: { cmd: "sudo whoami", dialogue: [], eof: true }
+  - id: m02-sudo-notsudoer
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/intern
+    user: intern
+    pre_root: ["useradd -m intern", "echo intern:internpw | chpasswd"]
+    cmd: "echo internpw | sudo -S whoami"
+    sim_equiv: { cmd: "sudo whoami", dialogue: ["internpw"] }
+    notes: two-sided least privilege — the ordinary account cannot elevate
+  - id: m02-sudo-cached
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "sudo whoami"
+    sim_equiv: { cmd: "sudo whoami", dialogue: [] }
+    notes: second sudo in a session reuses the cached credential — no prompt
+  - id: m02-sudo-journal
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre: ["echo labpass | sudo -S whoami"]
+    cmd: "sudo journalctl -t sudo -n 3"
+    sim_equiv: { cmd: "sudo journalctl -t sudo -n 3", dialogue: [] }
+    holes: [*h_jts, *h_pid]
+    notes: every elevation is an evidence-producing event — sudo's own journal lines
+
+  # -- processes (§4.2 canon) --
+  - id: m02-ps-sshd
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ps -o user,pid,comm -C sshd"
+    holes: [*h_pspid]
+    notes: §4.2 canon shape — sim pins scenario PID 742; procps right-aligns PID width 7
+  - id: m02-ps-aux
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ps aux"
+    holes:
+      - { name: ps_aux_row, pattern: "(suite: per-row format check)", source: "kernel pids + runtime cpu/mem — suite compares header byte-exact and each sim row against the captured row grammar (capture includes harness-only rows the simulated box does not have)" }
+    notes: suite-special-cased — header + per-row format fidelity, not line-count
+
+  # -- systemd unit lifecycle (§4.3 / §5.4; the apt→start→enable arc is §6 task 6) --
+  - id: m02-systemctl-status-ssh
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "systemctl status ssh"
+    holes: [*h_since, *h_ago, *h_mainpid, *h_procpid, *h_tasks, *h_mem, *h_cpu, *h_cgroup, *h_cgpid]
+    notes: non-root status shows NO journal tail (cannot read the system journal) — verified real behavior
+  - id: m02-systemctl-status-ec-notfound
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "systemctl status evidence-collector"
+    notes: fresh box — the unit does not exist until the learner installs the package
+  - id: m02-apt-install-deb
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S apt install -y ./evidence-collector_1.0.0_all.deb"
+    pipe_context: true
+    sim_equiv: { cmd: "sudo apt install -y ./evidence-collector_1.0.0_all.deb", dialogue: ["labpass"] }
+    notes: real apt transcript for the baked scenario .deb (no network; deterministic for the pinned image)
+  - id: m02-apt-install-notfound
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S apt install -y nginx"
+    pipe_context: true
+    sim_equiv: { cmd: "sudo apt install -y nginx", dialogue: ["labpass"] }
+    notes: honest negative space — the lab box has no package lists (offline); only the scenario .deb installs
+  - id: m02-apt-nonroot
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "apt install -y ./evidence-collector_1.0.0_all.deb"
+    pipe_context: true
+  - id: m02-apt-list-installed
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "apt list --installed"
+    pipe_context: true
+    notes: >
+      §4.8 — the host SBOM. Captured non-tty, so apt's stability WARNING is on stderr; the sim
+      emits it only when output is piped/redirected (real tty behavior) and the suite replays
+      this entry through a pipe.
+  - id: m02-apt-list-grep-ec
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb"]
+    cmd: "apt list --installed | grep evidence"
+    notes: the installed package appears in the package DB — inventory evidence
+  - id: m02-systemctl-start-ec
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb"]
+    cmd: "echo labpass | sudo -S systemctl start evidence-collector"
+    sim_equiv: { cmd: "sudo systemctl start evidence-collector", dialogue: ["labpass"] }
+    post: ["systemctl is-active evidence-collector"]
+  - id: m02-systemctl-status-ec-running-disabled
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector"]
+    cmd: "systemctl status evidence-collector"
+    holes: [*h_since, *h_ago, *h_mainpid, *h_tasks, *h_mem, *h_cpu, *h_cgroup, *h_cgpid]
+    notes: THE §4.3 trap state — active (running) but disabled; gone after the next reboot
+  - id: m02-systemctl-enable-ec
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector"]
+    cmd: "echo labpass | sudo -S systemctl enable evidence-collector"
+    sim_equiv: { cmd: "sudo systemctl enable evidence-collector", dialogue: ["labpass"] }
+    post: ["systemctl is-enabled evidence-collector"]
+  - id: m02-systemctl-status-ec-canon
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector", "systemctl enable evidence-collector"]
+    cmd: "systemctl status evidence-collector"
+    holes: [*h_since, *h_ago, *h_mainpid, *h_tasks, *h_mem, *h_cpu, *h_cgroup, *h_cgpid]
+    notes: §4.3/§5.4 canon state — enabled AND active (running); module prose shows a condensed rendering ("representative output")
+  - id: m02-systemctl-stop-ec
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector", "systemctl enable evidence-collector"]
+    cmd: "echo labpass | sudo -S systemctl stop evidence-collector"
+    sim_equiv: { cmd: "sudo systemctl stop evidence-collector", dialogue: ["labpass"] }
+    post: ["systemctl is-active evidence-collector"]
+  - id: m02-systemctl-status-ec-stopped
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector", "systemctl enable evidence-collector", "systemctl stop evidence-collector"]
+    cmd: "systemctl status evidence-collector"
+    holes: [*h_since, *h_ago, *h_mainpid, *h_procpid, *h_cpu, *h_duration]
+    notes: inactive (dead) — exit 3; non-root sees no journal tail
+  - id: m02-systemctl-disable-ec
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector", "systemctl enable evidence-collector"]
+    cmd: "echo labpass | sudo -S systemctl disable evidence-collector"
+    sim_equiv: { cmd: "sudo systemctl disable evidence-collector", dialogue: ["labpass"] }
+    post: ["systemctl is-enabled evidence-collector"]
+  - id: m02-systemctl-nonroot-stop
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb", "systemctl start evidence-collector"]
+    cmd: "systemctl stop evidence-collector"
+    notes: the write path needs root — Access denied without sudo
+  - id: m02-systemctl-nonroot-enable
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb"]
+    cmd: "systemctl enable evidence-collector"
+  - id: m02-systemctl-reload-ssh
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S systemctl reload ssh"
+    sim_equiv: { cmd: "sudo systemctl reload ssh", dialogue: ["labpass"] }
+    notes: §6 task 4 — reload the daemon after hardening sshd_config
+  - id: m02-systemctl-notfound
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "systemctl status nosuchsvc"
+
+  # -- journald (§4.7 / §6 task 7) --
+  - id: m02-journalctl-ssh-tail
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre: ["ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true", "echo labpass | sudo -S true"]
+    cmd: "sudo journalctl -u ssh | tail -5"
+    sim_equiv: { cmd: "sudo journalctl -u ssh | tail -5", dialogue: [] }
+    holes: [*h_jts, *h_pid, *h_clientip, *h_port, *h_fp]
+    notes: one key login leaves exactly these 5 unit lines — Accepted publickey is the §4.7 witness
+  - id: m02-journalctl-accepted
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre: ["ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true", "echo labpass | sudo -S true"]
+    cmd: "sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\""
+    sim_equiv: { cmd: "sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\"", dialogue: [] }
+    holes: [*h_jts, *h_pid, *h_clientip, *h_port, *h_fp]
+    notes: §4.7 canon query — module prose shows a truncated line ("representative"); the real line carries port + key fingerprint
+  - id: m02-journalctl-user-scope
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre: ["ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"]
+    cmd: "journalctl -u ssh | tail -2"
+    holes: [*h_jts, *h_pid, *h_clientip, *h_port]
+    notes: without sudo only the user-attributable lines are visible + the adm/systemd-journal Hint on stderr — real permission behavior
+  - id: m02-journalctl-noentries
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "sudo journalctl -u nosuchunit"
+    sim_equiv: { cmd: "sudo journalctl -u nosuchunit", dialogue: [] }
+  - id: m02-journalctl-after-reload
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["systemctl reload ssh"]
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "sudo journalctl -u ssh | tail -2"
+    sim_equiv: { cmd: "sudo journalctl -u ssh | tail -2", dialogue: [] }
+    holes: [*h_jts, *h_pid]
+    notes: pins the Reloading/Reloaded line pair the sim must append on reload
+
+  # -- ssh keys & auth (§4.6 / §6 tasks 1, 4, 7) --
+  - id: m02-ssh-keygen
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ssh-keygen -t ed25519 -N \"\" -f /home/grcops/.ssh/labkey -C \"grcops@web-01\""
+    holes: [*h_fp, *h_art]
+    post: ["ls -l /home/grcops/.ssh/labkey"]
+    post_holes: [*h_lsdate]
+    notes: fingerprint + randomart are key entropy — the sim derives both from structured session entropy (drunken-bishop is unit-tested against this capture's real pair)
+  - id: m02-ssh-login
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"
+    notes: first connection records the host key (known_hosts) — the Warning line is real
+  - id: m02-ssh-second
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"]
+    cmd: "ssh grcops@web-01 true"
+    notes: known host — silent clean login, exit 0
+  - id: m02-ssh-unknown-host
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ssh nosuchhost true"
+    sim_equiv: { cmd: "ssh nosuchhost true", dialogue: [] }
+  - id: m02-ssh-password-offered
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true"
+    notes: BEFORE hardening the server still offers password auth — "(publickey,password)" names the exposure; BatchMode pins the no-tty refusal deterministically
+  - id: m02-ssh-password-refused
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' >> /etc/ssh/sshd_config", "systemctl reload ssh"]
+    cmd: "ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true"
+    notes: AFTER hardening the password method disappears — "(publickey)" is the §6 task 4 proof
+
+  # -- sshd_config as evidence target (§4.5 / §5.3 canon) --
+  - id: m02-ls-l-sshd-config
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ls -l /etc/ssh/sshd_config"
+    notes: §4.5 canon — "-rw-r----- 1 root root 3243 May 27 09:02" (seed overlay pins bytes+mtime)
+  - id: m02-ls-l-ssh-dir
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ls -l /home/grcops/.ssh"
+    notes: §5.2 canon — id_ed25519 is 411 bytes, owner-only; authorized_keys seeded 644 (the learner tightens it)
+  - id: m02-naive-grep-trap
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["lab-setup 02"]
+    cmd: "grep PasswordAuthentication lab02-fixtures/sshd_config"
+    notes: §5.3 — the naive grep returns the commented decoy too (the §5.3 transcript targets the lab fixture copy; the real /etc file is 0640 and needs sudo)
+  - id: m02-sudo-grep-config
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S grep PasswordAuthentication /etc/ssh/sshd_config"
+    sim_equiv: { cmd: "sudo grep PasswordAuthentication /etc/ssh/sshd_config", dialogue: ["labpass"] }
+    notes: reading the 0640 root-owned config requires elevation — §4.5's verdict, lived
+  - id: m02-harden-tee
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"
+    sim_equiv: { cmd: "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config", dialogue: [] }
+    post: ["sudo tail -2 /etc/ssh/sshd_config"]
+    notes: the no-root-redirect idiom — sudo cache primed first so the pipe carries data, not a password
+  - id: m02-effective-directive
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre: ["lab-setup 02"]
+    cmd: "grep -v '^[[:space:]]*#' lab02-fixtures/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1"
+    notes: §5.3 canon resolution on the lab fixture — comments stripped, last directive wins
+  - id: m02-effective-directive-etc
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' >> /etc/ssh/sshd_config"]
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1"
+    sim_equiv: { cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1", dialogue: [] }
+    notes: resolving the EFFECTIVE directive on the real hardened config (sudo for the 0640 file)
+
+  # -- follow-up negative/edge captures --
+  - id: m02-usermod-nonroot
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["useradd -m intern"]
+    cmd: "usermod -aG sudo intern"
+  - id: m02-sudo-usage
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "sudo"
+  - id: m02-ps-bare
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ps"
+    holes:
+      - { name: ps_bare_row, pattern: "(suite: per-row format check)", source: "kernel pids — suite compares header byte-exact and sim rows against the captured row grammar (capture shows the harness runuser/bash context, the sim shows its login shell)" }
+  - id: m02-apt-reinstall
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["apt-get install -y /home/grcops/evidence-collector_1.0.0_all.deb"]
+    cmd: "echo labpass | sudo -S apt install -y ./evidence-collector_1.0.0_all.deb"
+    pipe_context: true
+    sim_equiv: { cmd: "sudo apt install -y ./evidence-collector_1.0.0_all.deb", dialogue: ["labpass"] }
+  - id: m02-systemctl-start-notfound
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "echo labpass | sudo -S systemctl start nosuchsvc"
+    sim_equiv: { cmd: "sudo systemctl start nosuchsvc", dialogue: ["labpass"] }
+  - id: m02-ssh-hostkey-ask
+    module: "02"
+    source: docker-linux-booted
+    match: structured
+    seed: m02
+    cwd: /home/grcops
+    cmd: "ssh grcops@web-01 true < /dev/null"
+    sim_equiv: { cmd: "ssh grcops@web-01 true", dialogue: [] }
+    holes: [*h_fp]
+    notes: default StrictHostKeyChecking asks; with stdin closed the answer is empty → verification fails. Pins the authenticity-prompt wording the sim's interactive dialogue replays.
+
+  # -- lab tooling --
+  - id: m02-lab-setup
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    cmd: "lab-setup 02"
+    post: ["cat lab02-fixtures/id-grcops.txt"]
+    notes: canon-locked to modules/02-linux-system-fundamentals/labs/setup.sh fixture bytes

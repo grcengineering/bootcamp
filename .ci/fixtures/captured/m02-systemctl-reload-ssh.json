@@ -1,0 +1,39 @@
+{
+  "id": "m02-systemctl-reload-ssh",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "echo labpass | sudo -S systemctl reload ssh",
+  "sim_equiv": {
+    "cmd": "sudo systemctl reload ssh",
+    "dialogue": [
+      "labpass"
+    ]
+  },
+  "pipe_context": false,
+  "citation": null,
+  "notes": "§6 task 4 — reload the daemon after hardening sshd_config",
+  "holes": null,
+  "post_holes": null,
+  "stdout": "",
+  "stderr": "[sudo] password for grcops: ",
+  "exit": 0,
+  "stderr_interactive": "[sudo] password for grcops: ",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:12:05.309Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

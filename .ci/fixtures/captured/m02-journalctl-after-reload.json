@@ -1,0 +1,57 @@
+{
+  "id": "m02-journalctl-after-reload",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [
+    "systemctl reload ssh"
+  ],
+  "pre": [
+    "echo labpass | sudo -S true"
+  ],
+  "cmd": "sudo journalctl -u ssh | tail -2",
+  "sim_equiv": {
+    "cmd": "sudo journalctl -u ssh | tail -2",
+    "dialogue": []
+  },
+  "pipe_context": false,
+  "citation": null,
+  "notes": "pins the Reloading/Reloaded line pair the sim must append on reload",
+  "holes": [
+    {
+      "name": "journal_ts",
+      "find": "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 0-3][0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}",
+      "pattern": "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 0-3][0-9] [0-9]{2}:[0-9]{2}:[0-9]{2}",
+      "source": "capture wall clock — sim renders sim-clock times"
+    },
+    {
+      "name": "pid",
+      "find": "\\[[0-9]+\\]",
+      "pattern": "\\[[0-9]+\\]",
+      "source": "kernel pid allocation — sim pins scenario pids (sshd 742)"
+    }
+  ],
+  "post_holes": null,
+  "stdout": "{{journal_ts}} web-01 sshd{{pid}}: Server listening on :: port 22.\n{{journal_ts}} web-01 systemd{{pid}}: Reloaded ssh.service - OpenBSD Secure Shell server.\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:12:09.388Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "journal_ts",
+      "pid"
+    ]
+  }
+}

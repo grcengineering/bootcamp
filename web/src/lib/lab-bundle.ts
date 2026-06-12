@@ -12,6 +12,12 @@ export interface LabBundle {
   seed: SeedSpec;
   expectations: Record<string, string>;
   epoch: string;
+  /**
+   * PowerShell engine seed (engine: powershell only) — the manifest seed profile's typed
+   * object stores (.ci/fixtures/seeds/m04/*.json with gpresultReportFile resolved), shaped
+   * as engines/powershell WindowsSeed. Absent for every other engine class.
+   */
+  windowsSeed?: unknown;
 }
 
 export const ENGINE_LABELS: Record<ExerciseSpec["engine"], string> = {
@@ -21,6 +27,7 @@ export const ENGINE_LABELS: Record<ExerciseSpec["engine"], string> = {
   python: "Python",
   sql: "SQL",
   policy: "Policy-as-code",
+  jq: "jq",
   api: "API lab",
   git: "Git",
   builder: "Guided builder",

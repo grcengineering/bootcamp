@@ -1,25 +1,45 @@
 # Executable environment contract — booted captures (root ISC-54; RedTeam finding 3).
 # Module 02's family (systemctl/journalctl/sshd/users) has NO ground truth in a userland container.
-# This image runs systemd as PID 1 (run with: --privileged --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup)
-# and seeds the module's scenario box: user grcops uid 1001 in sudo (module §4.4 prose canon),
-# sshd, and the module's fictional evidence-collector unit — authored HERE so that its
-# `systemctl status` output is captured REAL, never invented.
+# This image runs systemd as PID 1 (run with: --privileged --cgroupns=host --hostname web-01)
+# and seeds the module's scenario box: user grcops uid 1001 in sudo (module §4.4 prose canon)
+# with the scenario password "labpass" (sudo prompt flows are captured real), sshd, dbus
+# (so non-root systemctl talks to PID 1 exactly as on a real server), and the module's
+# fictional evidence-collector packaged as a REAL .deb baked into /home/grcops — so the
+# §6 task-6 `apt install` → `systemctl start/enable` flow produces REAL output, never invented.
+# The unit ships in /etc/systemd/system (module §4.3 prose canon path for the Loaded: line).
 FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends systemd systemd-sysv openssh-server sudo libfaketime \
+ && apt-get install -y --no-install-recommends systemd systemd-sysv openssh-server sudo dbus libfaketime \
  && rm -rf /var/lib/apt/lists/* \
  && userdel -r ubuntu \
  && useradd -m -u 1001 -s /bin/bash grcops \
- && usermod -aG sudo grcops
+ && usermod -aG sudo grcops \
+ && echo "grcops:labpass" | chpasswd
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC
 
-COPY evidence-collector /usr/local/bin/evidence-collector
-COPY evidence-collector.service /etc/systemd/system/evidence-collector.service
-RUN chmod +x /usr/local/bin/evidence-collector \
- && systemctl enable ssh \
- && systemctl enable evidence-collector
+# Bake the fictional service as a real Debian package; the box starts with it NOT installed
+# (the lab's apt-install scenario is the install path — capture replays the real transcript).
+COPY evidence-collector evidence-collector.service /tmp/pkgsrc/
+RUN mkdir -p /tmp/pkg/DEBIAN /tmp/pkg/usr/local/bin /tmp/pkg/etc/systemd/system \
+ && printf '%s\n' \
+      "Package: evidence-collector" \
+      "Version: 1.0.0" \
+      "Section: admin" \
+      "Priority: optional" \
+      "Architecture: all" \
+      "Maintainer: GRC Bootcamp <lab@grc.engineering>" \
+      "Description: GRC evidence collector daemon" \
+      " Emits a heartbeat journal line on an interval so controls monitoring" \
+      " has a live evidence stream to witness." \
+      > /tmp/pkg/DEBIAN/control \
+ && install -m 0755 /tmp/pkgsrc/evidence-collector /tmp/pkg/usr/local/bin/evidence-collector \
+ && install -m 0644 /tmp/pkgsrc/evidence-collector.service /tmp/pkg/etc/systemd/system/evidence-collector.service \
+ && dpkg-deb --build --root-owner-group /tmp/pkg /home/grcops/evidence-collector_1.0.0_all.deb \
+ && chown grcops:grcops /home/grcops/evidence-collector_1.0.0_all.deb \
+ && rm -rf /tmp/pkg /tmp/pkgsrc \
+ && systemctl enable ssh
 
 STOPSIGNAL SIGRTMIN+3
 CMD ["/lib/systemd/systemd"]

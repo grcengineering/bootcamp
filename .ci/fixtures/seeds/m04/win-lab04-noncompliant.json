@@ -1,0 +1,74 @@
+{
+  "_notes": [
+    "Module 04 assessment re-seed — the NON-COMPLIANT posture twin, mirroring the committed",
+    "lab fixture written by modules/04-windows-fundamentals/labs/setup.sh (THE canon):",
+    "encryption in progress, Defender off, signature age 19 days, screen lock disabled (0),",
+    "14 failed logons (4625), and an unexpected standing local admin (rogue.contractor).",
+    "Hostname matches the canonical bundle's WIN-LAB04-NONCOMPLIANT."
+  ],
+  "hostname": "WIN-LAB04-NONCOMPLIANT",
+  "gpresultReportFile": "gpresult-r-noncompliant.txt",
+  "bitlockerVolumes": [
+    {
+      "MountPoint": "C:",
+      "VolumeType": "OperatingSystem",
+      "VolumeStatus": "EncryptionInProgress",
+      "EncryptionPercentage": 43
+    }
+  ],
+  "defenderStatus": {
+    "AMServiceEnabled": true,
+    "AntispywareEnabled": false,
+    "AntivirusEnabled": false,
+    "AntivirusSignatureAge": 19,
+    "AntivirusSignatureLastUpdated": "2026-05-08T03:41:19",
+    "RealTimeProtectionEnabled": false
+  },
+  "registry": {
+    "HKCU:\\Control Panel\\Desktop": {
+      "ScreenSaveActive": "0",
+      "ScreenSaverIsSecure": "0",
+      "ScreenSaveTimeOut": 0
+    }
+  },
+  "securityLog": [
+    { "TimeCreated": "2026-05-27T07:55:02", "Id": 4624, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account was successfully logged on." },
+    { "TimeCreated": "2026-05-27T19:02:10", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:14", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:19", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:25", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:31", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:40", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:48", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:02:55", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:04", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:12", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:20", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:29", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:37", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T19:03:46", "Id": 4625, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account failed to log on." },
+    { "TimeCreated": "2026-05-27T20:11:33", "Id": 4624, "LevelDisplayName": "Information", "ProviderName": "Microsoft-Windows-Security-Auditing", "Message": "An account was successfully logged on." }
+  ],
+  "localGroups": {
+    "Administrators": [
+      {
+        "ObjectClass": "User",
+        "Name": "WIN-LAB04\\Administrator",
+        "PrincipalSource": "Local"
+      },
+      {
+        "ObjectClass": "User",
+        "Name": "WIN-LAB04\\rogue.contractor",
+        "PrincipalSource": "Local"
+      }
+    ],
+    "Users": [
+      {
+        "ObjectClass": "User",
+        "Name": "WIN-LAB04\\labuser",
+        "PrincipalSource": "Local"
+      }
+    ]
+  },
+  "files": []
+}

@@ -1,0 +1,25 @@
+{
+  "id": "m04-readonly-boundary",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Set-MpPreference -DisableRealtimeMonitoring 1",
+  "tty_equiv": null,
+  "citation": "module 04 §4.8 (read-only by construction) — an honest SIM-BOUNDARY message, not simulated Windows output: the lab box refuses mutating verbs by design and says so",
+  "notes": "Deliberately labeled [sim boundary]: a real box would accept this cmdlet; the lab's evidence session is all Get- by construction.",
+  "stdout": "",
+  "stderr": "Set-MpPreference : this simulated evidence session is read-only by construction — a collector observes and changes nothing (module 04 §4.8). [sim boundary]\n",
+  "exit": 1,
+  "stderr_interactive": "Set-MpPreference : this simulated evidence session is read-only by construction — a collector observes and changes nothing (module 04 §4.8). [sim boundary]\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

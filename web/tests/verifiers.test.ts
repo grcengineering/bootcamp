@@ -124,3 +124,137 @@ describe("verifier primitives — pass case + one-token mutation rejection", () 
     expect(out.evidence.length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Wave-2 engine-dispatch primitives (engine_result_equals, validator_passes,
+// mapping_score_at_least, api_pull_complete, policy_decision_is,
+// repo_state_matches) — pass case + one-token mutation rejection each.
+// ---------------------------------------------------------------------------
+describe("engine-dispatch primitives — pass case + mutation rejection", () => {
+  const s = fakeSession({});
+
+  test("engine_result_equals — stdout literal, generated, exit gate; mutations fail", () => {
+    const passCtx: VerifyContext = { ...ctx, engineResult: { stdout: "3\n", stderr: "", exit: 0 } };
+    expect(runCheck(s, { check: "engine_result_equals", value: "3" }, passCtx).pass).toBe(true);
+    expect(runCheck(s, { check: "engine_result_equals", from: "generated" }, passCtx).pass).toBe(true);
+    expect(runCheck(s, { check: "engine_result_equals", value: "3", exit: 0 }, passCtx).pass).toBe(true);
+    // mutations: content drift, exit drift, wrong stream, no run yet
+    expect(runCheck(s, { check: "engine_result_equals", value: "4" }, passCtx).pass).toBe(false);
+    const exit1: VerifyContext = { ...ctx, engineResult: { stdout: "3\n", stderr: "", exit: 1 } };
+    expect(runCheck(s, { check: "engine_result_equals", value: "3", exit: 0 }, exit1).pass).toBe(false);
+    expect(runCheck(s, { check: "engine_result_equals", stream: "stderr", value: "3" }, passCtx).pass).toBe(false);
+    const noRun = runCheck(s, { check: "engine_result_equals", value: "3" }, ctx);
+    expect(noRun.pass).toBe(false);
+    expect(noRun.gap).toContain("run");
+  });
+
+  test("validator_passes — exit + stdout_matches; mutations fail", () => {
+    const good: VerifyContext = { ...ctx, validatorRun: { stdout: "PASS: all green\n", stderr: "", exit: 0 } };
+    expect(runCheck(s, { check: "validator_passes" }, good).pass).toBe(true);
+    expect(runCheck(s, { check: "validator_passes", stdout_matches: "^PASS" }, good).pass).toBe(true);
+    // the fail-then-pass arc: a failing validator can be the EXPECTED state of a task
+    const failing: VerifyContext = { ...ctx, validatorRun: { stdout: "", stderr: "FAIL: drift\n", exit: 1 } };
+    expect(runCheck(s, { check: "validator_passes", exit: 1 }, failing).pass).toBe(true);
+    // mutations
+    expect(runCheck(s, { check: "validator_passes" }, failing).pass).toBe(false);
+    expect(runCheck(s, { check: "validator_passes", stdout_matches: "^FAIL" }, good).pass).toBe(false);
+    expect(runCheck(s, { check: "validator_passes" }, ctx).pass).toBe(false);
+  });
+
+  test("mapping_score_at_least — floor by count and fraction; mutations fail", () => {
+    const score: VerifyContext = { ...ctx, mappingScore: { correct: 7, total: 8 } };
+    expect(runCheck(s, { check: "mapping_score_at_least", min_correct: 7 }, score).pass).toBe(true);
+    expect(runCheck(s, { check: "mapping_score_at_least", min_fraction: 0.8 }, score).pass).toBe(true);
+    // mutations: one row short, fraction short, never scored, paramless rejected
+    expect(runCheck(s, { check: "mapping_score_at_least", min_correct: 8 }, score).pass).toBe(false);
+    expect(runCheck(s, { check: "mapping_score_at_least", min_fraction: 0.9 }, score).pass).toBe(false);
+    expect(runCheck(s, { check: "mapping_score_at_least", min_correct: 1 }, ctx).pass).toBe(false);
+    expect(() => runCheck(s, { check: "mapping_score_at_least" } as never, ctx)).toThrow();
+  });
+
+  test("api_pull_complete — full cursor walk passes; gaps and known failures fail", () => {
+    const full: VerifyContext = {
+      ...ctx,
+      apiExchanges: [
+        { method: "GET", path: "/api/v2/users", cursor: null, status: 200 },
+        { method: "GET", path: "/api/v2/users", cursor: "eyJwYWdlIjoyfQ==", status: 200 },
+      ],
+    };
+    const params = { check: "api_pull_complete", collection: "/api/v2/users", cursors: ["", "eyJwYWdlIjoyfQ=="] } as const;
+    expect(runCheck(s, { ...params }, full).pass).toBe(true);
+    // mutation: second page never pulled
+    const partial: VerifyContext = { ...ctx, apiExchanges: [full.apiExchanges![0]] };
+    const out = runCheck(s, { ...params }, partial);
+    expect(out.pass).toBe(false);
+    expect(out.gap).toContain("next_cursor");
+    // mutation: last attempt on a page is a KNOWN failure (401) — fails
+    const denied: VerifyContext = {
+      ...ctx,
+      apiExchanges: [
+        full.apiExchanges![0],
+        { method: "GET", path: "/api/v2/users", cursor: "eyJwYWdlIjoyfQ==", status: 401 },
+      ],
+    };
+    expect(runCheck(s, { ...params }, denied).pass).toBe(false);
+    // unknown status (no -i) is not punished — request-side ground truth carries it
+    const unknown: VerifyContext = {
+      ...ctx,
+      apiExchanges: [
+        { method: "GET", path: "/api/v2/users", cursor: null, status: null },
+        { method: "GET", path: "/api/v2/users", cursor: "eyJwYWdlIjoyfQ==", status: null },
+      ],
+    };
+    expect(runCheck(s, { ...params }, unknown).pass).toBe(true);
+    // mutation: nothing pulled at all
+    expect(runCheck(s, { ...params }, ctx).pass).toBe(false);
+    // mutation: POSTs don't count as a pull
+    const posts: VerifyContext = { ...ctx, apiExchanges: [{ method: "POST", path: "/api/v2/users", cursor: null, status: 200 }] };
+    expect(runCheck(s, { ...params }, posts).pass).toBe(false);
+  });
+
+  test("policy_decision_is — decision + determining policy; mutations fail", () => {
+    const evaluated: VerifyContext = {
+      ...ctx,
+      engineResult: {
+        stdout: "ALLOW\nDENY\n", stderr: "", exit: 0,
+        artifacts: { decisions: [
+          { decision: "allow", reason: ["policy0"] },
+          { decision: "deny", reason: [] },
+        ]},
+      },
+    };
+    expect(runCheck(s, { check: "policy_decision_is", index: 0, decision: "allow" }, evaluated).pass).toBe(true);
+    expect(runCheck(s, { check: "policy_decision_is", index: 1, decision: "deny" }, evaluated).pass).toBe(true);
+    expect(runCheck(s, { check: "policy_decision_is", index: 0, decision: "allow", reason_includes: "policy0" }, evaluated).pass).toBe(true);
+    // mutations: flipped decision, wrong determining policy, out-of-range index, no run
+    expect(runCheck(s, { check: "policy_decision_is", index: 1, decision: "allow" }, evaluated).pass).toBe(false);
+    expect(runCheck(s, { check: "policy_decision_is", index: 0, decision: "allow", reason_includes: "policy9" }, evaluated).pass).toBe(false);
+    expect(runCheck(s, { check: "policy_decision_is", index: 5, decision: "allow" }, evaluated).pass).toBe(false);
+    expect(runCheck(s, { check: "policy_decision_is", index: 0, decision: "allow" }, ctx).pass).toBe(false);
+  });
+
+  test("repo_state_matches — branch/branches/HEAD/commit-count; mutations fail", () => {
+    const state: VerifyContext = {
+      ...ctx,
+      repoState: {
+        branch: "main",
+        branches: ["handle-malformed", "main"],
+        headSha: "abc123",
+        commits: [
+          { oid: "abc123", subject: "Record malformed evidence files as errors instead of crashing", parents: 1 },
+          { oid: "def456", subject: "Start with an empty validator on main", parents: 0 },
+        ],
+      },
+    };
+    expect(runCheck(s, {
+      check: "repo_state_matches", branch: "main", branches_include: ["handle-malformed"],
+      head_subject_matches: "malformed", min_commits: 2,
+    }, state).pass).toBe(true);
+    // mutations
+    expect(runCheck(s, { check: "repo_state_matches", branch: "handle-malformed" }, state).pass).toBe(false);
+    expect(runCheck(s, { check: "repo_state_matches", branches_include: ["release"] }, state).pass).toBe(false);
+    expect(runCheck(s, { check: "repo_state_matches", head_subject_matches: "empty validator" }, state).pass).toBe(false);
+    expect(runCheck(s, { check: "repo_state_matches", min_commits: 3 }, state).pass).toBe(false);
+    expect(runCheck(s, { check: "repo_state_matches", branch: "main" }, ctx).pass).toBe(false);
+  });
+});

@@ -1,0 +1,42 @@
+{
+  "id": "m02-ps-aux",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "ps aux",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": "suite-special-cased — header + per-row format fidelity, not line-count",
+  "holes": [
+    {
+      "name": "ps_aux_row",
+      "pattern": "(suite: per-row format check)",
+      "source": "kernel pids + runtime cpu/mem — suite compares header byte-exact and each sim row against the captured row grammar (capture includes harness-only rows the simulated box does not have)"
+    }
+  ],
+  "post_holes": null,
+  "stdout": "USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nroot           1 20.0  0.0  20924 11796 ?        Ss   16:11   0:00 /lib/systemd/\nroot          23 10.5  0.0  33696 11692 ?        S<s  16:11   0:00 /usr/lib/syst\nmessage+      78  0.0  0.0   8404  4000 ?        Ss   16:11   0:00 @dbus-daemon \nroot          81  0.0  0.0  17204  7108 ?        Ss   16:11   0:00 /usr/lib/syst\nroot         112  0.0  0.0  12060  7352 ?        Ss   16:11   0:00 sshd: /usr/sb\nroot         114  0.0  0.0   4472  3272 ?        Ss   16:11   0:00 bash -s\nroot         122  0.0  0.0   5556  2696 ?        S    16:11   0:00 runuser -u gr\ngrcops       123  0.0  0.0   4472  3276 ?        S    16:11   0:00 bash -c cd '/\ngrcops       124  0.0  0.0   8032  3884 ?        R    16:11   0:00 ps aux\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:11:52.762Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "ps_aux_row"
+    ]
+  }
+}

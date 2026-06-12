@@ -1,0 +1,39 @@
+{
+  "id": "m02-apt-install-notfound",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "echo labpass | sudo -S apt install -y nginx",
+  "sim_equiv": {
+    "cmd": "sudo apt install -y nginx",
+    "dialogue": [
+      "labpass"
+    ]
+  },
+  "pipe_context": false,
+  "citation": null,
+  "notes": "honest negative space — the lab box has no package lists (offline); only the scenario .deb installs",
+  "holes": null,
+  "post_holes": null,
+  "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\n",
+  "stderr": "[sudo] password for grcops: \nWARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\nE: Unable to locate package nginx\n",
+  "exit": 100,
+  "stderr_interactive": "[sudo] password for grcops: \nWARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\nE: Unable to locate package nginx\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:11:55.303Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": []
+  }
+}

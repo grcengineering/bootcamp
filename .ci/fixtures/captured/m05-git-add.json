@@ -1,0 +1,35 @@
+{
+  "id": "m05-git-add",
+  "module": "05",
+  "source": "wasm-engine",
+  "match": "synthesized-porcelain",
+  "seed": null,
+  "cwd": "~/lab05",
+  "pre": [
+    "git init",
+    "git status",
+    "git status"
+  ],
+  "cmd": "git add validator.py",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "REAL local-git capture (synthesized-porcelain ground truth for the isomorphic-git engine). Pinned identity/dates make commit SHAs deterministic; init.defaultBranch=main pinned to module-prose canon.",
+  "stdout": "",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "local-real-git",
+    "ground_truth": "git version 2.50.1 (Apple Git-155)",
+    "platform": "darwin-arm64",
+    "identity": "analyst <analyst@workstation>",
+    "author_date_initial": "1780304400 +0000",
+    "author_date_feature": "1780304700 +0000",
+    "config_isolation": "GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_NOSYSTEM=1 LC_ALL=C TZ=UTC",
+    "default_branch_pin": "git -c init.defaultBranch=main",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T15:43:18.571Z",
+    "captured_with": "capture-git.ts v1"
+  }
+}

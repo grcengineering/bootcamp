@@ -5,7 +5,7 @@
   "private": true,
   "description": "Static web app for the GRC Engineering Bootcamp — learner site + owner curriculum-health dashboard, deployed to GitHub Pages.",
   "scripts": {
-    "sync": "bun run scripts/sync-content.ts",
+    "sync": "bun run scripts/sync-content.ts && bun run scripts/fetch-engines.ts",
     "dev": "bun run sync && astro dev",
     "build": "bun run sync && astro build",
     "preview": "astro preview",
@@ -13,11 +13,17 @@
   },
   "dependencies": {
     "@astrojs/react": "^4.2.0",
+    "@cedar-policy/cedar-wasm": "4.11.1",
     "@iconify-json/heroicons": "^1.2.3",
+    "@open-policy-agent/opa-wasm": "1.10.0",
     "astro": "^5.6.0",
     "astro-icon": "^1.1.5",
+    "isomorphic-git": "1.38.4",
+    "jq-wasm": "1.1.0-jq-1.8.1",
+    "pyodide": "314.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sql.js": "1.14.1",
     "yaml": "^2.7.0",
     "zod": "^4.4.3"
   },
@@ -27,6 +33,7 @@
     "@types/bun": "^1.3.14",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/sql.js": "^1.4.11",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0"
   }

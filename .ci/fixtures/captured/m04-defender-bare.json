@@ -1,0 +1,25 @@
+{
+  "id": "m04-defender-bare",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-MpComputerStatus",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-MpComputerStatus (https://learn.microsoft.com/powershell/module/defender/get-mpcomputerstatus) — property names; representative values authored for the WIN-LAB04 scenario; >4 properties render as Format-List per the documented 4-vs-5 rule (https://learn.microsoft.com/powershell/scripting/samples/using-format-commands-to-change-output-view)",
+  "notes": "Six-property seed store (names from the Defender module reference) so the bare cmdlet honestly exercises the list-view rule; a real box exposes many more properties.",
+  "stdout": "AMServiceEnabled              : True\nAntispywareEnabled            : True\nAntivirusEnabled              : True\nAntivirusSignatureAge         : 1\nAntivirusSignatureLastUpdated : 5/26/2026 6:12:44 AM\nRealTimeProtectionEnabled     : True\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

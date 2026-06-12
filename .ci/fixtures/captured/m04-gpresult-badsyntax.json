@@ -1,0 +1,25 @@
+{
+  "id": "m04-gpresult-badsyntax",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "gpresult",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn gpresult command reference (https://learn.microsoft.com/windows-server/administration/windows-commands/gpresult) — the tool requires a scope/switch; invalid-syntax error shape per the command-line reference",
+  "notes": null,
+  "stdout": "",
+  "stderr": "ERROR: Invalid syntax.\nType \"GPRESULT /?\" for usage.\n",
+  "exit": 1,
+  "stderr_interactive": "ERROR: Invalid syntax.\nType \"GPRESULT /?\" for usage.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

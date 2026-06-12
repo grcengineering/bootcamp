@@ -1,0 +1,17 @@
+{
+  "id": "m02x-seedkey-randomart",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "byte-exact",
+  "cmd": "ssh-keygen -lvf /tmp/seedkey.pub",
+  "notes": "real `ssh-keygen -lvf` over the committed scenario public key (seeds/m02/home/.ssh/id_ed25519.pub) — the drunken-bishop unit-test anchor: the sim algorithm must reproduce this art from the same key bytes",
+  "stdout": "256 SHA256:JVB5ZHzrL5HkRD8yBNMssHoCBCmnRK3bzYTzvKAumBM grcops@web-01 admin (ED25519)\n+--[ED25519 256]--+\n|..oo. ..o==+     |\n|..oo   ..o+.*    |\n|.+. o   o..= o   |\n|.. o o . o  * o  |\n|  o B o S  = + . |\n|E. o = o    =    |\n|.o. . .      o   |\n|=.   .      . .  |\n|oo           .   |\n+----[SHA256]-----+\n",
+  "stderr": "",
+  "exit": 0,
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "captured_at": "2026-06-12T16:00:00Z",
+    "captured_with": "interactive probe (docker exec), recorded verbatim"
+  }
+}

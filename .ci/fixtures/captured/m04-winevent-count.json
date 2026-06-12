@@ -1,0 +1,25 @@
+{
+  "id": "m04-winevent-count",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "(Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count",
+  "tty_equiv": null,
+  "citation": "module 04 §5.4 worked example (FailedLogonCount = 3, byte canon) and §4.5 .Count note; Get-WinEvent surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent)",
+  "notes": null,
+  "stdout": "3\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

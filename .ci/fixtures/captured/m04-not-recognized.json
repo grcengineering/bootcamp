@@ -1,0 +1,25 @@
+{
+  "id": "m04-not-recognized",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "frobnicate",
+  "tty_equiv": null,
+  "citation": "real Windows PowerShell 5.1 CommandNotFoundException text (Microsoft Learn cmdlet docs and the \"term is not recognized\" troubleshooting guidance, https://learn.microsoft.com/powershell/scripting/developer/cmdlet/cmdlet-overview); negative space per web ISA ISC-120",
+  "notes": null,
+  "stdout": "",
+  "stderr": "frobnicate : The term 'frobnicate' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.\n",
+  "exit": 1,
+  "stderr_interactive": "frobnicate : The term 'frobnicate' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

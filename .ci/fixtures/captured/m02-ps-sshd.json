@@ -1,0 +1,43 @@
+{
+  "id": "m02-ps-sshd",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "ps -o user,pid,comm -C sshd",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": "§4.2 canon shape — sim pins scenario PID 742; procps right-aligns PID width 7",
+  "holes": [
+    {
+      "name": "ps_pid",
+      "find": " +[0-9]+ sshd",
+      "pattern": " +[0-9]+ sshd",
+      "source": "kernel pid allocation (right-aligned column absorbs digit count)"
+    }
+  ],
+  "post_holes": null,
+  "stdout": "USER         PID COMMAND\nroot{{ps_pid}}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:11:52.135Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "ps_pid"
+    ]
+  }
+}

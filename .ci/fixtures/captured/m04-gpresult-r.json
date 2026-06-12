@@ -1,0 +1,25 @@
+{
+  "id": "m04-gpresult-r",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "gpresult /R",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn gpresult command reference (https://learn.microsoft.com/windows-server/administration/windows-commands/gpresult) — RSoP summary-scope report structure; representative report authored for the WIN-LAB04 scenario (module 04 §4.4: gpresult shows the INTENDED policy; the registry holds the effective value)",
+  "notes": "Authored representative fixture: gpresult output is machine-specific and never shown in module prose (DESIGN-INPUTS fidelity note 5).",
+  "stdout": "Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0\n(c) Microsoft Corporation. All rights reserved.\n\nCreated on 5/27/2026 at 9:20:14 PM\n\nRSOP data for WIN-LAB04\\labuser on WIN-LAB04 : Logging Mode\n-----------------------------------------------------------\n\nOS Configuration:            Standalone Workstation\nOS Version:                  10.0.26100\nSite Name:                   N/A\nRoaming Profile:             N/A\nLocal Profile:               C:\\Users\\labuser\nConnected over a slow link?: No\n\nUSER SETTINGS\n--------------\n    Last time Group Policy was applied: 5/27/2026 at 8:00:03 PM\n    Group Policy was applied from:      N/A\n    Group Policy slow link threshold:   500 kbps\n    Domain Name:                        WIN-LAB04\n    Domain Type:                        <Local Computer>\n\n    Applied Group Policy Objects\n    -----------------------------\n        Local Group Policy\n        Workstation Screen Lock Policy\n\n    The user is a part of the following security groups\n    ----------------------------------------------------\n        Everyone\n        BUILTIN\\Users\n        NT AUTHORITY\\INTERACTIVE\n        CONSOLE LOGON\n        NT AUTHORITY\\Authenticated Users\n        This Organization\n        Local account\n        LOCAL\n\nCOMPUTER SETTINGS\n------------------\n    Last time Group Policy was applied: 5/27/2026 at 8:00:01 PM\n    Group Policy was applied from:      N/A\n    Group Policy slow link threshold:   500 kbps\n    Domain Name:                        WIN-LAB04\n    Domain Type:                        <Local Computer>\n\n    Applied Group Policy Objects\n    -----------------------------\n        Local Group Policy\n        Workstation Screen Lock Policy\n\n    The computer is a part of the following security groups\n    ---------------------------------------------------------\n        BUILTIN\\Administrators\n        Everyone\n        NT AUTHORITY\\Authenticated Users\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

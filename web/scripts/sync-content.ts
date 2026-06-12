@@ -154,12 +154,13 @@ for (const id of readdirSync(MODULES).sort()) {
   const spec = parsed.data;
 
   // Seed bundle: fixture seed profile (home tree + PATH tools) + spec-local file refs.
+  // Non-shell profiles may lack home/path_bin (e.g. m04's typed object_store) — guarded.
   const seedDef = manifest?.seeds?.[spec.seed.profile];
   if (!seedDef) {
     console.error(`sync-content: FAIL — ${id} names seed profile '${spec.seed.profile}' not in .ci/fixtures/manifest.yaml`);
     process.exit(1);
   }
-  const files = walkSeedHome(join(FIXTURES, seedDef.home));
+  const files = seedDef.home ? walkSeedHome(join(FIXTURES, seedDef.home)) : [];
   for (const ref of spec.seed.files) {
     const src = join(MODULES, id, "exercises", ref.from);
     if (!existsSync(src)) {
@@ -168,10 +169,36 @@ for (const id of readdirSync(MODULES).sort()) {
     }
     files.push({ path: ref.path, content: readFileSync(src, "utf8") });
   }
+  if (spec.seed.path_tools.length > 0 && !seedDef.path_bin) {
+    console.error(`sync-content: FAIL — ${id} names path_tools but seed profile '${spec.seed.profile}' has no path_bin`);
+    process.exit(1);
+  }
   const seed: SeedSpecOut = {
     files,
-    tools: readSeedTools(join(FIXTURES, seedDef.path_bin), spec.seed.path_tools),
+    tools: seedDef.path_bin ? readSeedTools(join(FIXTURES, seedDef.path_bin), spec.seed.path_tools) : {},
   };
+
+  // PowerShell engine seed (web ISA ISC-63): the manifest profile's typed object stores,
+  // with the authored gpresult report file resolved — same loader rule the m04 fidelity
+  // suite uses (trailing newline stripped when seeding gpresultReport).
+  let windowsSeed: unknown;
+  if (spec.engine === "powershell") {
+    if (!seedDef.object_store) {
+      console.error(`sync-content: FAIL — ${id} (engine: powershell) needs seeds.${spec.seed.profile}.object_store in the manifest`);
+      process.exit(1);
+    }
+    const storePath = join(FIXTURES, seedDef.object_store);
+    const rawStore = JSON.parse(readFileSync(storePath, "utf8"));
+    const reportFile = rawStore.gpresultReportFile;
+    windowsSeed = {
+      ...rawStore,
+      gpresultReport:
+        typeof reportFile === "string"
+          ? readFileSync(join(dirname(storePath), reportFile), "utf8").replace(/\n$/, "")
+          : (rawStore.gpresultReport ?? ""),
+    };
+    delete (windowsSeed as Record<string, unknown>).gpresultReportFile;
+  }
 
   // Generated expectations (from: generated lookups), minus provenance keys.
   const expPath = join(MODULES, id, "exercises", "transcripts", "expectations.json");
@@ -182,7 +209,16 @@ for (const id of readdirSync(MODULES).sort()) {
     }
   }
 
-  writeFileSync(join(OUT_LABS, `${id}.json`), JSON.stringify({ spec, seed, expectations, epoch }, null, 2));
+  // Per-seed scenario epoch wins over the global fixture epoch (e.g. m02's May 27 clock).
+  const bundleEpoch: string = seedDef.epoch ?? epoch;
+  writeFileSync(
+    join(OUT_LABS, `${id}.json`),
+    JSON.stringify(
+      { spec, seed, expectations, epoch: bundleEpoch, ...(windowsSeed !== undefined ? { windowsSeed } : {}) },
+      null,
+      2,
+    ),
+  );
   labCount++;
 }
 

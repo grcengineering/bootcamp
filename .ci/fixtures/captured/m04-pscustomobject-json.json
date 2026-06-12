@@ -1,0 +1,25 @@
+{
+  "id": "m04-pscustomobject-json",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | ConvertTo-Json",
+  "tty_equiv": null,
+  "citation": "module 04 §5.4 worked example (byte canon); ConvertTo-Json surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/convertto-json)",
+  "notes": "Canon JSON shape = the module's §5.4 block and the committed lab bundles (2-space indent, inline arrays). Real PS 5.1 ConvertTo-Json emits 4-space indentation and exploded arrays — matches neither canon source; the module itself labels its output representative (DESIGN-INPUTS fidelity note 2). Collection-semantics property access keeps LocalAdmins an array, as the lab's happy-path evaluator requires.",
+  "stdout": "{\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\n  \"Control_CC6_8_DefenderEnabled\": true,\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\n  \"Control_CC6_1_FailedLogonCount\": 3,\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\n}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

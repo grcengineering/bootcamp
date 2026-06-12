@@ -1,0 +1,27 @@
+{
+  "id": "m04-json-redirect",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [
+    "[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | ConvertTo-Json > bundle.json"
+  ],
+  "cmd": "Get-Content bundle.json",
+  "tty_equiv": null,
+  "citation": "module 04 §6 lab task 6 (bundle.json deliverable); Get-Content surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-content); content is the §5.4 byte-canon JSON",
+  "notes": "Files are written with CRLF line endings (Windows); Get-Content enumerates lines.",
+  "stdout": "{\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\n  \"Control_CC6_8_DefenderEnabled\": true,\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\n  \"Control_CC6_1_FailedLogonCount\": 3,\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\n}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "modules/04-windows-fundamentals/module.md §5 + labs/* committed fixtures (fidelity hierarchy, root decision 2026-06-12)",
+    "captured_with": "authored 2026-06-12 (powershell-sim authoring pass; prose-canon blocks byte-verified against module.md at authoring time)"
+  }
+}

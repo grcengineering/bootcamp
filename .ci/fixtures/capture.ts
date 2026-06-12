@@ -22,10 +22,14 @@ const MANIFEST = parse(readFileSync(join(HERE, "manifest.yaml"), "utf8"));
 const CAPTURED = join(HERE, "captured");
 mkdirSync(CAPTURED, { recursive: true });
 
+type Hole = { name: string; find?: string; pattern: string; source: string };
 type Entry = {
   id: string; module: string; source: string; match: string; seed?: string;
   cwd: string; pre?: string[]; cmd: string; post?: string[];
   tty_equiv?: string; citation?: string; notes?: string;
+  // booted-mode extras (module 02 family)
+  user?: string; pre_root?: string[]; holes?: Hole[]; post_holes?: Hole[];
+  sim_equiv?: unknown; pipe_context?: boolean;
 };
 
 const args = process.argv.slice(2);
@@ -163,17 +167,143 @@ function captureMacos(e: Entry): Record<string, unknown> {
   };
 }
 
+// ---------------------------------------------------------------------------
+// booted mode (docker-linux-booted; module 02 family — systemd as PID 1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Scrub volatile spans out of captured streams per the entry's declared holes
+ * (`find` regex → `{{name}}` marker). Applied to structured entries only; the
+ * fidelity suite re-expands markers using each hole's `pattern`.
+ */
+function scrub(text: string | null, holes: Hole[] | undefined): string | null {
+  if (text === null || !holes) return text;
+  let out = text;
+  for (const h of holes) {
+    if (!h.find) continue;
+    out = out.replace(new RegExp(h.find, "gm"), `{{${h.name}}}`);
+  }
+  return out;
+}
+
+function captureBooted(e: Entry): Record<string, unknown> {
+  const seedDef = e.seed ? MANIFEST.seeds[e.seed] : null;
+  const user = e.user ?? contract.user;
+  // unique name per invocation: --check boots the same entry twice back-to-back, and
+  // docker's async teardown makes name reuse racy (observed: second boot briefly saw a
+  // half-initialized world)
+  const cname = `grcb-cap-${e.id}-${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
+  return captureBootedInner(e, seedDef, user, cname);
+}
+
+function captureBootedInner(e: Entry, seedDef: { apply?: string } | null, user: string, cname: string): Record<string, unknown> {
+  const runArgs = [
+    "run", "-d", "--name", cname, ...contract.run_flags.split(" "),
+    "--hostname", contract.hostname,
+  ];
+  if (e.seed) runArgs.push("-v", `${join(HERE, "seeds", e.seed)}:/seed:ro`);
+  runArgs.push(IMAGE_TAG);
+  sh("docker", runArgs);
+  try {
+    // wait for systemd to settle (exits 0 on "running")
+    sh("docker", ["exec", cname, "systemctl", "is-system-running", "--wait"]);
+    if (e.seed) {
+      // the bind mount must be live before the overlay runs (Docker Desktop mounts can
+      // lag a fresh boot); failure here must be loud, never a silently-unseeded capture
+      sh("docker", ["exec", cname, "bash", "-c",
+        "for i in $(seq 1 50); do [ -f /seed/apply-seed.sh ] && exit 0; sleep 0.1; done; echo 'seed mount never appeared' >&2; exit 1"]);
+    }
+
+    // root phase: seed overlay, then entry-specific root setup
+    const rootSteps = [
+      ...(seedDef?.apply ? ["bash /seed/apply-seed.sh"] : []),
+      ...(e.pre_root ?? []),
+    ];
+    for (const step of rootSteps) sh("docker", ["exec", cname, "bash", "-c", step]);
+    if (seedDef?.apply) {
+      // sanity: the overlay's effects must be visible before the session runs — two
+      // --privileged --cgroupns=host systemd containers in rapid succession can interfere
+      // during teardown, and a half-built world must fail loudly, never capture silently
+      sh("docker", ["exec", cname, "bash", "-c",
+        "[ -f /home/grcops/.ssh/id_ed25519 ] && [ \"$(stat -c %s /etc/ssh/sshd_config)\" = 3243 ] || { echo 'seed overlay not in effect' >&2; exit 1; }"]);
+    }
+
+    // learner session (same shape as the userland runner: streams + exit codes split)
+    const session: string[] = [`cd ${shq(e.cwd)} || exit 99`];
+    for (const p of e.pre ?? []) session.push(`{ ${p}; } > /dev/null 2>&1`);
+    session.push(
+      `{ ${e.cmd}; } > /cap/out.txt 2> /cap/err.txt; __rc=$?; echo -n $__rc > /cap/code.txt; (exit $__rc)`,
+    );
+    (e.post ?? []).forEach((p, i) => {
+      session.push(
+        `{ ${p}; } > /cap/post${i}.out.txt 2> /cap/post${i}.err.txt; __rc=$?; echo -n $__rc > /cap/post${i}.code.txt; (exit $__rc)`,
+      );
+    });
+    const script = [
+      "#!/bin/bash", "set -u",
+      `mkdir -p /cap && chown ${user} /cap`,
+      // stdin closed: ssh/cat in pre/cmd must not slurp the rest of this harness script
+      `runuser -u ${user} -- bash -c ${shq(session.join("\n"))} < /dev/null`,
+      `tar -C /cap -cf - . | base64`,
+    ].join("\n");
+    const out = sh("docker", ["exec", "-i", "-e", `COLUMNS=${contract.cols}`, cname, "bash", "-s"], { input: script });
+
+    const tmp = join(CAPTURED, `.tmp-${e.id}`);
+    rmSync(tmp, { recursive: true, force: true });
+    mkdirSync(tmp, { recursive: true });
+    execFileSync("bash", ["-c", `echo ${shq(out.trim())} | base64 -d | tar -C ${shq(tmp)} -xf -`]);
+    const read = (f: string) => { try { return readFileSync(join(tmp, f), "utf8"); } catch { return null; } };
+
+    const fixture: Record<string, unknown> = {
+      id: e.id, module: e.module, source: e.source, match: e.match,
+      seed: e.seed ?? null, cwd: e.cwd, user, pre_root: e.pre_root ?? [], pre: e.pre ?? [], cmd: e.cmd,
+      sim_equiv: e.sim_equiv ?? null, pipe_context: e.pipe_context ?? false,
+      citation: e.citation ?? null, notes: e.notes ?? null,
+      holes: e.holes ?? null, post_holes: e.post_holes ?? null,
+      stdout: scrub(read("out.txt"), e.holes), stderr: scrub(read("err.txt"), e.holes), exit: Number(read("code.txt")),
+      // Interactive bash omits the script-mode "line N:" prefix (same justification as userland).
+      stderr_interactive: scrub(read("err.txt")?.replace(/^bash: line \d+: /gm, "bash: ") ?? null, e.holes),
+      post: (e.post ?? []).map((p, i) => ({
+        cmd: p,
+        stdout: scrub(read(`post${i}.out.txt`), e.post_holes ?? e.holes),
+        stderr: scrub(read(`post${i}.err.txt`), e.post_holes ?? e.holes),
+        exit: Number(read(`post${i}.code.txt`)),
+      })),
+      provenance: {
+        contract: source,
+        image: IMAGE_TAG,
+        base_digest: contract.base_digest,
+        dockerfile: contract.dockerfile,
+        arch: sh("docker", ["version", "--format", "{{.Server.Arch}}"]).trim(),
+        epoch: MANIFEST.seeds[e.seed ?? ""]?.epoch ?? MANIFEST.meta.epoch,
+        captured_at: new Date().toISOString(),
+        captured_with: "capture.ts v1 (booted)",
+        scrubbed: (e.holes ?? []).map((h) => h.name),
+      },
+    };
+    rmSync(tmp, { recursive: true, force: true });
+    return fixture;
+  } finally {
+    try { sh("docker", ["rm", "-f", cname]); } catch { /* already gone */ }
+  }
+}
+
 if (source.startsWith("docker")) buildImage();
 
 let failures = 0;
 for (const e of entries) {
-  const cap = source === "macos-host" ? captureMacos(e) : captureLinux(e);
+  const cap = source === "macos-host" ? captureMacos(e) : source === "docker-linux-booted" ? captureBooted(e) : captureLinux(e);
   if (selfCheck) {
-    const cap2 = source === "macos-host" ? captureMacos(e) : captureLinux(e);
+    // booted containers share the host cgroup namespace — let the first one's teardown
+    // settle before booting its twin (interference corrupts the second world)
+    if (source === "docker-linux-booted") execFileSync("sleep", ["3"]);
+    const cap2 = source === "macos-host" ? captureMacos(e) : source === "docker-linux-booted" ? captureBooted(e) : captureLinux(e);
     const a = JSON.stringify({ o: cap.stdout, e: cap.stderr, c: cap.exit, p: cap.post });
     const b = JSON.stringify({ o: cap2.stdout, e: cap2.stderr, c: cap2.exit, p: cap2.post });
     if (a !== b) {
       console.error(`SELF-DIFF ${e.id}: capture is non-deterministic — needs match:structured with declared holes`);
+      console.error(`  run1: ${a.slice(0, 400)}`);
+      console.error(`  run2: ${b.slice(0, 400)}`);
       failures++;
       continue;
     }

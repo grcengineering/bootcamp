@@ -21,12 +21,42 @@ export interface SeedFile {
   content?: string;      // utf8 (omit for dir)
   dir?: boolean;
   mode?: number;         // default 0o644 files / 0o755 dirs
+  /** Owner/group/mtime overrides (module-02 system seeds: root-owned /etc files, canon mtimes). */
+  owner?: string;
+  group?: string;
+  mtimeMs?: number;
 }
 
 export interface SeedSpec {
   files: SeedFile[];
   /** PATH tools: name → bash script source (installed at /usr/local/bin/<name>, mode 0755). */
   tools: Record<string, string>;
+}
+
+/**
+ * Module-06 API lab surface (additive 2026-06-12; web ISA ISC-74..79). When present, the
+ * box gains `curl` (taught subset, src/engines/shell/curl-ext.ts) wired to an in-engine
+ * acme.example router on the sim clock. Absent (every other module), curl stays
+ * `command not found` exactly as the pinned container behaves. Router state (issued
+ * tokens, rate window) is per-session and resets on restore — tokens are short-lived
+ * by design. `rateLimit` overrides the documented 600/min for in-lab 429 drills.
+ */
+export interface ApiLabOptions {
+  rateLimit?: { limit: number; windowMs: number };
+}
+
+/**
+ * Module-02 Linux-admin lab surface (additive 2026-06-12; web ISA ISC-60). When present, the
+ * box gains the booted-contract command family (systemctl/journalctl/sudo/ssh/ssh-keygen +
+ * working id/ps/useradd/usermod/passwd/apt) implemented in src/engines/linuxadmin/ over a
+ * VFS-backed system-state model, fidelity-pinned to the docker-linux-booted captures.
+ * Absent (every other module), those commands keep their userland behavior: not-installed
+ * names stay `command not found`, installed-but-unsimulated names keep the honest
+ * sim-boundary message — exactly as the pinned userland container behaves.
+ */
+export interface AdminLabOptions {
+  /** Scenario account password (sudo/ssh dialogues). Default: the booted contract's "labpass". */
+  password?: string;
 }
 
 export interface ShellSessionOptions {
@@ -38,6 +68,10 @@ export interface ShellSessionOptions {
   user: string;          // e.g. "analyst"
   host: string;          // e.g. "workstation"
   home: string;          // e.g. "/home/analyst"
+  /** Optional mock-vendor wiring (module 06 only). */
+  apiLab?: ApiLabOptions;
+  /** Optional Linux-admin lab wiring (module 02 only). */
+  adminLab?: AdminLabOptions;
 }
 
 export interface ExecEvent { stream: "stdout" | "stderr"; text: string }

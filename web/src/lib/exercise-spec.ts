@@ -41,6 +41,53 @@ export const SeedFileRef = z.object({
   from: z.string(),
 }).strict();
 
+/**
+ * Console-surface configuration (engines: python | sql | policy | jq) — all optional,
+ * additive (module-01's spec is unchanged; older specs parse identically).
+ */
+export const ConsoleSpecSchema = z.object({
+  /** policy engine flavor: cedar = live authoring (default), opa = precompiled + input mutation. */
+  flavor: z.enum(["cedar", "opa"]).optional(),
+  /** Seeded file opened in the editable buffer (default: the first seeded file). */
+  main_file: z.string().optional(),
+  /** Seeded files passed to every engine run (e.g. requests.json/entities.json, *.sql, input.json). */
+  assets: z.array(z.string()).default([]),
+  /** Run-button label (default per engine). */
+  run_label: z.string().optional(),
+}).strict();
+
+/** Builder-surface configuration (engine: builder) — names which widget model renders. */
+export const BuilderSpecSchema = z.object({
+  surface: z.enum(["workspace", "mapping", "scoring-grid", "ccm", "capstone"]),
+  /** Ported validator (closed registry in the builder host — code, not data). */
+  validator: z.enum([
+    "evaluate-analysis", "gate", "crosswalk", "coverage", "oscal", "expected-loss", "capstone",
+  ]).optional(),
+  /** argv for the validator (paths into the workspace). */
+  validator_args: z.array(z.string()).default([]),
+  mapping: z.object({
+    /** How many leading CSV columns are fixed identity columns. */
+    left_cols: z.number().int().min(1),
+    /** Seed CSV file (workspace path). */
+    seed_file: z.string(),
+    /** Closed vocabularies offered by the widget. */
+    targets: z.array(z.string()).default([]),
+    labels: z.array(z.string()).default([]),
+    /** Answer-key CSV (workspace path) for the per-row score (mapping_score_at_least). */
+    key_file: z.string().optional(),
+  }).strict().optional(),
+  ccm: z.object({
+    /** Seed state-document file (workspace path). */
+    state_file: z.string(),
+    /** ISO start of the schedule (declared time compression starts here). */
+    start: z.string(),
+    /** Bucket name offered by the drift-injection control. */
+    drift_bucket: z.string(),
+    /** Selectable hours-per-tick choices (declared compression control). */
+    interval_hours_options: z.array(z.number().int().min(1)).default([24]),
+  }).strict().optional(),
+}).strict();
+
 export const ExerciseSpecSchema = z.object({
   id: z.string().regex(/^lab-\d{2}[a-z]?$/),
   module: z.string().min(1),
@@ -48,7 +95,7 @@ export const ExerciseSpecSchema = z.object({
   owner: z.string().min(1),
   volatility: z.enum(["A", "B", "C"]),
   review_due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  engine: z.enum(["shell-linux", "shell-macos", "powershell", "python", "sql", "policy", "api", "git", "builder", "mixed"]),
+  engine: z.enum(["shell-linux", "shell-macos", "powershell", "python", "sql", "policy", "jq", "api", "git", "builder", "mixed"]),
   claim_thread: z.string().optional(),
   payload_budget_bytes: z.number().int().min(0).default(0),
   desktop_recommended: z.boolean().default(false),
@@ -60,9 +107,25 @@ export const ExerciseSpecSchema = z.object({
   }).strict(),
   intro: z.string().min(1),
   walkthrough_first_input: z.string().optional(),
+  /** Console-surface config (python/sql/policy/jq engines only) — optional, additive. */
+  console: ConsoleSpecSchema.optional(),
+  /** Builder-surface config (builder engine only) — optional, additive. */
+  builder: BuilderSpecSchema.optional(),
   tasks: z.array(TaskSchema).min(1),
   completion: z.object({ evidence_pack: z.boolean().default(true) }).strict().default({ evidence_pack: true }),
-}).strict();
+}).strict().superRefine((s, ctx) => {
+  const CONSOLE_ENGINES: string[] = ["python", "sql", "policy", "jq"];
+  if (s.engine === "builder" && !s.builder)
+    ctx.addIssue({ code: "custom", message: "engine: builder requires a builder: block (surface selection)" });
+  if (s.builder && s.engine !== "builder")
+    ctx.addIssue({ code: "custom", message: `builder: block is only valid with engine: builder (got ${s.engine})` });
+  if (s.console && !CONSOLE_ENGINES.includes(s.engine))
+    ctx.addIssue({ code: "custom", message: `console: block is only valid with engines ${CONSOLE_ENGINES.join("|")} (got ${s.engine})` });
+  if (s.builder?.surface === "mapping" && !s.builder.mapping)
+    ctx.addIssue({ code: "custom", message: "builder.surface: mapping requires builder.mapping config" });
+  if (s.builder?.surface === "ccm" && !s.builder.ccm)
+    ctx.addIssue({ code: "custom", message: "builder.surface: ccm requires builder.ccm config" });
+});
 
 export type ExerciseSpec = z.infer<typeof ExerciseSpecSchema>;
 

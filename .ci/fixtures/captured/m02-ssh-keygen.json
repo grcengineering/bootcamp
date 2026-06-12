@@ -1,0 +1,64 @@
+{
+  "id": "m02-ssh-keygen",
+  "module": "02",
+  "source": "docker-linux-booted",
+  "match": "structured",
+  "seed": "m02",
+  "cwd": "/home/grcops",
+  "user": "grcops",
+  "pre_root": [],
+  "pre": [],
+  "cmd": "ssh-keygen -t ed25519 -N \"\" -f /home/grcops/.ssh/labkey -C \"grcops@web-01\"",
+  "sim_equiv": null,
+  "pipe_context": false,
+  "citation": null,
+  "notes": "fingerprint + randomart are key entropy — the sim derives both from structured session entropy (drunken-bishop is unit-tested against this capture's real pair)",
+  "holes": [
+    {
+      "name": "fingerprint",
+      "find": "SHA256:[A-Za-z0-9+/]{43}",
+      "pattern": "SHA256:[A-Za-z0-9+/]{43}",
+      "source": "key entropy (sim derives from structured session entropy)"
+    },
+    {
+      "name": "randomart",
+      "find": "^\\|.{17}\\|$",
+      "pattern": "\\|.{17}\\|",
+      "source": "key entropy randomart (drunken-bishop over the key hash)"
+    }
+  ],
+  "post_holes": [
+    {
+      "name": "ls_date",
+      "find": "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}",
+      "pattern": "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}",
+      "source": "capture mtime — sim renders sim-clock mtimes"
+    }
+  ],
+  "stdout": "Generating public/private ed25519 key pair.\nYour identification has been saved in /home/grcops/.ssh/labkey\nYour public key has been saved in /home/grcops/.ssh/labkey.pub\nThe key fingerprint is:\n{{fingerprint}} grcops@web-01\nThe key's randomart image is:\n+--[ED25519 256]--+\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n{{randomart}}\n+----[SHA256]-----+\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "ls -l /home/grcops/.ssh/labkey",
+      "stdout": "-rw------- 1 grcops grcops 399 {{ls_date}} /home/grcops/.ssh/labkey\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-booted",
+    "image": "grc-bootcamp-capture:booted",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.booted",
+    "arch": "arm64",
+    "epoch": "2026-05-27T09:45:00Z",
+    "captured_at": "2026-06-12T16:18:03.262Z",
+    "captured_with": "capture.ts v1 (booted)",
+    "scrubbed": [
+      "fingerprint",
+      "randomart"
+    ]
+  }
+}

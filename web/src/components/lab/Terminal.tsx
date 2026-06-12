@@ -24,7 +24,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ExecResult, ShellSession } from "../../engines/shell/types";
+import { isThenable, type LabExecResult, type LabSession, type MaybePromise } from "./sessions/types";
 
 export interface Chunk {
   id: number;
@@ -41,13 +41,21 @@ export interface TerminalHandle {
 }
 
 interface TerminalProps {
-  session: ShellSession;
+  /** Any terminal-class session: bash/zsh shell, PowerShell, api wrapper, git wrapper. */
+  session: LabSession;
   /** Called after every COMPLETED command (state:"done") — the player runs verifiers here. */
   onCommandComplete?: (line: string, exit: number) => void;
   /** Intercept `nano <file>` before exec — opens the editor panel (ISC-51 UI side). */
   onOpenEditor?: (fileArg: string) => void;
   onActivity?: () => void;
   disabled?: boolean;
+  /**
+   * Continuation-prompt convention: bash shows no prompt while a command reads stdin
+   * ("> " inside heredocs); PowerShell's own `>> ` continuation comes from the session.
+   */
+  promptMode?: "bash" | "ps";
+  /** Header label, e.g. "analyst@workstation" / "labuser@WIN-LAB04 — PowerShell 5.1". */
+  label?: string;
 }
 
 const PAGE_LINES = 2000;
@@ -74,7 +82,7 @@ function commonPrefix(items: string[]): string {
 let chunkSeq = 0;
 
 const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
-  { session, onCommandComplete, onOpenEditor, onActivity, disabled = false },
+  { session, onCommandComplete, onOpenEditor, onActivity, disabled = false, promptMode = "bash", label = "analyst@workstation" },
   ref,
 ) {
   const [chunks, setChunks] = useState<Chunk[]>([]);
@@ -82,11 +90,18 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
   const [pending, setPending] = useState<null | { heredoc: boolean }>(null);
   const [announce, setAnnounce] = useState("");
   const [visibleLineBudget, setVisibleLineBudget] = useState(PAGE_LINES);
+  const [busy, setBusy] = useState(false); // async engine call in flight (git porcelain)
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const historyDraft = useRef<string | null>(null);
 
-  const prompt = pending ? (pending.heredoc ? "> " : "") : session.prompt();
+  const prompt = pending
+    ? promptMode === "ps"
+      ? session.prompt() // PowerShell renders its own ">> " continuation
+      : pending.heredoc
+        ? "> "
+        : ""
+    : session.prompt();
 
   const push = useCallback((items: Omit<Chunk, "id">[]) => {
     if (items.length === 0) return;
@@ -110,7 +125,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
   }, [chunks]);
 
   const applyResult = useCallback(
-    (line: string, result: ExecResult, opts: { heredoc?: boolean } = {}) => {
+    (line: string, result: LabExecResult, opts: { heredoc?: boolean } = {}) => {
       push(result.events.map((e) => ({ kind: e.stream, text: e.text }) as Omit<Chunk, "id">));
       if (result.state === "done") {
         setPending(null);
@@ -130,13 +145,32 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
     [push, onCommandComplete],
   );
 
+  // Sync engines settle inline (no behavior change); async engines (git porcelain over
+  // isomorphic-git promises) disable input until the SAME single announcement fires.
+  const settle = useCallback(
+    (r: MaybePromise<LabExecResult>, apply: (res: LabExecResult) => void) => {
+      if (isThenable(r)) {
+        setBusy(true);
+        void r.then((res) => {
+          setBusy(false);
+          apply(res);
+          requestAnimationFrame(() => inputRef.current?.focus());
+        });
+        return;
+      }
+      apply(r);
+    },
+    [],
+  );
+
   const runLine = useCallback(
     (line: string) => {
       onActivity?.();
       if (pending) {
-        // bash shows no prompt while a command reads stdin; heredocs show the "> " continuation.
-        echoInput(line, pending.heredoc ? "> " : "");
-        applyResult(line, session.feedStdin(line + "\n"));
+        // bash shows no prompt while a command reads stdin; heredocs show the "> " continuation;
+        // PowerShell's ">> " continuation comes from the session prompt (promptMode "ps").
+        echoInput(line, promptMode === "ps" ? session.prompt() : pending.heredoc ? "> " : "");
+        settle(session.feedStdin(line + "\n"), (res) => applyResult(line, res));
         return;
       }
       echoInput(line);
@@ -145,10 +179,10 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
         onOpenEditor(nano[1]);
         return;
       }
-      const heredoc = /<<-?\s*['"]?\w/.test(line);
-      applyResult(line, session.exec(line), { heredoc });
+      const heredoc = promptMode === "bash" && /<<-?\s*['"]?\w/.test(line);
+      settle(session.exec(line), (res) => applyResult(line, res, { heredoc }));
     },
-    [pending, echoInput, applyResult, session, onOpenEditor, onActivity],
+    [pending, echoInput, applyResult, settle, session, onOpenEditor, onActivity, promptMode],
   );
 
   const submit = useCallback(() => {
@@ -169,15 +203,16 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
         e.preventDefault();
         echoInput(value + "^C", pending ? "" : undefined);
         setValue("");
-        const r = session.interrupt();
-        push(r.events.map((ev) => ({ kind: ev.stream, text: ev.text }) as Omit<Chunk, "id">));
-        setPending(null);
+        settle(session.interrupt(), (r) => {
+          push(r.events.map((ev) => ({ kind: ev.stream, text: ev.text }) as Omit<Chunk, "id">));
+          setPending(null);
+        });
         return;
       }
       if (e.ctrlKey && (e.key === "d" || e.key === "D")) {
         if (pending || value === "") {
           e.preventDefault();
-          applyResult("", session.eof());
+          settle(session.eof(), (r) => applyResult("", r));
         }
         return;
       }
@@ -219,7 +254,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
         return;
       }
     },
-    [submit, echoInput, value, pending, session, push, applyResult],
+    [submit, echoInput, value, pending, session, push, applyResult, settle],
   );
 
   // Native paste works (single line). Multi-line paste executes whole lines in order —
@@ -278,7 +313,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
           <span className="w-2.5 h-2.5 rounded-full bg-blue/60" />
           <span className="w-2.5 h-2.5 rounded-full bg-[color:var(--color-line)]" />
         </span>
-        <span className="font-mono text-xs text-ink-dim">simulated terminal — analyst@workstation</span>
+        <span className="font-mono text-xs text-ink-dim">simulated terminal — {label}</span>
       </div>
 
       <div ref={scrollRef} className="grcb-term-scroll flex-1 px-4 py-3 text-[13px] leading-relaxed min-h-[20rem] max-h-[32rem]">
@@ -329,7 +364,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={onKeyDown}
               onPaste={onPaste}
-              disabled={disabled}
+              disabled={disabled || busy}
               className="grcb-term-input w-full bg-transparent border-0 outline-none font-mono text-[13px] text-ink p-0"
               aria-label={pending ? "Terminal input — a command is reading from standard input" : "Terminal command input"}
               autoCapitalize="off"
@@ -337,7 +372,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
               autoComplete="off"
               spellCheck={false}
             />
-            {value === "" && !disabled && (
+            {value === "" && !disabled && !busy && (
               <span aria-hidden="true" className="grcb-term-cursor absolute left-0 top-1/2 -translate-y-1/2" />
             )}
           </span>
