@@ -17,7 +17,7 @@
   "post": [
     {
       "cmd": "echo $?",
-      "stdout": "0\n",
+      "stdout": "1\n",
       "stderr": "",
       "exit": 0
     }

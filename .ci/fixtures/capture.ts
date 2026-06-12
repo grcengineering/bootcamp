@@ -69,9 +69,18 @@ function runnerScript(e: Entry): string {
   // The learner session runs as the contract user with a fresh bash (no -e: exit codes are data).
   const session: string[] = [`cd ${shq(e.cwd)} || exit 99`];
   for (const p of e.pre ?? []) session.push(`{ ${p}; } > /dev/null 2>&1`);
-  session.push(`{ ${e.cmd}; } > /cap/out.txt 2> /cap/err.txt`, `echo -n $? > /cap/code.txt`);
+  // $? must survive the bookkeeping write: an interactive learner session has nothing between
+  // the command and the next thing they type, so `echo $?` probes in post must observe the
+  // captured command's exit status (module 01 §5.4 canon). `(exit $__rc)` restores it after
+  // each harness write — without this, the harness's own `echo -n` clobbers $? (capture bug
+  // found 2026-06-12: m01-grepq-clean recorded post `echo $?` → "0" after a grep that exited 1).
+  session.push(
+    `{ ${e.cmd}; } > /cap/out.txt 2> /cap/err.txt; __rc=$?; echo -n $__rc > /cap/code.txt; (exit $__rc)`,
+  );
   (e.post ?? []).forEach((p, i) => {
-    session.push(`{ ${p}; } > /cap/post${i}.out.txt 2> /cap/post${i}.err.txt`, `echo -n $? > /cap/post${i}.code.txt`);
+    session.push(
+      `{ ${p}; } > /cap/post${i}.out.txt 2> /cap/post${i}.err.txt; __rc=$?; echo -n $__rc > /cap/post${i}.code.txt; (exit $__rc)`,
+    );
   });
   lines.push(
     `mkdir -p /cap && chown ${contract.user} /cap`,
@@ -119,6 +128,7 @@ function captureLinux(e: Entry): Record<string, unknown> {
       dockerfile: contract.dockerfile,
       arch: sh("docker", ["version", "--format", "{{.Server.Arch}}"]).trim(),
       epoch: MANIFEST.meta.epoch,
+      captured_at: new Date().toISOString(),
       captured_with: "capture.ts v1",
     },
   };
@@ -142,6 +152,7 @@ function captureMacos(e: Entry): Record<string, unknown> {
       contract: source,
       sw_vers: sh("sw_vers", []).trim(),
       epoch: MANIFEST.meta.epoch,
+      captured_at: new Date().toISOString(),
       captured_with: "capture.ts v1",
     },
   };

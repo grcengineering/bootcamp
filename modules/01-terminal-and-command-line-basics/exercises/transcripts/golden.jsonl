@@ -1,0 +1,17 @@
+{"input": "pwd"}
+{"input": "ls"}
+{"input": "lab-setup 01"}
+{"input": "cd lab01"}
+{"input": "cd"}
+{"input": "cd /home/analyst/lab01"}
+{"input": "cat access-export.csv | grep admin | wc -l"}
+{"input": "cat access-export.csv | grep admin | wc -l > evidence-admin-count.txt"}
+{"input": "cat evidence-admin-count.txt"}
+{"input": "parse-access-export access-export.csv 2> collection-errors.log | grep admin | wc -l > evidence-admin-count.txt"}
+{"input": "cat collection-errors.log"}
+{"input": "grep -q admin access-export.csv"}
+{"input": "echo $?"}
+{"input": "cat > check-admin-access.sh << 'EOF'\n#!/usr/bin/env bash\nparse-access-export \"$1\" 2> collection-errors.log | grep admin | wc -l\nEOF"}
+{"input": "chmod +x check-admin-access.sh"}
+{"input": "./check-admin-access.sh access-export.csv"}
+{"input": "./check-admin-access.sh access-export.csv"}

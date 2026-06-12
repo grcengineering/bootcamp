@@ -1,0 +1,5 @@
+{"anti_for": "t4", "reason": "right content, wrong provenance — echo 3 is not a composed evidence pipeline"}
+{"input": "lab-setup 01"}
+{"input": "cd lab01"}
+{"input": "echo 3 > evidence-admin-count.txt"}
+{"input": "cat evidence-admin-count.txt"}

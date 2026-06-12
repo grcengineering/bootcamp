@@ -26,3 +26,16 @@ triggers:
   - id: ai-governance-shift
     description: "NIST AI RMF / ISO 42001 material update (emerging universal thread)"
     affects: [ANY]
+  # Wave 2 — simulation-fidelity re-capture triggers (root ISA ISC-71)
+  - id: fixture-base-image-change
+    description: "ubuntu:24.04 pinned digest updated in .ci/fixtures/env/* (re-run capture-linux + booted, re-baseline fixtures deliberately)"
+    affects: [01-terminal-and-command-line-basics, 02-linux-system-fundamentals]
+  - id: macos-host-version-change
+    description: "Capture Mac's sw_vers differs from fixtures' provenance (re-run capture-macos; macOS fixtures re-baseline)"
+    affects: [03-macos-fundamentals]
+  - id: wasm-engine-version-bump
+    description: "Pinned WASM engine version changes (Pyodide / sql.js / opa-wasm / cedar-wasm / isomorphic-git / jq) — re-run engine-pinned captures + fidelity suite"
+    affects: [05-programming-and-git, 06-api-fundamentals, 07-data-and-cloud-control-plane, 09-policy-as-code, 12-oscal-compliance-as-code]
+  - id: powershell-docs-drift
+    description: "Microsoft Learn output examples for cited cmdlets change (pwsh-authored fixtures re-validated against citations)"
+    affects: [04-windows-fundamentals]

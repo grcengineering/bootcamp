@@ -1,0 +1,4 @@
+{
+  "_provenance": "bootstrap value from docker capture m01-lab-evidence-file (post: cat evidence-admin-count.txt = '3'); regenerated + asserted equal by web/scripts/gen-expectations.ts replaying golden.jsonl through the engine (root ISA ISC-60)",
+  "t4:0": "3"
+}

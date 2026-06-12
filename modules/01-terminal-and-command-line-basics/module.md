@@ -166,7 +166,9 @@ analyst@workstation:~/evidence$ echo $?
 
 **Scenario.** You are handed a raw access export and asked to produce a one-file piece of evidence answering a control question, plus a record of any collection problems — and to make it re-runnable.
 
-**Setup.** In the lab container, run `lab-setup 01` (provides `~/lab01/access-export.csv` with deliberately messy rows and one malformed line).
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 01 → Interactive lab) in a simulated terminal whose command outputs are CI-verified against a real Linux machine — the same commands on a real box give the same answers.
+
+**Setup.** In the interactive lab (or any Unix-like shell), run `lab-setup 01`. It provides `~/lab01/access-export.csv` — deliberately messy rows and one malformed line — and puts the lab's parsing tool `parse-access-export` on your PATH (on your own machine, `labs/setup.sh` writes both and prints the PATH line to use).
 
 **Tasks.**
 
@@ -174,7 +176,7 @@ analyst@workstation:~/evidence$ echo $?
 2. Navigate into `~/lab01` using a relative path, then back to your home directory using `cd` with no argument, then back into `~/lab01` using an absolute path. State out loud which is which and why both reached the same place. *(Objective 3)*
 3. Using `cat`, `grep`, and `wc` connected only by pipes, produce the count of access rows that grant a role containing the word `admin`. You may not use any single tool that "does it all." *(Objectives 4)*
 4. Re-run task 3 but **redirect the count into** `~/lab01/evidence-admin-count.txt`, and confirm the file exists and contains exactly that number — without re-running the pipeline. *(Objective 4)*
-5. One row in the export is malformed and the parsing step you use will complain. Capture that complaint into `collection-errors.log` using stderr redirection, while keeping your evidence file clean of it. Show that the two files contain different things and explain *why the channel separation made that possible*. *(Objectives 4, 5)*
+5. One row in the export is malformed, and the lab's parsing tool complains about it — `parse-access-export` emits clean data rows on stdout and a `WARN:` complaint on stderr, exactly the §5.2 shape. Rebuild your evidence with `parse-access-export` as the first stage of your pipeline, capturing the complaint into `collection-errors.log` via stderr redirection while keeping your evidence file clean of it. Show that the two files contain different things and explain *why the channel separation made that possible*. *(Objectives 4, 5)*
 6. Run a `grep -q` form of your check and inspect `$?`. State, in one sentence, what exit code corresponds to a control *pass* for this specific question and why. *(Objective 5)*
 7. Put the working sequence from tasks 3–6 into a file `check-admin-access.sh`, make it run as one action, and run it twice. Confirm both runs produce identical evidence. Write one sentence connecting "it produced identical evidence twice" to continuous assurance. *(Objectives 6, 2)*
 
