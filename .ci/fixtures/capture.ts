@@ -147,7 +147,12 @@ function captureMacos(e: Entry): Record<string, unknown> {
   return {
     id: e.id, module: e.module, source: e.source, match: e.match, cwd: e.cwd,
     pre: e.pre ?? [], cmd: e.cmd, citation: e.citation ?? null,
+    notes: e.notes ?? null, holes: (e as { holes?: unknown }).holes ?? null,
     stdout, stderr, exit,
+    // Interactive zsh omits the `-c`-context ":1" position marker in error messages.
+    // Declared transformation (ISC-72 justification): verified 2026-06-12 on this host —
+    // typing an unmatched glob interactively yields "zsh: no matches found: …".
+    stderr_interactive: stderr.replace(/^zsh:\d+: /gm, "zsh: "),
     provenance: {
       contract: source,
       sw_vers: sh("sw_vers", []).trim(),

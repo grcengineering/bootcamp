@@ -13,6 +13,7 @@ const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
 const nav = [
   { href: withBase("/"), label: "Home" },
   { href: withBase("/modules"), label: "Modules" },
+  { href: withBase("/labs"), label: "Labs" },
   { href: withBase("/tracks"), label: "Tracks" },
   { href: withBase("/dashboard"), label: "Dashboard" },
 ];
@@ -44,6 +45,17 @@ const isActive = (href: string, label: string) => href === path || (label !== "H
     <meta name="twitter:card" content="summary" />
     <link rel="icon" href={withBase("/favicon.svg")} />
     <title>{title}</title>
+    {
+      import.meta.env.PROD && (
+        <script is:inline>
+          {`if ("serviceWorker" in navigator) {
+  addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  });
+}`}
+        </script>
+      )
+    }
   </head>
   <body class="min-h-screen flex flex-col">
     <header class="glass-strong border-b border-[color:var(--hairline)] sticky top-0 z-20">

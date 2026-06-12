@@ -1,0 +1,23 @@
+{
+  "id": "m01x-glob-nomatch-zsh",
+  "module": "01",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [],
+  "cmd": "echo *.does-not-exist-xyz",
+  "citation": null,
+  "notes": "zsh errors on unmatched globs where bash falls back to the literal (ISC-40 zsh variant)",
+  "holes": null,
+  "stdout": "",
+  "stderr": "zsh:1: no matches found: *.does-not-exist-xyz\n",
+  "exit": 1,
+  "stderr_interactive": "zsh: no matches found: *.does-not-exist-xyz\n",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T14:43:48.027Z",
+    "captured_with": "capture.ts v1"
+  }
+}

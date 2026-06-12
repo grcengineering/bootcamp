@@ -1,0 +1,23 @@
+{
+  "id": "m03-fdesetup-status",
+  "module": "03",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [],
+  "cmd": "fdesetup status",
+  "citation": null,
+  "notes": "captures the real \"FileVault is On.\" line shape; the sim's scenario parameterizes On/Off using module 03's committed fixture strings",
+  "holes": null,
+  "stdout": "FileVault is On.\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T14:43:48.201Z",
+    "captured_with": "capture.ts v1"
+  }
+}

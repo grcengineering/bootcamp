@@ -268,3 +268,56 @@ entries:
     cwd: /home/analyst
     pre: ["lab-setup 01", "cd lab01", "touch alpha.txt beta.txt gamma-longer-name.txt delta.txt"]
     cmd: "ls -C -w120"
+
+  # ---- macOS divergence set (module 01 cross-platform honesty; RedTeam finding 4 / ISC-55) ----
+  - id: m01x-wc-pipe-macos
+    module: "01"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "printf 'alpha,admin\\nbravo,viewer\\n' | grep admin | wc -l"
+    notes: BSD wc pads with leading spaces where GNU prints bare digits — generated divergence callout
+  - id: m01x-glob-nomatch-zsh
+    module: "01"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "echo *.does-not-exist-xyz"
+    notes: zsh errors on unmatched globs where bash falls back to the literal (ISC-40 zsh variant)
+  - id: m01x-echo-exitcode-macos
+    module: "01"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "printf 'u,admin\\n' | grep -q admin"
+    post: ["echo $?"]
+
+  # ---- module 03 — macOS endpoint evidence commands (format canon from a real Mac) ----
+  - id: m03-sw-vers
+    module: "03"
+    source: macos-host
+    match: structured
+    holes:
+      - { name: product_version, pattern: "[0-9]+\\.[0-9]+(\\.[0-9]+)?", source: "host macOS version — scenario pins a value; format is canon" }
+      - { name: build_version, pattern: "[0-9A-Z]+", source: "host build id" }
+    cwd: /tmp
+    cmd: "sw_vers"
+  - id: m03-csrutil-status
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "csrutil status"
+  - id: m03-spctl-status
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "spctl --status"
+  - id: m03-fdesetup-status
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "fdesetup status"
+    notes: captures the real "FileVault is On." line shape; the sim's scenario parameterizes On/Off using module 03's committed fixture strings

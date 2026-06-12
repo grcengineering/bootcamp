@@ -1,0 +1,34 @@
+{
+  "id": "m03-sw-vers",
+  "module": "03",
+  "source": "macos-host",
+  "match": "structured",
+  "cwd": "/tmp",
+  "pre": [],
+  "cmd": "sw_vers",
+  "citation": null,
+  "notes": null,
+  "holes": [
+    {
+      "name": "product_version",
+      "pattern": "[0-9]+\\.[0-9]+(\\.[0-9]+)?",
+      "source": "host macOS version — scenario pins a value; format is canon"
+    },
+    {
+      "name": "build_version",
+      "pattern": "[0-9A-Z]+",
+      "source": "host build id"
+    }
+  ],
+  "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T14:43:48.069Z",
+    "captured_with": "capture.ts v1"
+  }
+}

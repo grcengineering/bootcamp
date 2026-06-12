@@ -1,0 +1,339 @@
+{
+  "spec": {
+    "id": "lab-01",
+    "module": "01-terminal-and-command-line-basics",
+    "title": "Evidence from a raw export",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-01",
+    "engine": "shell-linux",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m01",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": [
+        "lab-setup",
+        "parse-access-export",
+        "collect-encryption-status"
+      ]
+    },
+    "intro": "You are handed a raw access export and asked to produce a one-file piece of evidence\nanswering a control question — plus a record of any collection problems — and to make\nthe whole thing re-runnable. This terminal is a real simulation of the lab box: the\ncommands you run here produce the same results they would on the machine itself.\nStart by provisioning your lab files.\n",
+    "walkthrough_first_input": "pwd",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Before touching anything, ask the shell where you are and what is around you:\nrun `pwd`, then `ls`. Read the prompt first and predict both answers.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^pwd$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ls( |$)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Two of the three orientation questions from §4.2 — where am I, and what's around me?"
+          },
+          {
+            "reveal": "pwd"
+          }
+        ],
+        "explain": "The prompt was telling you the answer to `pwd` the whole time — `~` is your home\ndirectory, `/home/analyst`. Orientation is the first discipline: when evidence\ncollection goes wrong, \"where was I standing?\" is the first audit question.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Provision the lab: run `lab-setup 01`. Then practice the three forms of movement —\nenter `lab01` with a relative path, return home with bare `cd`, and come back into\n`lab01` using its absolute path.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab01/access-export.csv"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cd lab01/?$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cd$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cd /home/analyst/lab01/?$"
+          },
+          {
+            "check": "cwd_is",
+            "path": "~/lab01"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A relative path starts from where you stand; an absolute path starts from `/`. `cd` with nothing always goes home."
+          },
+          {
+            "concept": "§4.2 — the filesystem is a tree, and you are always standing somewhere in it"
+          },
+          {
+            "reveal": "lab-setup 01, then: cd lab01 · cd · cd /home/analyst/lab01"
+          }
+        ],
+        "explain": "Both routes ended in the same place — a relative path is directions from here,\nan absolute path is directions from the root. Evidence scripts use absolute paths\nprecisely because they can't assume where the runner is standing.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Using `cat`, `grep`, and `wc` connected only by pipes, produce the count of access\nrows that grant a role containing the word \"admin\". No single tool that \"does it\nall\" — the point is composition.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "cat .*\\|.*grep .*\\|.*wc"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Which program emits the file? Which keeps only the lines you care about? Which counts what's left?"
+          },
+          {
+            "concept": "§4.3 — the pipe connects one program's stdout to the next program's stdin"
+          },
+          {
+            "reveal": "cat access-export.csv | grep admin | wc -l"
+          }
+        ],
+        "explain": "Three small honest tools and two pipes just evaluated an access-control claim.\nThat number — and not a screenshot of a spreadsheet — is the atomic unit of\ncontinuous assurance: text in, text out, re-runnable next quarter.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Re-run your pipeline, but redirect the count into `~/lab01/evidence-admin-count.txt`.\nThen confirm the file holds exactly that number — without re-running the pipeline.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab01/evidence-admin-count.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab01/evidence-admin-count.txt",
+            "min_pipes": 2,
+            "forbidden_commands": [
+              "awk",
+              "sed",
+              "perl",
+              "python3"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "cat .*evidence-admin-count\\.txt"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`>` points stdout somewhere other than your screen. Reading a file back is a job for the program that emits files."
+          },
+          {
+            "concept": "§4.3 — redirection turns output you glance at into an artifact you keep"
+          },
+          {
+            "reveal": "cat access-export.csv | grep admin | wc -l > evidence-admin-count.txt, then: cat evidence-admin-count.txt"
+          }
+        ],
+        "explain": "The count stopped being something you saw and became something you HAVE — a kept\nartifact. That file is evidence in the audit sense: durable, inspectable, and\nproduced by a documented, re-runnable question.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "One row in the export is malformed, and the lab's parsing tool complains about it.\nRebuild your evidence using `parse-access-export` as the first stage of the\npipeline, capturing its complaint into `collection-errors.log` while keeping the\nevidence file clean. The two files must end up containing different things.\n",
+        "verify": [
+          {
+            "check": "stream_separated",
+            "clean_file": "~/lab01/evidence-admin-count.txt",
+            "error_file": "~/lab01/collection-errors.log",
+            "error_regex": "WARN: malformed row"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab01/evidence-admin-count.txt",
+            "min_pipes": 2,
+            "required_commands": [
+              "parse-access-export"
+            ],
+            "forbidden_commands": [
+              "awk",
+              "sed"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "stdout and stderr are different channels. `>` only redirects one of them — which operator takes the other?"
+          },
+          {
+            "concept": "§4.3 — two output channels exist so results and complaints can go different places"
+          },
+          {
+            "reveal": "parse-access-export access-export.csv 2> collection-errors.log | grep admin | wc -l > evidence-admin-count.txt"
+          }
+        ],
+        "explain": "Your evidence file is clean data; the operational complaint went to its own log a\nhuman can review. That one line is a defensible evidence-collection step: the\nanswer AND an auditable record of what went wrong while collecting it.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "Run a `grep -q` form of your check against the export, then inspect `$?`.\nState (in your notes) which exit code means the control PASSED for this question,\nand why \"no output\" and \"failed\" are different facts.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "grep -q .*access-export"
+          },
+          {
+            "check": "history_contains",
+            "regex": "echo \\$\\?"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`-q` means quiet — grep says nothing and only sets the verdict. `$?` holds the previous program's exit code."
+          },
+          {
+            "concept": "§4.4 — output is for people; the exit code is for machines"
+          },
+          {
+            "reveal": "grep -q admin access-export.csv, then: echo $?"
+          }
+        ],
+        "explain": "A machine just evaluated your control with zero human reading. For THIS question,\ngrep finding a match (exit 0) means admin grants exist — whether that's a pass or a\nfinding depends on the claim. The exit code is the hinge that makes monitoring\ncontinuous instead of quarterly.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          6,
+          2
+        ],
+        "instruction": "Make it reproducible: put your working sequence into `check-admin-access.sh` (the\neditor `nano` is on this box, or compose the file with redirection), make it\nexecutable, and run it twice with the export as its argument. Both runs must\nproduce identical evidence.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab01/check-admin-access.sh"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab01/check-admin-access.sh",
+            "regex": "\\|"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab01/check-admin-access.sh",
+            "regex": "\\bawk\\b|\\bsed\\b"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab01/check-admin-access.sh",
+            "args": [
+              "access-export.csv"
+            ],
+            "expect_stdout": "3"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A script is just the lines you already typed, saved. `chmod +x` makes it runnable as `./check-admin-access.sh`."
+          },
+          {
+            "concept": "§4.6 — automation is just memory; a saved sequence is a reproducible check"
+          },
+          {
+            "reveal": "nano check-admin-access.sh — paste your t5 pipeline with \"$1\" in place of the filename — then chmod +x check-admin-access.sh and ./check-admin-access.sh access-export.csv (twice)"
+          }
+        ],
+        "explain": "It produced identical evidence twice — that is the difference between \"we verified\nthis once last audit\" and \"we verify this continuously and can prove it.\" You just\nbuilt your first continuously-runnable control check; module 13 will put it on a\nschedule and alert on drift.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "In 4–6 sentences: where were you standing and how did you know; why the pipe\ncomposition worked; why stdout/stderr separation mattered; and what the exit code\nmeant. Write it as if explaining to a non-technical colleague — use the terminal's\norigin story from §3, not jargon.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 mental model: terminal (dumb endpoint) → shell (REPL) → kernel → programs."
+          },
+          {
+            "concept": "§3 — The Mental Model"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/evidence",
+        "dir": true
+      },
+      {
+        "path": "~/evidence/access.csv",
+        "content": "user,role\nalice,admin\nbob,viewer\ndave,editor\nerin,admin\nfrank,viewer\ngrace,auditor\n"
+      },
+      {
+        "path": "~/reports",
+        "dir": true
+      },
+      {
+        "path": "~/reports/.gitkeep",
+        "content": ""
+      },
+      {
+        "path": "~/scratch",
+        "dir": true
+      },
+      {
+        "path": "~/scratch/.gitkeep",
+        "content": ""
+      }
+    ],
+    "tools": {
+      "lab-setup": "#!/usr/bin/env bash\n# Lab provisioning tool (module 01 §6 setup). The CSV bytes are canon-locked to\n# modules/01-terminal-and-command-line-basics/labs/setup.sh — a CI drift check asserts equality.\nset -euo pipefail\ncase \"${1:-}\" in\n  01)\n    mkdir -p \"$HOME/lab01\"\n    cat > \"$HOME/lab01/access-export.csv\" <<'CSV'\nuser,role\nalice,admin\nbob,viewer\ncarol,legacy-admin\ndave,editor\nerin,admin\nfrank,viewer\nMALFORMED_ROW_WITH_NO_DELIMITER\ngrace,auditor\nCSV\n    echo \"lab01 fixture written to $HOME/lab01/access-export.csv\"\n    ;;\n  *)\n    echo \"usage: lab-setup <module-number>\" >&2\n    exit 1\n    ;;\nesac\n",
+      "parse-access-export": "#!/usr/bin/env bash\n# Lab tool (module 01 §6 task 5): emits clean data rows on stdout and complains about\n# malformed rows on stderr — the §5.2 stream-separation archetype, made runnable.\n# Exists so the lab's \"the parsing step will complain\" is producible with taught composition\n# (root ISA ISC-75: the reference solution previously required untaught awk).\nawk -F, '\n  NR == 1 { next }\n  NF != 2 { print \"WARN: malformed row: \" $0 > \"/dev/stderr\"; next }\n  { print }\n' \"${1:?usage: parse-access-export <export.csv>}\"\n",
+      "collect-encryption-status": "#!/usr/bin/env bash\n# Fictional evidence collector from module 01 §5.2 (authored-fixture; stderr line is prose canon).\n# stdout: one line per laptop. stderr: the unreachable-host complaint, verbatim from §5.2.\ncat <<'OUT'\nlaptop-01: encrypted\nlaptop-02: encrypted\nlaptop-03: encrypted\nlaptop-04: encrypted\nlaptop-05: not-encrypted\nOUT\necho \"WARN: host db-07 unreachable\" >&2\n"
+    }
+  },
+  "expectations": {
+    "t4:0": "3"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

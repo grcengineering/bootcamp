@@ -1,0 +1,34 @@
+# Badge definitions — DATA owned by the curriculum repo (web ISA ISC-139).
+# The app derives earned badges deterministically from local completion state via a pure
+# function (web/src/lib/badges.ts) that maps each `rule` id to its implementation.
+# No second source of truth: badges are recomputable from completions at any time.
+
+points:
+  per_exercise: 10
+  clean_bonus: 5
+
+badges:
+  - id: first-exercise
+    name: First Evidence
+    description: Completed your first interactive exercise.
+    rule: first-exercise
+
+  - id: tier-1-complete
+    name: Foundations Laid
+    description: Completed every exercise in modules 00–06 (Mindset + Tier 1 Foundations).
+    rule: tier-1-complete
+
+  - id: clean-run
+    name: Clean Run
+    description: Completed an exercise without revealing a single answer.
+    rule: clean-run
+
+  - id: evidence-keeper
+    name: Evidence Keeper
+    description: Built an evidence chain at least 5 entries long.
+    rule: evidence-keeper
+
+  - id: full-loop
+    name: The Full Loop
+    description: Completed all 16 module exercises — the irreducible loop, end to end.
+    rule: full-loop

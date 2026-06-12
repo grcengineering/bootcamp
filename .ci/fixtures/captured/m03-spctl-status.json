@@ -1,0 +1,23 @@
+{
+  "id": "m03-spctl-status",
+  "module": "03",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [],
+  "cmd": "spctl --status",
+  "citation": null,
+  "notes": null,
+  "holes": null,
+  "stdout": "assessments enabled\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T14:43:48.110Z",
+    "captured_with": "capture.ts v1"
+  }
+}
