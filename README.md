@@ -38,6 +38,18 @@ wired. Authoring of the remaining backlog (Part I + Modules 02–15) is pipeline
 production workflow. The anti-rot machinery (CI + dashboard + triggers) went live **with**
 module #1, not at the end.
 
+**Wave 2 — interactive exercises (2026-06-12, in build).** Every module gains a hands-on,
+in-browser exercise in the bootcamp app (`web/`): a terminal simulation whose taught-command
+outputs are **CI-diffed against ground truth captured from real machines** (digest-pinned Ubuntu
+containers + a real Mac, under executable environment contracts), real engines compiled for the
+browser where they exist (Python, SQLite, jq, Cedar, OPA, git plumbing), and realistic structured
+simulations for the non-terminal modules — all driven by `modules/*/exercises/exercise.yaml`
+specs (data, not code) verified by a closed, mutation-tested verifier registry. Learner state is
+browser-local with encrypted cross-device sync (AES-256-GCM, passphrase-derived key); completions
+append to a tamper-evident evidence chain — the learner's own audit-ready evidence pack.
+Simulation fidelity is the repo's newest control: when reality drifts from the simulation, the
+build goes red and someone owns it.
+
 ## Target repo layout (instantiated as authoring is approved)
 
 ```

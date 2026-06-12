@@ -146,6 +146,36 @@ Runs on every PR and nightly on `main`:
 4. **Style lint** — Vale against `style/` (voice, banned unmeasurable objective verbs, plain-language rules).
 5. **Anatomy lint** — fails if a module is missing any of the 9 required sections or `meta.yaml` lacks `owner`/`review_due`.
 
+### Wave 2 gates — the interactive exercise layer (2026-06-12)
+
+Every module ships an in-app interactive exercise (`modules/*/exercises/exercise.yaml`) rendered
+by the bootcamp web app's simulated environments. The simulation's honesty is itself a CI-tested
+control:
+
+6. **Exercise spec lint** (`.ci/exercise-lint.ts`) — schema, the closed verifier-registry seam
+   (specs are data; verifiers are unit-tested code), hint ladders, objective coverage,
+   completability against the fidelity manifest, golden + anti-transcript presence.
+7. **Fidelity manifest lint** (`.ci/fixtures/manifest-lint.ts`) — the ground-truth taxonomy
+   (byte-exact / structured-with-typed-holes / engine-pinned / synthesized-porcelain /
+   authored-with-citation / computed), booted-vs-userland provenance rules, citations, and the
+   assertion-loosening tripwire (every normalization carries a justification).
+8. **Fidelity suite** (`web/ bun test`) — replays every captured fixture through the simulation
+   engine and diffs per match class. Ground truth is captured by `.ci/fixtures/capture-*.sh`
+   from executable environment contracts (digest-pinned Ubuntu images — userland + a
+   systemd-booted lab image — and a `zsh -f` clean-account macOS contract). Drift between the
+   simulator and reality is a red build, owned like any overdue control.
+9. **Transcript replay gate** — each exercise's golden transcript must satisfy every
+   machine-gated task and each anti-transcript (the `echo`-cheat, the all-in-one shortcut, the
+   `date`-contaminated script) must fail its targeted task: verifiers are proven to
+   discriminate, not just accept.
+10. **Semantic originality** (`.ci/semantic-originality.ts`) — n-gram shingle overlap against
+    the live §8 sources (scheduled job; cross-module self-similarity on every PR), closing the
+    regurgitation gap that link-linting cannot see.
+
+**Re-capture triggers** live in `.ci/triggers.yaml` (base-image digest change, macOS host
+version change, WASM engine version bumps, PowerShell documentation drift) — fixture re-baselines
+are deliberate, reviewed events, never silent.
+
 Green CI is the curriculum's *evidence*. The build status is literally the assurance artifact.
 
 ---
