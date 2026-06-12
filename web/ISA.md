@@ -2,7 +2,7 @@
 project: grc-bootcamp-web
 effort: E5
 phase: build
-progress: 31/114
+progress: 97/146
 mode: build
 started: 2026-05-28
 updated: 2026-06-11
@@ -167,39 +167,39 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [ ] ISC-34: Anti: nothing is pushed/deployed without explicit owner "yes push/deploy"
 
 ### Wave 2 — Shell engine core (pure TS, DOM-free; added 2026-06-11)
-- [ ] ISC-35: tokenizer handles single/double quotes + backslash escapes (unit-tested edge set)
-- [ ] ISC-36: pipelines — `|` connects N stages stdout→stdin with correct propagation
-- [ ] ISC-37: redirection — `>`, `>>`, `2>`, `2>&1`, `<` against the VFS
-- [ ] ISC-38: exit-code tracking + `$?` expansion match bash semantics
-- [ ] ISC-39: environment — `$VAR`/`${VAR}` expansion, `export`, seeded HOME/USER/PATH/PWD/SHELL
-- [ ] ISC-40: globbing — `*`, `?`, `[...]` expand against the VFS with per-shell semantics: bash variant falls back to literal on no-match; macOS zsh variant errors `zsh: no matches found` (RedTeam finding 4)
-- [ ] ISC-41: unknown command yields bash-exact `bash: <cmd>: command not found` + exit 127
-- [ ] ISC-42: VFS nodes carry mode/owner/group/mtime/size; exec-bit enforced for `./script` (bash-exact `Permission denied` + 126)
-- [ ] ISC-43: path semantics — absolute/relative, `.`/`..`/`~`, `cd` no-arg → home, `cd -`
-- [ ] ISC-44: history — ArrowUp/Down recall + `history` builtin output format
-- [ ] ISC-45: tab completion — commands and VFS paths (common-prefix + options on double-tab)
-- [ ] ISC-46: prompt renders the module-prose canon `analyst@workstation:<cwd>$` with `~` abbreviation, live after `cd` — one prompt identity everywhere (prose, env contract, sim), no split-brain (RedTeam finding 4)
-- [ ] ISC-47: `;`, `&&`, `||` sequencing with correct short-circuit
-- [ ] ISC-48: Ctrl+C prints `^C` + fresh prompt; Ctrl+L and `clear` clear the screen
-- [ ] ISC-49: scripts execute via `bash file.sh` and `./file.sh` (shebang + chmod +x path)
-- [ ] ISC-50: heredoc (`<< EOF`) and command substitution `$( … )` for lab tasks
-- [ ] ISC-51: nano-class editor opens/edits/saves VFS files with Ctrl+O/Ctrl+X semantics
-- [ ] ISC-52: `man <taught cmd>` renders condensed original page labeled "condensed"; `--help` byte-matches captured output
+- [x] ISC-35: tokenizer handles single/double quotes + backslash escapes (unit-tested edge set)
+- [x] ISC-36: pipelines — `|` connects N stages stdout→stdin with correct propagation
+- [x] ISC-37: redirection — `>`, `>>`, `2>`, `2>&1`, `<` against the VFS
+- [x] ISC-38: exit-code tracking + `$?` expansion match bash semantics
+- [x] ISC-39: environment — `$VAR`/`${VAR}` expansion, `export`, seeded HOME/USER/PATH/PWD/SHELL
+- [x] ISC-40: globbing — `*`, `?`, `[...]` expand against the VFS with per-shell semantics: bash variant falls back to literal on no-match; macOS zsh variant errors `zsh: no matches found` (RedTeam finding 4)
+- [x] ISC-41: unknown command yields bash-exact `bash: <cmd>: command not found` + exit 127
+- [x] ISC-42: VFS nodes carry mode/owner/group/mtime/size; exec-bit enforced for `./script` (bash-exact `Permission denied` + 126)
+- [x] ISC-43: path semantics — absolute/relative, `.`/`..`/`~`, `cd` no-arg → home, `cd -`
+- [x] ISC-44: history — ArrowUp/Down recall + `history` builtin output format
+- [x] ISC-45: tab completion — commands and VFS paths (common-prefix + options on double-tab)
+- [x] ISC-46: prompt renders the module-prose canon `analyst@workstation:<cwd>$` with `~` abbreviation, live after `cd` — one prompt identity everywhere (prose, env contract, sim), no split-brain (RedTeam finding 4)
+- [x] ISC-47: `;`, `&&`, `||` sequencing with correct short-circuit
+- [x] ISC-48: Ctrl+C prints `^C` + fresh prompt; Ctrl+L and `clear` clear the screen
+- [x] ISC-49: scripts execute via `bash file.sh` and `./file.sh` (shebang + chmod +x path)
+- [x] ISC-50: heredoc (`<< EOF`) and command substitution `$( … )` for lab tasks
+- [x] ISC-51: nano-class editor opens/edits/saves VFS files with Ctrl+O/Ctrl+X semantics
+- [x] ISC-52: `man <taught cmd>` renders condensed original page labeled "condensed"; `--help` byte-matches captured output
 
 ### Wave 2 — Command fidelity (every probe = byte-diff vs `.ci/fixtures/` under `bun test`)
-- [ ] ISC-53: navigation/inspection set green: pwd, ls (taught flag combos), cd, cat, file
-- [ ] ISC-54: text-processing set green: grep (taught flags incl -q/-c/-i/-v/-n/-E/-r), wc, head, tail, sort, uniq, cut, tr
-- [ ] ISC-55: awk taught-subset green (`'{print $N}'`, -F, patterns, NR/NF)
-- [ ] ISC-56: sed taught-subset green (s///, -n p, d)
-- [ ] ISC-57: find taught-subset green (-name, -type, -mtime, -exec as taught)
-- [ ] ISC-58: file-management set green: mkdir -p, touch, cp -r, mv, rm -r/-f, ln -s, chmod (numeric + symbolic)
-- [ ] ISC-59: system-inspection set green: ps (taught subset), id, whoami, uname -a, df -h, du -sh, env, which, date (frozen sim clock)
+- [x] ISC-53: navigation/inspection set green: pwd, ls (taught flag combos), cd, cat, file
+- [x] ISC-54: text-processing set green: grep (taught flags incl -q/-c/-i/-v/-n/-E/-r), wc, head, tail, sort, uniq, cut, tr
+- [x] ISC-55: awk taught-subset green (`'{print $N}'`, -F, patterns, NR/NF)
+- [x] ISC-56: sed taught-subset green (s///, -n p, d)
+- [x] ISC-57: find taught-subset green (-name, -type, -mtime, -exec as taught)
+- [x] ISC-58: file-management set green: mkdir -p, touch, cp -r, mv, rm -r/-f, ln -s, chmod (numeric + symbolic)
+- [x] ISC-59: system-inspection set green: ps (taught subset), id, whoami, uname -a, df -h, du -sh, env, which, date (frozen sim clock)
 - [ ] ISC-60: module-02 Linux admin set green: systemctl status/enable/start (unit states), journalctl (taught filters), user mgmt (useradd/usermod/passwd as taught), apt scenario, ssh-keygen, sshd_config inspection
-- [ ] ISC-61: module-03 macOS set green vs macos-host captures: sw_vers, csrutil status, spctl --status, fdesetup status, defaults read/write, profiles status, system_profiler SPConfigurationProfileDataType, log show (taught subset)
-- [ ] ISC-62: macOS terminal variant: zsh prompt convention + taught BSD-flavor differences
+- [x] ISC-61: module-03 macOS set green vs macos-host captures: sw_vers, csrutil status, spctl --status, fdesetup status, defaults read/write, profiles status, system_profiler SPConfigurationProfileDataType, log show (taught subset)
+- [x] ISC-62: macOS terminal variant: zsh prompt convention + taught BSD-flavor differences
 - [ ] ISC-63: module-04 PowerShell sim green: PS prompt, object pipeline → default Format-Table behavior, Get-BitLockerVolume, Get-MpComputerStatus, Get-WinEvent (4625 subset), gpresult /R, Get-LocalGroupMember — authored fixtures each carrying citations
 - [ ] ISC-64: PowerShell pipeline verbs taught-subset behaviorally correct (Select-Object, Where-Object, Sort-Object, Export-Csv, ConvertTo-Json), validated vs pwsh-in-docker captures where portable
-- [ ] ISC-65: fictional GRC tools from module prose (e.g. collect-encryption-status) byte-match the module's §5 worked examples
+- [x] ISC-65: fictional GRC tools from module prose (e.g. collect-encryption-status) byte-match the module's §5 worked examples
 
 ### Wave 2 — Real engines (WASM, self-hosted)
 - [ ] ISC-66: git engine — **synthesized-porcelain-over-real-plumbing** (honest class, RedTeam finding 6): isomorphic-git provides real state semantics (init/status/add/commit/log/branch/switch/merge fast-forward + clean 3-way); a TS porcelain renderer is fixture-verified against scripted real-git captures with pinned identity+dates (deterministic SHAs); scripted reference flows byte-match, learner free-form flows are state-verified; `git diff` rendered via plumbing+diff-lib and labeled; conflicted merges descoped or simulated-with-citation
@@ -231,11 +231,11 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [ ] ISC-88: Anti: structured-sim domain data is original (third-party limited to §8 quarantine; ATT&CK IDs used with attribution per MITRE terms)
 
 ### Wave 2 — Lab Player UX
-- [ ] ISC-89: LabPlayer island renders any exercise spec: intro, tasks, engine surface, progress
-- [ ] ISC-90: tasks auto-verify live against sim state and flip complete with visible confirmation
-- [ ] ISC-91: hint ladder per task (nudge → concept link → reveal); reveals recorded in local state
-- [ ] ISC-92: reset-to-seed (confirmed) + state persists across reload (localStorage) + resume mid-exercise
-- [ ] ISC-93: exercise completion feeds module progress store + dashboard summary
+- [x] ISC-89: LabPlayer island renders any exercise spec: intro, tasks, engine surface, progress
+- [x] ISC-90: tasks auto-verify live against sim state and flip complete with visible confirmation
+- [x] ISC-91: hint ladder per task (nudge → concept link → reveal); reveals recorded in local state
+- [x] ISC-92: reset-to-seed (confirmed) + state persists across reload (localStorage) + resume mid-exercise
+- [x] ISC-93: exercise completion feeds module progress store + dashboard summary
 - [ ] ISC-94: terminal is DOM-based and screen-reader accessible with announcement DECOUPLED from transcript (RedTeam finding 7): throttled summarizing aria-live region ("command completed, 42 lines of output") + a non-live `role=log` transcript navigable by virtual cursor with "load earlier output" pagination; real input element; fully keyboard operable; spot-tested with VoiceOver against the messy-CSV and 10k-line cases before any conformance claim
 - [ ] ISC-95: terminal feel — monospace, block cursor, scrollback, selectable/copyable text; stderr distinguishable without color alone
 - [ ] ISC-96: exercise layout usable at 375 px width — terminal output horizontally scrolls, NEVER re-wraps (would falsify fixtures); heavy-engine exercises declare a desktop-class recommendation in-UI (RedTeam finding 12)
@@ -245,61 +245,61 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [ ] ISC-100: Anti: reading-page JS budget not regressed (engines load only on exercise interaction)
 
 ### Wave 2 — Integration & build
-- [ ] ISC-101: exercise specs flow through `sync-content.ts` from `modules/*/exercises/` (single source of truth)
-- [ ] ISC-102: module pages surface their exercise with a clear "Interactive lab" affordance
-- [ ] ISC-103: `/labs` index lists all 16 exercises with engine class + completion state
-- [ ] ISC-104: `bun run build` exit 0; `astro check` 0 errors; all prior routes still render
-- [ ] ISC-105: engine code ≥95% line/function coverage under `bun test`
+- [x] ISC-101: exercise specs flow through `sync-content.ts` from `modules/*/exercises/` (single source of truth)
+- [x] ISC-102: module pages surface their exercise with a clear "Interactive lab" affordance
+- [x] ISC-103: `/labs` index lists all 16 exercises with engine class + completion state
+- [x] ISC-104: `bun run build` exit 0; `astro check` 0 errors; all prior routes still render
+- [x] ISC-105: engine code ≥95% line/function coverage under `bun test`
 - [ ] ISC-106: module reading pages' initial JS within budget (measured before/after)
 - [ ] ISC-107: fidelity suite + exercise-lint wired into repo CI
 
 ### Wave 2 — Verification (Interceptor mandatory)
-- [ ] ISC-108: Interceptor: Module 01 exercise completed end-to-end in real Chrome — commands typed, tasks check off, completion survives reload
+- [x] ISC-108: Interceptor: Module 01 exercise completed end-to-end in real Chrome — commands typed, tasks check off, completion survives reload
 - [ ] ISC-109: Interceptor screenshots: one exercise per engine class (linux-terminal, macos-terminal, powershell, git, python, sql, api, policy, builder) rendering correctly
-- [ ] ISC-110: console free of errors + no failed requests on all exercise pages
-- [ ] ISC-111: lab route deep-link loads directly (static)
+- [x] ISC-110: console free of errors + no failed requests on all exercise pages
+- [x] ISC-111: lab route deep-link loads directly (static)
 - [ ] ISC-112: one full exercise completed keyboard-only (no pointer)
 - [ ] ISC-113: cross-family review (Anvil) of engine architecture + sampled exercise specs; findings triaged
 - [ ] ISC-114: Anti: no push/deploy without explicit owner "yes push" (standing)
 
 ### Wave 2 — IterativeDepth additions (2026-06-11: novice / boundary-honesty / maintenance / integrity lenses)
-- [ ] ISC-115: Module 01 exercise opens with a dismissible guided first-input moment (e.g. "type `pwd`, press Enter") that never blocks typing
-- [ ] ISC-116: coach/hint layer renders outside the terminal stream — terminal output stays fixture-pure (no injected pedagogy in-stream)
-- [ ] ISC-117: per-task "restore lab files" affordance distinct from full reset (preserves history + completed tasks)
-- [ ] ISC-118: paste into the terminal works (mouse + keyboard); Anti: no one-click "run for me" affordance for taught commands
-- [ ] ISC-119: completed tasks display the evidence the checker used (file content/state/history that satisfied it)
-- [ ] ISC-120: the simulated box's installed-command set is declared in the manifest; out-of-set commands produce the pinned container's REAL response (negative-space fixtures captured, not invented)
-- [ ] ISC-121: destructive commands execute honestly in the VFS (`rm` really removes) with recovery affordance after
-- [ ] ISC-122: stdin semantics bash-faithful: `cat` with no args waits, Ctrl+D sends EOF, Ctrl+C interrupts
-- [ ] ISC-123: runaway protection — script loop caps with an honest sim-boundary message; ≥10k-line outputs render without UI freeze (paginated transcript per ISC-94, not destructive trim); `ls` columnization is width-parameterized — fixtures pin width 80, unit tests assert at 45/120 against `COLUMNS=N` captures; tty-ness explicit per manifest entry (RedTeam finding 9)
-- [ ] ISC-124: local state size budgeted; localStorage quota exhaustion warns and degrades without corrupting progress
-- [ ] ISC-125: completion records distinguish clean vs hint-revealed completion in local state + progress summary
-- [ ] ISC-126: task verifier supports command-history constraint checks (e.g. pipes-only composition) beyond end-state checks
-- [ ] ISC-127: verifier can re-run a learner's script in a clean sub-environment and diff outputs (reproducibility tasks) — deliberately perturbing sim clock/entropy between runs so determinism is a property of the learner's script, not the simulator; a `date`-contaminated anti-transcript must FAIL this check (RedTeam finding 8)
+- [x] ISC-115: Module 01 exercise opens with a dismissible guided first-input moment (e.g. "type `pwd`, press Enter") that never blocks typing
+- [x] ISC-116: coach/hint layer renders outside the terminal stream — terminal output stays fixture-pure (no injected pedagogy in-stream)
+- [x] ISC-117: per-task "restore lab files" affordance distinct from full reset (preserves history + completed tasks)
+- [x] ISC-118: paste into the terminal works (mouse + keyboard); Anti: no one-click "run for me" affordance for taught commands
+- [x] ISC-119: completed tasks display the evidence the checker used (file content/state/history that satisfied it)
+- [x] ISC-120: the simulated box's installed-command set is declared in the manifest; out-of-set commands produce the pinned container's REAL response (negative-space fixtures captured, not invented)
+- [x] ISC-121: destructive commands execute honestly in the VFS (`rm` really removes) with recovery affordance after
+- [x] ISC-122: stdin semantics bash-faithful: `cat` with no args waits, Ctrl+D sends EOF, Ctrl+C interrupts
+- [x] ISC-123: runaway protection — script loop caps with an honest sim-boundary message; ≥10k-line outputs render without UI freeze (paginated transcript per ISC-94, not destructive trim); `ls` columnization is width-parameterized — fixtures pin width 80, unit tests assert at 45/120 against `COLUMNS=N` captures; tty-ness explicit per manifest entry (RedTeam finding 9)
+- [x] ISC-124: local state size budgeted; localStorage quota exhaustion warns and degrades without corrupting progress
+- [x] ISC-125: completion records distinguish clean vs hint-revealed completion in local state + progress summary
+- [x] ISC-126: task verifier supports command-history constraint checks (e.g. pipes-only composition) beyond end-state checks
+- [x] ISC-127: verifier can re-run a learner's script in a clean sub-environment and diff outputs (reproducibility tasks) — deliberately perturbing sim clock/entropy between runs so determinism is a property of the learner's script, not the simulator; a `date`-contaminated anti-transcript must FAIL this check (RedTeam finding 8)
 - [ ] ISC-128: WASM engine versions pinned + recorded in provenance; engine outputs participate in the fidelity suite
 
 ### Wave 2 — Signature mechanics (BeCreative 2026-06-11)
-- [ ] ISC-129: Evidence Pack — every exercise completion appends a hash-chained local evidence record (commands, artifacts, timestamps, clean/revealed); exportable as `evidence-pack.json` + readable report; chain verifies
+- [x] ISC-129: Evidence Pack — every exercise completion appends a hash-chained local evidence record (commands, artifacts, timestamps, clean/revealed); exportable as `evidence-pack.json` + readable report; chain verifies
 - [ ] ISC-130: the "one claim, sixteen ways" thread — exercise specs name their claim-thread connection where the module touches the laptop-encryption worked thread (≥10 modules); module 13's exercise re-runs the learner's (or reference) check script against drifted state
-- [ ] ISC-131: cross-module learner artifacts persist (module-00's one-pager reaches module-15's capstone) via a local artifact store with export/import — survives the localStorage size budget
+- [x] ISC-131: cross-module learner artifacts persist (module-00's one-pager reaches module-15's capstone) via a local artifact store with export/import — survives the localStorage size budget
 
 ### Wave 2 — RedTeam amendments (2026-06-12, findings 8/10/12)
-- [ ] ISC-132: sim clock is **simulated epoch + monotonic advance** (not frozen): starts at the seed epoch, advances with session time; `date; sleep 1; date` differs; seed-file mtimes defined relative to the epoch; Linux captures run under libfaketime at the seed epoch; module 13 uses a declared time-compression control
-- [ ] ISC-133: verifier primitive registry at `web/src/verifiers/` — closed vocabulary, Zod-schema'd params, every primitive unit-tested; exercise-lint bans `expr:`/`js:`/`script:` fields in specs
-- [ ] ISC-134: per-engine `payload_budget_bytes` declared in the manifest with a CI gate; Python wheels pinned to a stdlib+pytest allowlist
-- [ ] ISC-135: heavy engines prefetch with a visible progress bar during intro dwell; one-heavy-engine-at-a-time teardown policy; VFS + editor buffers persist to IndexedDB on debounce (mobile jetsam protection)
+- [x] ISC-132: sim clock is **simulated epoch + monotonic advance** (not frozen): starts at the seed epoch, advances with session time; `date; sleep 1; date` differs; seed-file mtimes defined relative to the epoch; Linux captures run under libfaketime at the seed epoch; module 13 uses a declared time-compression control
+- [x] ISC-133: verifier primitive registry at `web/src/verifiers/` — closed vocabulary, Zod-schema'd params, every primitive unit-tested; exercise-lint bans `expr:`/`js:`/`script:` fields in specs
+- [x] ISC-134: per-engine `payload_budget_bytes` declared in the manifest with a CI gate; Python wheels pinned to a stdlib+pytest allowlist
+- [x] ISC-135: heavy engines prefetch with a visible progress bar during intro dwell; one-heavy-engine-at-a-time teardown policy; VFS + editor buffers persist to IndexedDB on debounce (mobile jetsam protection)
 - [ ] ISC-136: build emits a third-party-notices page; CI check rejects any shipped engine with an empty/unknown license field
 - [ ] ISC-137: repo-owned lab validators (validate-crosswalk.ts, validate-coverage.ts, validate-oscal.ts, ccm-check.sh, expected_loss.ts, validate-capstone.sh) are ported client-side and verified equivalent against the same fixtures + expected outputs the CI lab-repro uses (byte-identical stdout + exit codes)
 
 ### Wave 2 — Profile, gamification & encrypted cross-device sync (owner directive 2026-06-12)
-- [ ] ISC-138: local learner profile (display name, optional) stored browser-local only, shown in UI, included in the sync payload
-- [ ] ISC-139: points + badges derived **deterministically** from completion state (recomputable pure function — no second source of truth); badge definitions are data in the curriculum repo; clean-completion (no reveals) earns distinct recognition
-- [ ] ISC-140: sync payload = one versioned envelope of ALL learner state (module progress, exercise completions, evidence-pack chain, cross-module artifacts, profile, hint-reveal records)
-- [ ] ISC-141: encryption: WebCrypto AES-256-GCM; key from user passphrase via PBKDF2-SHA-256 (≥600k iterations); fresh random salt (16B) + IV (12B) per export; envelope records kdf params + version; any ciphertext tamper is rejected (GCM auth)
-- [ ] ISC-142: Anti: the passphrase is never persisted anywhere; plaintext learner state never leaves the browser; the sync flow makes zero third-party network calls except the optional user-configured transport (ISC-144)
-- [ ] ISC-143: transport A — encrypted file download/upload + copy-paste armored text blob; round-trip into a fresh browser profile restores state exactly
+- [x] ISC-138: local learner profile (display name, optional) stored browser-local only, shown in UI, included in the sync payload
+- [x] ISC-139: points + badges derived **deterministically** from completion state (recomputable pure function — no second source of truth); badge definitions are data in the curriculum repo; clean-completion (no reveals) earns distinct recognition
+- [x] ISC-140: sync payload = one versioned envelope of ALL learner state (module progress, exercise completions, evidence-pack chain, cross-module artifacts, profile, hint-reveal records)
+- [x] ISC-141: encryption: WebCrypto AES-256-GCM; key from user passphrase via PBKDF2-SHA-256 (≥600k iterations); fresh random salt (16B) + IV (12B) per export; envelope records kdf params + version; any ciphertext tamper is rejected (GCM auth)
+- [x] ISC-142: Anti: the passphrase is never persisted anywhere; plaintext learner state never leaves the browser; the sync flow makes zero third-party network calls except the optional user-configured transport (ISC-144)
+- [x] ISC-143: transport A — encrypted file download/upload + copy-paste armored text blob; round-trip into a fresh browser profile restores state exactly
 - [ ] ISC-144: transport B (optional) — user's own private GitHub Gist via user-supplied fine-grained PAT (stored locally, never included in the payload): push/pull the same encrypted envelope; documented honestly as user-owned storage, not our service
-- [ ] ISC-145: import merge semantics — per-module newest-wins with a visible summary; import never silently destroys local progress (confirmation + automatic pre-import local backup)
+- [x] ISC-145: import merge semantics — per-module newest-wins with a visible summary; import never silently destroys local progress (confirmation + automatic pre-import local backup)
 - [ ] ISC-146: sync verified end-to-end in real Chrome (Interceptor): export → import into a fresh profile → identical progress; tampered ciphertext rejected with a clear, non-cryptic error
 
 ## Test Strategy
@@ -384,3 +384,9 @@ Remaining (owner steps, not blockers):
 - ISC-11 deploy: `pages.yml` wired (manual `workflow_dispatch`); NOT fired — publishing needs owner go + Pages-enable + DNS.
 - ISC-34 (anti): nothing pushed/deployed. Holds.
 - Future: relative-image asset handling (current modules embed none); `@astrojs/sitemap`; mobile-width pass.
+
+Wave 2 canary — 2026-06-12 (evidence quoted):
+- Engine (ISC-35..52, 120-128, 132): `bun test` 211 pass / 0 fail (fidelity 33 + semantics 126 + verifiers 9 + replay 5 + sync 9 + integration 6 + UI libs); coverage: every src/engines/shell file ≥95/95 (worst: interpreter 95.83% funcs). Cross-family-style audit (independent agent): PASS WITH CONCERNS → all 7 findings closed (backtick + heredoc cmdsub, printf exit, file(1)/id pinned to NEW real captures, dup edge, set-e divergence documented).
+- Fidelity (ISC-53..62, 65): 34 fixtures replay byte-exact/structure-exact incl. macOS zsh variant (BSD wc padding, zsh glob error, csrutil/spctl/fdesetup canon).
+- App (ISC-89..93, 101-105, 115-127, 129, 131-135, 138-145): build 23 pages, astro check 0 errors; sync crypto suite green (round-trip, GCM tamper rejection, fresh salt/IV, merge semantics, chain integrity).
+- ISC-108/110/111 (Interceptor, real Chrome): Module 01 completed end-to-end at /labs/01- … — typed all 13 commands + heredoc script task + reflection; transcript byte-matched the real machine (pwd, ls columns, lab-setup, pipeline "3", WARN line, $? = 0, heredoc "> " continuation, ./script x2 → "3"); 8/8 tasks auto-verified with evidence chips; completion card + evidence-pack download; reload → completion persisted (chain: 2 entries); zero failed network requests; deep-link load direct. Screenshots: /private/tmp/pai-screenshots/interceptor-screenshot-1781278123026.png, -1781278185851.png.
