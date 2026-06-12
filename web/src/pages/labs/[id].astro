@@ -1,0 +1,66 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { Icon } from "astro-icon/components";
+import LabPlayer from "../../components/lab/LabPlayer.tsx";
+import { ENGINE_LABELS, type LabBundle } from "../../lib/lab-bundle";
+
+export async function getStaticPaths() {
+  const labModules = import.meta.glob<{ default: LabBundle }>("../../content/labs/*.json", { eager: true });
+  return Object.values(labModules).map((m) => ({
+    params: { id: m.default.spec.module },
+    props: { lab: m.default },
+  }));
+}
+
+interface Props {
+  lab: LabBundle;
+}
+const { lab } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
+const num = lab.spec.module.split("-")[0];
+---
+
+<Layout
+  title={`Lab: ${lab.spec.title} — GRC Engineering Bootcamp`}
+  description={`Interactive lab for module ${num}: ${lab.spec.title} — runs entirely in your browser.`}
+>
+  <nav class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+    <a href={withBase("/labs")} class="inline-flex items-center gap-1.5 text-ink-dim hover:text-orange no-underline">
+      <Icon name="heroicons:arrow-left" class="w-4 h-4" /> All labs
+    </a>
+    <a
+      href={withBase(`/modules/${lab.spec.module}`)}
+      class="inline-flex items-center gap-1.5 text-ink-dim hover:text-orange no-underline"
+    >
+      <Icon name="heroicons:book-open" class="w-4 h-4" /> Module {num} reading
+    </a>
+  </nav>
+
+  <header class="mt-4 pb-6 border-b border-[color:var(--hairline)]">
+    <div class="font-mono text-xs text-gradient inline-block">
+      Interactive lab · Module {num} · {ENGINE_LABELS[lab.spec.engine]}
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-ink mt-1.5 tracking-tight">{lab.spec.title}</h1>
+    <div class="flex flex-wrap gap-2 mt-4 text-xs">
+      <span class="font-mono px-2 py-0.5 rounded bg-blue/10 text-blue-bright border border-blue/20">
+        {lab.spec.tasks.length} tasks
+      </span>
+      <span class="px-2 py-0.5 rounded glass text-ink-soft">runs in your browser</span>
+      <span class="px-2 py-0.5 rounded glass text-ink-soft">progress stays local</span>
+      {lab.spec.claim_thread && (
+        <span class="px-2 py-0.5 rounded glass text-ink-soft">claim thread: {lab.spec.claim_thread}</span>
+      )}
+    </div>
+  </header>
+
+  <div class="mt-8">
+    <LabPlayer
+      client:load
+      spec={lab.spec}
+      seed={lab.seed}
+      epoch={lab.epoch}
+      expectations={lab.expectations}
+    />
+  </div>
+</Layout>

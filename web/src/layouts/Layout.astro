@@ -48,11 +48,11 @@ const isActive = (href: string, label: string) => href === path || (label !== "H
     {
       import.meta.env.PROD && (
         <script is:inline>
-          {`if ("serviceWorker" in navigator) {
-  addEventListener("load", function () {
-    navigator.serviceWorker.register("/sw.js").catch(function () {});
-  });
-}`}
+          if ("serviceWorker" in navigator) {
+            addEventListener("load", function () {
+              navigator.serviceWorker.register("/sw.js").catch(function () {});
+            });
+          }
         </script>
       )
     }

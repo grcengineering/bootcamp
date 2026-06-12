@@ -1,0 +1,89 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { Icon } from "astro-icon/components";
+import { getCollection } from "astro:content";
+import LabStatusBadge from "../../components/lab/LabStatusBadge.tsx";
+import BadgeRail from "../../components/lab/BadgeRail.tsx";
+import SyncPanel from "../../components/lab/SyncPanel.tsx";
+import { ENGINE_LABELS, type LabBundle } from "../../lib/lab-bundle";
+import type { BadgeData } from "../../lib/badges";
+
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => (base + p).replace(/\/{2,}/g, "/");
+
+const labModules = import.meta.glob<{ default: LabBundle }>("../../content/labs/*.json", { eager: true });
+const labs = Object.values(labModules)
+  .map((m) => m.default)
+  .sort((a, b) => a.spec.module.localeCompare(b.spec.module));
+
+const badgeModules = import.meta.glob<{ default: BadgeData }>("../../content/badges.json", { eager: true });
+const badgeData = Object.values(badgeModules)[0]?.default ?? { points: { per_exercise: 10, clean_bonus: 5 }, badges: [] };
+
+const mods = await getCollection("modules");
+const titleOf = (moduleId: string) => mods.find((m) => m.id === moduleId)?.data.title ?? moduleId;
+
+const specs = labs.map((l) => ({ id: l.spec.id, module: l.spec.module }));
+const totalModules = mods.length;
+---
+
+<Layout
+  title="Interactive labs — GRC Engineering Bootcamp"
+  description="Hands-on, in-browser exercises — a simulated machine per module, verified against reality."
+>
+  <header class="pb-6 border-b border-[color:var(--hairline)]">
+    <div class="font-mono text-xs text-gradient inline-block">Learning by doing</div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-ink mt-1.5 tracking-tight">Interactive labs</h1>
+    <p class="mt-3 text-ink-soft max-w-2xl leading-relaxed">
+      Each module's exercise runs <em>in this page</em> — a simulated machine seeded with the lab's files, whose
+      output is verified against captures from the real thing. Tasks check themselves off as the machine actually
+      changes. Everything you do stays in your browser.
+    </p>
+    <p class="mt-2 text-xs text-ink-dim">
+      {labs.length} of {totalModules} module exercises are live; the rest land wave by wave.
+    </p>
+  </header>
+
+  <section aria-label="Exercises" class="mt-8 grid gap-4 sm:grid-cols-2">
+    {
+      labs.map((lab) => (
+        <article class="glass-card p-5 flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <span class="grid place-items-center w-9 h-9 rounded-lg bg-gradient-brand text-white shrink-0">
+              <Icon name="heroicons:command-line-solid" class="w-5 h-5" />
+            </span>
+            <LabStatusBadge client:load exerciseId={lab.spec.id} />
+          </div>
+          <div>
+            <div class="font-mono text-xs text-ink-dim">Module {lab.spec.module.split("-")[0]} · {ENGINE_LABELS[lab.spec.engine]}</div>
+            <h2 class="text-lg font-semibold text-ink mt-1">
+              <a href={withBase(`/labs/${lab.spec.module}`)} class="no-underline text-ink hover:text-orange">
+                {lab.spec.title}
+              </a>
+            </h2>
+            <p class="text-sm text-ink-dim mt-1">
+              {lab.spec.tasks.length} tasks · from <a href={withBase(`/modules/${lab.spec.module}`)}>{titleOf(lab.spec.module)}</a>
+            </p>
+          </div>
+          <div class="mt-auto">
+            <a href={withBase(`/labs/${lab.spec.module}`)} class="btn btn-ghost text-sm">
+              Open the lab <Icon name="heroicons:arrow-right" class="w-4 h-4" />
+            </a>
+          </div>
+        </article>
+      ))
+    }
+  </section>
+
+  <section aria-label="Badges" class="mt-10">
+    <BadgeRail client:load specs={specs} defs={badgeData.badges} points={badgeData.points} />
+  </section>
+
+  <section aria-label="Profile and sync" class="mt-10">
+    <h2 class="text-xl font-semibold text-ink mb-1">Profile &amp; cross-device sync</h2>
+    <p class="text-sm text-ink-dim mb-4 max-w-2xl">
+      There is no server and no account — your progress lives in this browser. To move it, you carry it yourself as
+      an encrypted blob only your passphrase can open.
+    </p>
+    <SyncPanel client:visible />
+  </section>
+</Layout>

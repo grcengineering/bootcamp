@@ -34,6 +34,11 @@ export interface Primitive<S extends z.ZodTypeAny = z.ZodTypeAny> {
   run: Runner<z.infer<S>>;
 }
 
+/** Identity helper that preserves each primitive's inferred param type (keeps `run` fully typed). */
+function definePrimitive<S extends z.ZodTypeAny>(p: { kind: string; params: S; run: Runner<z.infer<S>> }): Primitive<S> {
+  return p;
+}
+
 const valueOrGenerated = z.object({
   value: z.string().optional(),
   from: z.literal("generated").optional(),
@@ -53,7 +58,7 @@ function resolveExpected(p: { value?: string; from?: "generated" }, ctx: VerifyC
 const norm = (s: string) => s.replace(/\n$/, "");
 
 export const PRIMITIVES = {
-  file_exists: {
+  file_exists: definePrimitive({
     kind: "file_exists",
     params: z.object({ check: z.literal("file_exists"), path: z.string() }),
     run: (s, p) => ({
@@ -61,9 +66,9 @@ export const PRIMITIVES = {
       evidence: `${p.path} exists`,
       gap: `${p.path} does not exist yet`,
     }),
-  },
+  }),
 
-  file_absent: {
+  file_absent: definePrimitive({
     kind: "file_absent",
     params: z.object({ check: z.literal("file_absent"), path: z.string() }),
     run: (s, p) => ({
@@ -71,9 +76,9 @@ export const PRIMITIVES = {
       evidence: `${p.path} is absent`,
       gap: `${p.path} should not exist`,
     }),
-  },
+  }),
 
-  file_content_equals: {
+  file_content_equals: definePrimitive({
     kind: "file_content_equals",
     params: z.object({ check: z.literal("file_content_equals"), path: z.string() })
       .and(valueOrGenerated),
@@ -89,9 +94,9 @@ export const PRIMITIVES = {
           : `${p.path} doesn't contain the expected result yet`,
       };
     },
-  },
+  }),
 
-  file_content_matches: {
+  file_content_matches: definePrimitive({
     kind: "file_content_matches",
     params: z.object({ check: z.literal("file_content_matches"), path: z.string(), regex: z.string() }),
     run: (s, p) => {
@@ -103,9 +108,9 @@ export const PRIMITIVES = {
         gap: got === null ? `${p.path} does not exist yet` : `${p.path} doesn't match the expected pattern yet`,
       };
     },
-  },
+  }),
 
-  file_not_matches: {
+  file_not_matches: definePrimitive({
     kind: "file_not_matches",
     params: z.object({ check: z.literal("file_not_matches"), path: z.string(), regex: z.string() }),
     run: (s, p) => {
@@ -117,9 +122,9 @@ export const PRIMITIVES = {
         gap: got === null ? `${p.path} does not exist yet` : `${p.path} contains content that belongs elsewhere (stream separation)`,
       };
     },
-  },
+  }),
 
-  last_exit_code: {
+  last_exit_code: definePrimitive({
     kind: "last_exit_code",
     params: z.object({ check: z.literal("last_exit_code"), equals: z.number().int() }),
     run: (s, p) => ({
@@ -127,9 +132,9 @@ export const PRIMITIVES = {
       evidence: `last exit code was ${p.equals}`,
       gap: `the last command's exit code was ${s.lastExit()}, looking for ${p.equals}`,
     }),
-  },
+  }),
 
-  history_contains: {
+  history_contains: definePrimitive({
     kind: "history_contains",
     params: z.object({ check: z.literal("history_contains"), regex: z.string() }),
     run: (s, p) => ({
@@ -137,13 +142,13 @@ export const PRIMITIVES = {
       evidence: `a command matching /${p.regex}/ was run`,
       gap: `no command matching the expected shape has been run yet`,
     }),
-  },
+  }),
 
   /**
    * Provenance constraint (web ISA ISC-126): inspects the command line that PRODUCED an
    * artifact — composition rules verify how the result was made, not keystrokes.
    */
-  artifact_produced_by: {
+  artifact_produced_by: definePrimitive({
     kind: "artifact_produced_by",
     params: z.object({
       check: z.literal("artifact_produced_by"),
@@ -166,9 +171,9 @@ export const PRIMITIVES = {
         if (cmds.includes(fc)) return { pass: false, evidence: "", gap: `${fc} is an all-in-one shortcut here — compose small programs instead` };
       return { pass: true, evidence: `produced by: ${line}`, gap: "" };
     },
-  },
+  }),
 
-  stream_separated: {
+  stream_separated: definePrimitive({
     kind: "stream_separated",
     params: z.object({
       check: z.literal("stream_separated"),
@@ -186,10 +191,10 @@ export const PRIMITIVES = {
       if (!re.test(errs)) return { pass: false, evidence: "", gap: `${p.error_file} doesn't hold the collection complaint yet` };
       return { pass: true, evidence: `evidence is clean; complaint captured in ${p.error_file}`, gap: "" };
     },
-  },
+  }),
 
   /** Reproducibility (web ISA ISC-127): clean re-runs with perturbed clock/entropy must agree. */
-  script_reproducible: {
+  script_reproducible: definePrimitive({
     kind: "script_reproducible",
     params: z.object({
       check: z.literal("script_reproducible"),
@@ -209,9 +214,9 @@ export const PRIMITIVES = {
         return { pass: false, evidence: "", gap: "the script runs, but its evidence isn't the expected result yet" };
       return { pass: true, evidence: `two clean runs produced identical evidence: ${JSON.stringify(norm(a.stdout))}`, gap: "" };
     },
-  },
+  }),
 
-  cwd_is: {
+  cwd_is: definePrimitive({
     kind: "cwd_is",
     params: z.object({ check: z.literal("cwd_is"), path: z.string() }),
     run: (s, p) => {
@@ -222,8 +227,8 @@ export const PRIMITIVES = {
         gap: `you're standing in ${here} — the prompt is the first witness`,
       };
     },
-  },
-} satisfies Record<string, Primitive<z.ZodTypeAny>>;
+  }),
+};
 
 function currentDir(s: ShellSession): string {
   // The prompt always tells the truth: parse cwd from it (public API only).
