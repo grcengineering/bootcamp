@@ -1,12 +1,12 @@
 ---
 project: grc-engineering-bootcamp
 effort: E5
-phase: complete
+phase: build
 progress: 87/89
 mode: build
 started: 2026-05-28
 updated: 2026-06-13
-iteration: 3
+iteration: 4
 owner: Justin Pagano (accountable) · Jai (operational)
 ---
 
@@ -168,7 +168,22 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [x] ISC-86: Anti: every design frames the topic by its loop question, never "learn this stack" (manifesto thesis preserved); originality-clean (no third-party framing presented as original)
 - [x] ISC-87: `VISUAL-ENGINE-SPEC.md` specifies the new `visual` Lab Player surface + the minimal new verifier-primitive set + the new parsers/engines, each with its honest ground-truth source; reuses wave-2 engines where the topic fits
 - [x] ISC-88: `SEQUENCING.md` places the modules in the Tier-1 dependency graph + track map with a numbering recommendation (additive vs 3-digit relabel), prerequisites among new modules noted
-- [ ] ISC-89: Antecedent: owner reviews the enumeration + designs and authorizes the build wave before any module/exercise is built (no auto-build of 10 modules on green design)
+- [x] ISC-89: Antecedent: owner reviews the enumeration + designs and authorizes the build wave before any module/exercise is built — **owner said "Build them!" 2026-06-13; build authorized**
+
+### Wave 4 — IT-foundations BUILD (added 2026-06-13; owner authorized + mandated per-module LOOK+FUNCTION testing)
+> Build all 10 IT-foundations modules (dirs 16–25, additive) with the new visual engine, real-artifact fixtures, exercises, and gates — AND the owner's explicit mandate: thoroughly test EACH module in real Chrome for LOOK and FUNCTION, fix every bug, re-verify until explicitly confirmed. Canary-first: networking proves the visual surface end-to-end before fan-out.
+- [ ] ISC-90: `visual` Lab Player surface (PEEL/TRACE/MAP + Build-and-Break + Diff-the-Trace) built, DOM-based + keyboard/SR-accessible, lazy-loaded, dispatched by `spec.engine: visual`; reading-page JS budget not regressed
+- [ ] ISC-91: the 6 new verifier primitives (region_labeled_correctly, field_value_is, decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct) added to the closed registry with Zod schemas, unit + mutation tests, and exercise-lint descriptors (each discriminates, not just accepts)
+- [ ] ISC-92: the new oracles/parsers built + fidelity-checked vs a reference (pkt, dns, x509, jwt, xform, tls13, dnsres, oauth, hdr, contracts, pbwire, gqlsim, syslog, oci, saml); each ships a committed fidelity-check fixture; coverage ≥95/95 on new engine files
+- [ ] ISC-93: real-artifact fixtures captured/sourced with provenance (tcpdump packet, dig DNS bytes, openssl cert chain, docker OCI manifest, real JWT/syslog/protobuf/contracts) — manifest-lint extended (new sources/match classes) and green
+- [ ] ISC-94: all 10 modules authored (16–25): module.md 9-section anatomy + meta.yaml + exercise.yaml + golden/anti transcripts; anatomy + originality + style + exercise lints green across all 26 modules
+- [ ] ISC-95: every new module's golden transcript passes all action tasks AND each anti fails at its `fails_check` index (the H1 discrimination gate) in `bun test`
+- [ ] ISC-96: engine/fidelity suites green for all new oracles; full web `bun test` green; `astro check` 0 errors; build emits all 26 module routes + 26 lab routes
+- [ ] ISC-97: integration-canary matrix extended — one green canary per new visual class (PEEL/TRACE/MAP/build-and-break/diff-the-trace) in the built site
+- [ ] ISC-98: **owner mandate — EACH of the 10 new modules verified by the primary in real Chrome (Interceptor): LOOK (renders correctly, screenshot evidence) AND FUNCTION (the puzzle's select/decode/order/assign interactions auto-verify and tasks complete)**; every bug found is fixed and the fix re-verified in-browser
+- [ ] ISC-99: Anti: no new module ships with a known unfixed LOOK or FUNCTION defect — the fix-and-re-verify loop is closed and recorded per module
+- [ ] ISC-100: docs updated for the IT-foundations band (curriculum doc + track map + coverage matrix + README + CHANGELOG); rot dashboard shows 26 exercises; CI runs the new gates
+- [ ] ISC-101: Anti: nothing pushed to `origin` / deployed without explicit owner "yes push" (standing)
 
 ## Test Strategy
 
