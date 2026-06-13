@@ -12,12 +12,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
-import { parse } from "yaml";
 import { createShellEngine } from "../src/engines/shell";
+import { loadManifest } from "../../.ci/fixtures/load-manifest";
 import type { SeedSpec, ExecResult, ShellSession } from "../src/engines/shell/types";
 
 const FIXTURES = join(dirname(new URL(import.meta.url).pathname), "../../.ci/fixtures");
-const manifest = parse(readFileSync(join(FIXTURES, "manifest.yaml"), "utf8"));
+// manifest.yaml PLUS every manifest.d/*.yaml fragment (Wave-4 fan-out) — one merged manifest.
+const manifest = loadManifest(FIXTURES);
 
 function loadSeed(seedId: string): SeedSpec {
   const seedDef = manifest.seeds[seedId];

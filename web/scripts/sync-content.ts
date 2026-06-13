@@ -98,6 +98,31 @@ if (existsSync(TRACKS)) {
 import { ExerciseSpecSchema, findBannedKeys } from "../src/lib/exercise-spec";
 import { buildM02Seed } from "../src/engines/linuxadmin";
 import { buildVisualOptions, type FixtureSet, type PacketFixture } from "../src/lib/visual-seed";
+import { buildApiVisualOptions, type ApiFixture } from "../src/lib/api-seed";
+import { loadManifest } from "../../.ci/fixtures/load-manifest";
+
+/** The Wave-4 contract/wire oracles served from .ci/fixtures/assets/api/ (vs the net `pkt` canary). */
+const API_ORACLES = new Set(["oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim"]);
+/** The four real machine-readable contracts the api-paradigms PEEL/diff surface parses. */
+const API_CONTRACT_FILES = ["users.openapi.json", "users.wsdl", "users.graphql", "users.proto"];
+
+/** Load the committed api fixtures (JSON bundles) + the raw contract files for the api oracles. */
+function loadApiFixtures(): { fixtures: Record<string, ApiFixture>; contracts: Record<string, string> } {
+  const dir = join(FIXTURES, "assets", "api");
+  const fixtures: Record<string, ApiFixture> = {};
+  const contracts: Record<string, string> = {};
+  if (!existsSync(dir)) return { fixtures, contracts };
+  for (const name of readdirSync(dir)) {
+    if (name.endsWith(".json") && !API_CONTRACT_FILES.includes(name)) {
+      fixtures[name] = JSON.parse(readFileSync(join(dir, name), "utf8")) as ApiFixture;
+    }
+  }
+  for (const f of API_CONTRACT_FILES) {
+    const p = join(dir, f);
+    if (existsSync(p)) contracts[f] = readFileSync(p, "utf8");
+  }
+  return { fixtures, contracts };
+}
 
 /** Load every committed packet fixture under .ci/fixtures/assets/net/ as a FixtureSet. */
 function loadVisualFixtureSet(): FixtureSet {
@@ -150,8 +175,11 @@ function readSeedTools(binDir: string, names: string[]): Record<string, string> 
 
 reset(OUT_LABS);
 let labCount = 0;
+// manifest.yaml PLUS every manifest.d/*.yaml fragment (Wave-4 fan-out): each module agent owns
+// its own fragment, so a fragment-defined seed profile (e.g. m22) validates here without any
+// edit to the shared base file.
 const manifestPath = join(FIXTURES, "manifest.yaml");
-const manifest = existsSync(manifestPath) ? parse(readFileSync(manifestPath, "utf8")) : null;
+const manifest = existsSync(manifestPath) ? loadManifest(FIXTURES) : null;
 const epoch: string = manifest?.meta?.epoch ?? "2026-06-01T09:00:00Z";
 
 for (const id of readdirSync(MODULES).sort()) {
@@ -267,14 +295,27 @@ for (const id of readdirSync(MODULES).sort()) {
       console.error(`sync-content: FAIL — ${id} (engine: visual) needs a visual: block`);
       process.exit(1);
     }
-    const set = loadVisualFixtureSet();
-    const fromFile = spec.visual.artifact.from.replace(/^assets\/net\//, "").replace(/^assets\//, "");
-    const primary = set[fromFile] ?? Object.values(set).find((f) => f.id === fromFile.replace(/\.json$/, ""));
-    if (!primary) {
-      console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/net`);
-      process.exit(1);
+    if (API_ORACLES.has(spec.visual.oracle)) {
+      // Wave-4 contract/wire oracle: parse the committed api artifacts into the SAME parse-tree
+      // panels the replay test builds (lib/api-seed), so browser and test see identical records.
+      const { fixtures, contracts } = loadApiFixtures();
+      const fromFile = spec.visual.artifact.from.replace(/^assets\/api\//, "").replace(/^assets\//, "");
+      const primary = fixtures[fromFile] ?? Object.values(fixtures).find((f) => f.id === fromFile.replace(/\.json$/, ""));
+      if (!primary) {
+        console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/api`);
+        process.exit(1);
+      }
+      visual = buildApiVisualOptions(spec.visual.mode, spec.visual.oracle, primary, contracts);
+    } else {
+      const set = loadVisualFixtureSet();
+      const fromFile = spec.visual.artifact.from.replace(/^assets\/net\//, "").replace(/^assets\//, "");
+      const primary = set[fromFile] ?? Object.values(set).find((f) => f.id === fromFile.replace(/\.json$/, ""));
+      if (!primary) {
+        console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/net`);
+        process.exit(1);
+      }
+      visual = buildVisualOptions(spec.visual.mode, spec.visual.oracle, primary, set);
     }
-    visual = buildVisualOptions(spec.visual.mode, spec.visual.oracle, primary, set);
   }
 
   // Generated expectations (from: generated lookups), minus provenance keys.

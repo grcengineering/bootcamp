@@ -1,0 +1,301 @@
+{
+  "id": "api-diff-the-trace",
+  "kind": "contract-payload-pairs",
+  "description": "Four real clean/broken pairs (one control failure per paradigm) for the EVALUATE-stage Diff-the-Trace. Each broken twin is a real instance; the discriminating field is each oracle's computed divergence \u2014 never an answer key.",
+  "provenance": {
+    "match": "authored-with-citation",
+    "owasp": "OWASP API Security Top 10 2023; OWASP GraphQL Cheat Sheet; RFC 7519 alg:none; OASIS WS-Security replay (nonce/created)"
+  },
+  "field_map": {
+    "1": {
+      "name": "users",
+      "type": "message",
+      "sub": {
+        "1": {
+          "name": "email",
+          "type": "string"
+        },
+        "2": {
+          "name": "mfa_enabled",
+          "type": "bool"
+        },
+        "3": {
+          "name": "role",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "pairs": [
+    {
+      "id": "rest",
+      "paradigm": "REST",
+      "oracle": "oas",
+      "control_claim": "the endpoint returns only the fields it declares (no excessive data) \u2014 BOPLA",
+      "owasp": "API3:2023",
+      "framework_ref": "API3:2023 Broken Object Property Level Authorization",
+      "discriminating_node": "REST response over-returns a salary/ssn property the contract never declared",
+      "clean": {
+        "label": "sparse {email, mfa_enabled}",
+        "artifact": {
+          "data": [
+            {
+              "type": "users",
+              "id": "1",
+              "attributes": {
+                "email": "alice@acme.example",
+                "mfa_enabled": true
+              }
+            },
+            {
+              "type": "users",
+              "id": "2",
+              "attributes": {
+                "email": "bob@acme.example",
+                "mfa_enabled": false
+              }
+            },
+            {
+              "type": "users",
+              "id": "3",
+              "attributes": {
+                "email": "carol@acme.example",
+                "mfa_enabled": true
+              }
+            },
+            {
+              "type": "users",
+              "id": "4",
+              "attributes": {
+                "email": "dan@acme.example",
+                "mfa_enabled": false
+              }
+            },
+            {
+              "type": "users",
+              "id": "5",
+              "attributes": {
+                "email": "erin@acme.example",
+                "mfa_enabled": true
+              }
+            },
+            {
+              "type": "users",
+              "id": "6",
+              "attributes": {
+                "email": "frank@acme.example",
+                "mfa_enabled": false
+              }
+            },
+            {
+              "type": "users",
+              "id": "7",
+              "attributes": {
+                "email": "grace@acme.example",
+                "mfa_enabled": true
+              }
+            },
+            {
+              "type": "users",
+              "id": "8",
+              "attributes": {
+                "email": "heidi@acme.example",
+                "mfa_enabled": false
+              }
+            }
+          ]
+        }
+      },
+      "broken": {
+        "label": "over-returns salary + ssn (API3)",
+        "artifact": {
+          "data": [
+            {
+              "type": "users",
+              "id": "1",
+              "attributes": {
+                "email": "alice@acme.example",
+                "mfa_enabled": true,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "2",
+              "attributes": {
+                "email": "bob@acme.example",
+                "mfa_enabled": false,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "3",
+              "attributes": {
+                "email": "carol@acme.example",
+                "mfa_enabled": true,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "4",
+              "attributes": {
+                "email": "dan@acme.example",
+                "mfa_enabled": false,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "5",
+              "attributes": {
+                "email": "erin@acme.example",
+                "mfa_enabled": true,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "6",
+              "attributes": {
+                "email": "frank@acme.example",
+                "mfa_enabled": false,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "7",
+              "attributes": {
+                "email": "grace@acme.example",
+                "mfa_enabled": true,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            },
+            {
+              "type": "users",
+              "id": "8",
+              "attributes": {
+                "email": "heidi@acme.example",
+                "mfa_enabled": false,
+                "salary": 185000,
+                "ssn": "123-45-6789"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "graphql",
+      "paradigm": "GraphQL",
+      "oracle": "gqlsim",
+      "control_claim": "queries are depth/cost-limited and introspection is OFF in prod",
+      "owasp": "API4+API9",
+      "framework_ref": "API4:2023 + API9:2023",
+      "discriminating_node": "a 12-deep circular selection set past the depth cap AND an introspection query",
+      "clean": {
+        "label": "precise { email mfaEnabled }",
+        "query": "query { users { email mfaEnabled } }"
+      },
+      "broken": {
+        "label": "12-deep circular + __schema (API4+API9)",
+        "query": "query { users { manager { manager { manager { manager { manager { manager { manager { manager { manager { manager { id } } } } } } } } } } __schema { types { name } } }"
+      }
+    },
+    {
+      "id": "soap",
+      "paradigm": "SOAP",
+      "oracle": "wsdl",
+      "control_claim": "the message is fresh + integrity-protected (nonce/created replay protection + signed Body)",
+      "owasp": "API2:2023",
+      "framework_ref": "API2:2023 Broken Authentication (replay)",
+      "discriminating_node": "a stale wsu:Created whose recomputed PasswordDigest no longer matches the envelope",
+      "clean": {
+        "label": "fresh Created + matching digest",
+        "envelope": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n    xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"\n    xmlns:tns=\"http://acme.example/users\">\n  <soap:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>NNK</wsse:Username>\n        <wsse:Password Type=\"...#PasswordDigest\">AtYMdWClJo7PIuTpqmhmEEoEZyc=</wsse:Password>\n        <wsse:Nonce>WScqanjCEAC4mQoBE07sAQ==</wsse:Nonce>\n        <wsu:Created>2003-07-16T01:24:32Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </soap:Header>\n  <soap:Body>\n    <tns:ListUsersResponse>\n      <tns:User><tns:email>alice@acme.example</tns:email><tns:mfaEnabled>true</tns:mfaEnabled></tns:User>\n      <tns:User><tns:email>bob@acme.example</tns:email><tns:mfaEnabled>false</tns:mfaEnabled></tns:User>\n    </tns:ListUsersResponse>\n  </soap:Body>\n</soap:Envelope>\n",
+        "ws": {
+          "nonce": "WScqanjCEAC4mQoBE07sAQ==",
+          "created": "2003-07-16T01:24:32Z",
+          "password": "taadtaadpstcsm",
+          "digest": "AtYMdWClJo7PIuTpqmhmEEoEZyc="
+        }
+      },
+      "broken": {
+        "label": "stale Created \u2192 digest mismatch (API2)",
+        "envelope": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n    xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"\n    xmlns:tns=\"http://acme.example/users\">\n  <soap:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>NNK</wsse:Username>\n        <wsse:Password Type=\"...#PasswordDigest\">AtYMdWClJo7PIuTpqmhmEEoEZyc=</wsse:Password>\n        <wsse:Nonce>WScqanjCEAC4mQoBE07sAQ==</wsse:Nonce>\n        <wsu:Created>2001-01-01T00:00:00Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </soap:Header>\n  <soap:Body>\n    <tns:ListUsersResponse>\n      <tns:User><tns:email>alice@acme.example</tns:email><tns:mfaEnabled>true</tns:mfaEnabled></tns:User>\n      <tns:User><tns:email>bob@acme.example</tns:email><tns:mfaEnabled>false</tns:mfaEnabled></tns:User>\n    </tns:ListUsersResponse>\n  </soap:Body>\n</soap:Envelope>\n",
+        "ws": {
+          "nonce": "WScqanjCEAC4mQoBE07sAQ==",
+          "created": "2001-01-01T00:00:00Z",
+          "password": "taadtaadpstcsm",
+          "envelope_digest": "AtYMdWClJo7PIuTpqmhmEEoEZyc="
+        }
+      }
+    },
+    {
+      "id": "grpc",
+      "paradigm": "gRPC",
+      "oracle": "pbwire",
+      "control_claim": "server reflection is OFF in prod and tokens are signature-verified (no alg:none)",
+      "owasp": "API9+API2",
+      "framework_ref": "API9:2023 + API2:2023",
+      "discriminating_node": "server reflection advertised in prod metadata + an alg:none JWT in authorization",
+      "clean": {
+        "label": "no reflection, signed JWT",
+        "frame_hex": "00000000f70a1d0a12616c6963654061636d652e6578616d706c6510011a0561646d696e0a1c0a10626f624061636d652e6578616d706c6510001a066d656d6265720a1d0a126361726f6c4061636d652e6578616d706c6510011a0561646d696e0a1c0a1064616e4061636d652e6578616d706c6510001a066d656d6265720a1c0a116572696e4061636d652e6578616d706c6510011a0561646d696e0a1e0a126672616e6b4061636d652e6578616d706c6510001a066d656d6265720a1d0a1267726163654061636d652e6578616d706c6510011a0561646d696e0a1e0a1268656964694061636d652e6578616d706c6510001a066d656d626572",
+        "request_headers": [
+          {
+            "name": ":path",
+            "value": "/userservice.UserService/ListUsers"
+          },
+          {
+            "name": "authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+          },
+          {
+            "name": "grpc-server-reflection",
+            "value": "disabled"
+          }
+        ],
+        "response_trailers": [
+          {
+            "name": "grpc-status",
+            "value": "0"
+          }
+        ]
+      },
+      "broken": {
+        "label": "reflection enabled + alg:none JWT (API9+API2)",
+        "frame_hex": "00000000f70a1d0a12616c6963654061636d652e6578616d706c6510011a0561646d696e0a1c0a10626f624061636d652e6578616d706c6510001a066d656d6265720a1d0a126361726f6c4061636d652e6578616d706c6510011a0561646d696e0a1c0a1064616e4061636d652e6578616d706c6510001a066d656d6265720a1c0a116572696e4061636d652e6578616d706c6510011a0561646d696e0a1e0a126672616e6b4061636d652e6578616d706c6510001a066d656d6265720a1d0a1267726163654061636d652e6578616d706c6510011a0561646d696e0a1e0a1268656964694061636d652e6578616d706c6510001a066d656d626572",
+        "request_headers": [
+          {
+            "name": ":path",
+            "value": "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+          },
+          {
+            "name": "authorization",
+            "value": "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0."
+          },
+          {
+            "name": "grpc-server-reflection",
+            "value": "enabled"
+          }
+        ],
+        "response_trailers": [
+          {
+            "name": "grpc-status",
+            "value": "0"
+          }
+        ]
+      }
+    }
+  ]
+}

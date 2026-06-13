@@ -166,6 +166,16 @@ seeds:
                                   # the packet-dissector (oracle `pkt`) parses; sync-content + visual-seed.ts
                                   # normalize it to the Inspect-&-Assemble panels. The parse tree over those real
                                   # bytes IS the oracle (fidelity-checked vs tshark in web/tests/pkt-fidelity.test.ts).
+  mapi:
+    kind: visual                  # Wave-4 visual engine (module 19, api-paradigms): no home tree, no PATH tools.
+                                  # The seeded state is REAL machine-readable contracts + wire payloads committed
+                                  # under .ci/fixtures/assets/api/* (users.openapi.json / users.wsdl / users.graphql /
+                                  # users.proto, grpc-listusers.json, payloads.json, diff-the-trace.json), all over the
+                                  # shared 8-user acme.example seed. The contract/wire oracles (oas/wsdl/sdl/proto/
+                                  # pbwire/gqlsim) parse them; sync-content + lib/api-seed.ts normalize to the
+                                  # Inspect-&-Assemble panels. The protobuf decode is byte-exact-verified against
+                                  # protobuf.dev examples (a=150 -> 08 96 01) in web/tests/pbwire-fidelity.test.ts.
+                                  # The parser/decoder/transform over the real artifact IS the oracle.
 
 # Reusable hole definitions for booted structured captures (module 02 family): `find` is the
 # capture-time scrub regex (matches in captured streams are replaced with {{name}}), `pattern`

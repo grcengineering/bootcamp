@@ -1,0 +1,109 @@
+{
+  "id": "logging-syslog-5424-examples",
+  "kind": "syslog-5424",
+  "match": "authored-with-citation",
+  "description": "The four RFC 5424 §6.5 example log lines, committed verbatim. A syslog line is RFC text, not capturable wire bytes, so the honest source is the RFC's own normative examples — the PRI bit-unpack, NILVALUE handling, and SD-ELEMENT walk are the parser's computation over these exact characters, never an authored answer key. The leading \\uFEFF on ex1/ex3 MSG is the real UTF-8 BOM (RFC 5424 §6.4). PRIVAL 34 -> Facility 4 (security/authorization), Severity 2 (Critical); PRIVAL 165 -> Facility 20 (local4), Severity 5 (Notice).",
+  "provenance": {
+    "source": "RFC 5424 (The Syslog Protocol), §6.5 Examples; §6.2.1 Table 1 (Facility) + Table 2 (Severity); §6.2.x field defs; §6.3 STRUCTURED-DATA; §6.4 MSG/BOM.",
+    "authored_with_citation": "Transcribed verbatim from RFC 5424 §6.5. The 'BOM' placeholder the RFC prints in ex1/ex3 is rendered here as the real U+FEFF byte sequence (EF BB BF) it stands for.",
+    "cross_checked_against": "The arithmetic PRIVAL = Facility*8 + Severity verified locally with python3 (divmod): 34 -> (4,2), 165 -> (20,5), matching RFC 5424 §6.2.1's own worked statements ('local use 4 with Severity Notice = 165'). The parser (web/src/engines/visual/syslog.ts) tokenizes these exact lines; web/tests/syslog-fidelity.test.ts asserts its decode equals these RFC-true values, so the parser cannot drift from the spec without CI failing.",
+    "honesty_note": "Nothing here is invented. A learner can paste any line into a reference RFC 5424 parser (e.g. rsyslog/syslog-ng test harness) or compute the offsets by hand against §6 and get the identical decode."
+  },
+  "lines": [
+    {
+      "id": "ex1_auth_failure",
+      "rfc": "RFC 5424 §6.5 Example 1",
+      "chars": 108,
+      "raw": "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - ﻿'su root' failed for lonvick on /dev/pts/8",
+      "rfc_field_truth": {
+        "pri.prival": 34,
+        "pri.facility": { "code": 4, "keyword": "security/authorization messages", "ref": "RFC 5424 Table 1" },
+        "pri.severity": { "code": 2, "keyword": "Critical", "ref": "RFC 5424 Table 2" },
+        "version": "1",
+        "timestamp": "2003-10-11T22:14:15.003Z",
+        "hostname": "mymachine.example.com",
+        "app_name": "su",
+        "procid": "- (NILVALUE)",
+        "msgid": "ID47",
+        "structured_data": "- (NILVALUE)",
+        "msg_has_bom": true,
+        "msg": "'su root' failed for lonvick on /dev/pts/8"
+      }
+    },
+    {
+      "id": "ex2_donuts",
+      "rfc": "RFC 5424 §6.5 Example 2",
+      "chars": 99,
+      "raw": "<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.",
+      "rfc_field_truth": {
+        "pri.prival": 165,
+        "pri.facility": { "code": 20, "keyword": "local use 4 (local4)", "ref": "RFC 5424 Table 1" },
+        "pri.severity": { "code": 5, "keyword": "Notice", "ref": "RFC 5424 Table 2" },
+        "version": "1",
+        "timestamp": "2003-08-24T05:14:15.000003-07:00",
+        "hostname": "192.0.2.1",
+        "app_name": "myproc",
+        "procid": "8710",
+        "msgid": "- (NILVALUE)",
+        "structured_data": "- (NILVALUE)",
+        "msg_has_bom": false,
+        "msg": "%% It's time to make the do-nuts."
+      }
+    },
+    {
+      "id": "ex3_sd_one",
+      "rfc": "RFC 5424 §6.5 Example 3 (with STRUCTURED-DATA)",
+      "chars": 173,
+      "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"] ﻿An application event log entry...",
+      "rfc_field_truth": {
+        "pri.prival": 165,
+        "pri.facility": { "code": 20, "keyword": "local use 4 (local4)", "ref": "RFC 5424 Table 1" },
+        "pri.severity": { "code": 5, "keyword": "Notice", "ref": "RFC 5424 Table 2" },
+        "app_name": "evntslog",
+        "procid": "- (NILVALUE)",
+        "msgid": "ID47",
+        "structured_data_elements": 1,
+        "sd0.id": "exampleSDID@32473",
+        "sd0.params": { "iut": "3", "eventSource": "Application", "eventID": "1011" },
+        "msg_has_bom": true,
+        "msg": "An application event log entry..."
+      }
+    },
+    {
+      "id": "ex4_sd_two",
+      "rfc": "RFC 5424 §6.5 Example 4 (two SD-ELEMENTs, no MSG)",
+      "chars": 174,
+      "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"][examplePriority@32473 class=\"high\"]",
+      "rfc_field_truth": {
+        "pri.prival": 165,
+        "structured_data_elements": 2,
+        "sd0.id": "exampleSDID@32473",
+        "sd1.id": "examplePriority@32473",
+        "sd1.params": { "class": "high" },
+        "structured_data": "no trailing MSG"
+      }
+    }
+  ],
+  "diff_pairs": [
+    {
+      "id": "pair-auth-severity",
+      "control_claim": "auth failures are logged at Critical severity for alerting (AU-3 / AC-7 / IA-5)",
+      "framework_ref": "AU-3, AC-7, IA-5",
+      "discriminating_field": "pri.severity",
+      "clean": {
+        "label": "auth failure logged as Critical (PRIVAL 34)",
+        "line_ref": "ex1_auth_failure"
+      },
+      "broken": {
+        "label": "same auth failure mislabelled Debug (PRIVAL 39) — slips under the alert threshold",
+        "raw": "<39>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - ﻿'su root' failed for lonvick on /dev/pts/8",
+        "discriminating_truth": {
+          "pri.prival": 39,
+          "pri.facility": { "code": 4, "keyword": "security/authorization messages" },
+          "pri.severity": { "code": 7, "keyword": "Debug" }
+        },
+        "honesty_note": "A real RFC 5424 line built from ex1 with only the PRIVAL changed 34->39 (same Facility 4, Severity downgraded 2->7). The parser computes the divergent Severity from the real PRI byte — the break is the dissector's arithmetic, not an authored verdict. PRIVAL 39 = 4*8+7 = Facility 4, Severity 7 (Debug), which a Critical-threshold alert never fires on."
+      }
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "id": "crypto-transform-vectors",
+  "kind": "transform-vectors",
+  "description": "Reference vectors for the crypto-transform oracle (SHA-256/SHA-1/MD5 + base64/hex), used by the applied-crypto MAP 'Sorting the Scramble' sort, the api-paradigms WS-Security digest recompute, and identity HS256 verification. The transform RECOMPUTES from learner bytes at runtime \u2014 these vectors only pin the engine's fidelity (it must reproduce them exactly). No learner string is ever stored.",
+  "provenance": {
+    "computed_with": "shasum -a 256/-a 1, md5, base64, xxd -p (macOS) and cross-checked vs node:crypto and python hashlib",
+    "computed_at": "2026-06-13T18:55Z",
+    "honesty_note": "Every value is a deterministic transform of its input, reproducible by anyone. SHA-256(empty)=e3b0c442... is the canonical empty-string digest cited across the curriculum. The api-paradigms WS-Security OASIS digest value is authored-with-citation (the OASIS normative example password is not published in full); the engine's job is to recompute Base64(SHA-1(nonce+created+password)) faithfully, which it does.",
+    "match": "captured-real",
+    "specs": [
+      "FIPS 180-4 (SHA-1/SHA-256)",
+      "RFC 1321 (MD5)",
+      "RFC 4648 (base64/base64url/hex)"
+    ]
+  },
+  "vectors": [
+    {
+      "input": "",
+      "class": "input",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "base64": "",
+      "hex": ""
+    },
+    {
+      "input": "hello",
+      "class": "input",
+      "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+      "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+      "md5": "5d41402abc4b2a76b9719d911017c592",
+      "base64": "aGVsbG8=",
+      "hex": "68656c6c6f"
+    },
+    {
+      "input": "abc",
+      "class": "input",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "sha1": "a9993e364706816aba3e25717850c26c9cd0d89d",
+      "sha1_base64": "qZk+NkcGgWq6PiVxeFDCbJzQ2J0=",
+      "base64": "YWJj",
+      "hex": "616263"
+    },
+    {
+      "input": "A",
+      "class": "input",
+      "base64": "QQ==",
+      "hex": "41"
+    }
+  ],
+  "sort_classes": {
+    "description": "The 'Sorting the Scramble' MAP key \u2014 the class is DERIVED by running the real transform, not authored. base64/hex reverse with NO key => ENCODE; SHA-256/SHA-1/MD5 never reverse => HASH; AES reverses only WITH a key => ENCRYPT. The JWT-header card decodes with no key => ENCODE (the encoding-!=-protection lesson).",
+    "items": [
+      {
+        "id": "base64-hello",
+        "value": "aGVsbG8=",
+        "key_class": "ENCODE",
+        "key_ref": "RFC 4648 (reversible, no key)"
+      },
+      {
+        "id": "hex-hello",
+        "value": "68656c6c6f",
+        "key_class": "ENCODE",
+        "key_ref": "RFC 4648 (reversible, no key)"
+      },
+      {
+        "id": "sha256-hello",
+        "value": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "key_class": "HASH",
+        "key_ref": "FIPS 180-4 (one-way)"
+      },
+      {
+        "id": "sha1-hello",
+        "value": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+        "key_class": "HASH",
+        "key_ref": "FIPS 180-4 (one-way)"
+      },
+      {
+        "id": "md5-hello",
+        "value": "5d41402abc4b2a76b9719d911017c592",
+        "key_class": "HASH",
+        "key_ref": "RFC 1321 (one-way)"
+      },
+      {
+        "id": "jwt-header",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+        "key_class": "ENCODE",
+        "key_ref": "RFC 7515 (base64url, no key) \u2014 decodes to {alg:HS256,typ:JWT}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "identity-oauth-oidc-dance",
+  "kind": "json-store",
+  "description": "The RFC 6749 §4.1 authorization-code grant (+ OIDC Core 1.0 id_token) as orderable dance cards. The oauth-oidc-sim runs the state machine: the canonical order reaches resource access; calling the resource server before the token exchange raises the real invalid_request (the valet key was never obtained); a missing code raises invalid_request; a bad grant raises invalid_grant.",
+  "oracle": "oauth",
+  "match": "authored-with-citation",
+  "provenance": {
+    "reference": "RFC 6749 §4.1 (authorization-code grant), §4.1.2.1 + §5.2 (error codes: invalid_request, invalid_grant, …), RFC 6750 §3.1 (Bearer / 401), OpenID Connect Core 1.0 §3.1 (authentication request / id_token)",
+    "example_values": "the code 'SplxlOBeZQQYbYS6WxSbIA' and access_token '2YotnFZFEjr1zCsicMWpAA' are the literal example values from RFC 6749 §4.1.2 / §5.1",
+    "reproducible_against": "a real IdP authorize/token endpoint produces this exact act ordering; an out-of-order resource call returns the OAuth error JSON {\"error\":\"invalid_request\"}",
+    "honesty_note": "Authored from RFC 6749 / OIDC Core with citation (the act NAMES and error STRINGS are the spec's literal values); the state machine is the consequence engine — the error a wrong move raises is computed, not authored."
+  },
+  "dance": {
+    "canonical_ref": "oauth-authz-code",
+    "cards": [
+      { "seq": 0, "from": "client", "to": "authz-server", "type": "authorization_request" },
+      { "seq": 1, "from": "authz-server", "to": "client", "type": "authorization_response" },
+      { "seq": 2, "from": "client", "to": "authz-server", "type": "token_request" },
+      { "seq": 3, "from": "authz-server", "to": "client", "type": "token_response" },
+      { "seq": 4, "from": "client", "to": "resource-server", "type": "resource_request" },
+      { "seq": 5, "from": "resource-server", "to": "client", "type": "resource_response" }
+    ],
+    "break_cards": {
+      "resource_before_token": { "from": "client", "to": "resource-server", "type": "resource_request", "expect_error": "invalid_request" },
+      "missing_code": { "fault": "missing_code", "expect_error": "invalid_request" },
+      "bad_grant": { "fault": "bad_grant", "expect_error": "invalid_grant" }
+    }
+  }
+}

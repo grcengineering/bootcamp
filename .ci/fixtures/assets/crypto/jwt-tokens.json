@@ -1,0 +1,53 @@
+{
+  "id": "crypto-jwt-tokens",
+  "kind": "jwt",
+  "description": "A REAL three-segment HS256 JWT (header.payload.signature) and its real alg:none tamper twin, for the identity / web-app / api-paradigms PEEL legs. The jwt-7519 parser base64url-splits the segments and JSON-decodes header+payload; the decode IS the oracle (no key needed \u2014 proving encoding != protection). HS256 verification delegates to crypto-transform (HMAC-SHA-256).",
+  "provenance": {
+    "captured_with": "node:crypto: HMAC-SHA-256 over base64url(header).base64url(payload) with a fixed secret; segments base64url-encoded per RFC 7515 \u00a72",
+    "captured_at": "2026-06-13T18:55Z",
+    "cross_checked_against": "python base64.urlsafe_b64decode of each segment; the signature recomputes identically (HS256_VERIFIES=true). Decoded header={alg:HS256,typ:JWT}; payload carries iss/sub/aud/iat/exp.",
+    "honesty_note": "Real RFC 7519 token. The decode is the parser's output over the real base64url bytes. The alg:none twin is a real tampered instance (header alg swapped to 'none', signature segment emptied) \u2014 the genuine attack, not a mock. The exp (1718203600 = 2024-06-12T14:46:40Z) is genuinely in the past, so this also serves as a real expired-token leg.",
+    "secret_note": "The HMAC secret 'grc-bootcamp-shared-hs256-secret' is published here ONLY so the HS256 leg is reproducible; in the lab the learner verifies the signature by recomputing the HMAC, not by reading a key.",
+    "match": "captured-real"
+  },
+  "tokens": {
+    "valid_hs256": {
+      "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdyY2Jvb3RjYW1wLmV4YW1wbGUiLCJzdWIiOiJ1c2VyLTdmM2EiLCJhdWQiOiJncmMtYm9vdGNhbXAtbGFiIiwiaWF0IjoxNzE4MjAwMDAwLCJleHAiOjE3MTgyMDM2MDAsIm5hbWUiOiJBdmVyeSBMaW4iLCJyb2xlIjoiYXVkaXRvciJ9.J9SkdtAQCO-2M2--8pdgsuRJMx12RzL_ZbcZKxBcJZU",
+      "header_decoded": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "payload_decoded": {
+        "iss": "https://accounts.grcbootcamp.example",
+        "sub": "user-7f3a",
+        "aud": "grc-bootcamp-lab",
+        "iat": 1718200000,
+        "exp": 1718203600,
+        "name": "Avery Lin",
+        "role": "auditor"
+      },
+      "signature_b64url": "J9SkdtAQCO-2M2--8pdgsuRJMx12RzL_ZbcZKxBcJZU",
+      "hs256_secret": "grc-bootcamp-shared-hs256-secret",
+      "rfc": "RFC 7519 (JWT), RFC 7515 (JWS), RFC 4648 \u00a75 (base64url)"
+    },
+    "algnone_twin": {
+      "jwt": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdyY2Jvb3RjYW1wLmV4YW1wbGUiLCJzdWIiOiJ1c2VyLTdmM2EiLCJhdWQiOiJncmMtYm9vdGNhbXAtbGFiIiwiaWF0IjoxNzE4MjAwMDAwLCJleHAiOjE3MTgyMDM2MDAsIm5hbWUiOiJBdmVyeSBMaW4iLCJyb2xlIjoiYXVkaXRvciJ9.",
+      "header_decoded": {
+        "alg": "none",
+        "typ": "JWT"
+      },
+      "payload_decoded": {
+        "iss": "https://accounts.grcbootcamp.example",
+        "sub": "user-7f3a",
+        "aud": "grc-bootcamp-lab",
+        "iat": 1718200000,
+        "exp": 1718203600,
+        "name": "Avery Lin",
+        "role": "auditor"
+      },
+      "signature_b64url": "",
+      "attack": "alg:none \u2014 the unprotected-token attack (RFC 8725 \u00a72.1). The signature segment is empty; an alg:none verifier would accept it as valid.",
+      "rfc": "RFC 7519, RFC 8725 (JWT BCP)"
+    }
+  }
+}

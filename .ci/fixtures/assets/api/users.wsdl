@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="UserService"
+    targetNamespace="http://acme.example/users"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:wsp="http://www.w3.org/ns/ws-policy"
+    xmlns:sp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702"
+    xmlns:tns="http://acme.example/users">
+  <wsdl:types>
+    <xsd:schema targetNamespace="http://acme.example/users">
+      <xsd:complexType name="User">
+        <xsd:sequence>
+          <xsd:element name="email" type="xsd:string"/>
+          <xsd:element name="mfaEnabled" type="xsd:boolean"/>
+          <xsd:element name="role" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="ListUsersRequest"/>
+  <wsdl:message name="ListUsersResponse">
+    <wsdl:part name="users" type="tns:User"/>
+  </wsdl:message>
+  <wsdl:portType name="UserPortType">
+    <wsdl:operation name="ListUsers">
+      <wsdl:input message="tns:ListUsersRequest"/>
+      <wsdl:output message="tns:ListUsersResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="UserBinding" type="tns:UserPortType">
+    <wsp:Policy>
+      <sp:SignedParts>
+        <sp:Body/>
+      </sp:SignedParts>
+      <sp:SupportingTokens>
+        <wsp:Policy><sp:UsernameToken/></wsp:Policy>
+      </sp:SupportingTokens>
+    </wsp:Policy>
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="ListUsers">
+      <soap:operation soapAction="http://acme.example/users/ListUsers"/>
+    </wsdl:operation>
+  </wsdl:binding>
+</wsdl:definitions>

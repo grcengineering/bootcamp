@@ -1,0 +1,631 @@
+{
+  "spec": {
+    "id": "lab-19",
+    "module": "19-it-api-paradigms",
+    "title": "Four counters, one control question",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-13",
+    "engine": "visual",
+    "claim_thread": "every-user-has-mfa",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "mapi",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "One control question — \"list every user and whether MFA is on\" — takes four wire shapes. You are\nhanded the four machine-readable contracts (OpenAPI, WSDL, GraphQL SDL, .proto) and four real\nclean/broken capture pairs over the SAME eight users, and asked to LOCATE the MFA truth-field in\neach contract, decode the gRPC frame down to the literal bytes, recompute a SOAP credential\ndigest, and click the single field where each broken capture breaks its control.\n\nEvery value you reveal is the real parser/decoder/transform over the real artifact — the same\nbytes protobuf.dev verifies (a=150 → 08 96 01) and the spec grammars define. Nothing is invented;\nthe decoder is the answer key. Start on the REST OpenAPI contract panel.\n",
+    "visual": {
+      "artifact": {
+        "kind": "grpc-http2",
+        "from": "assets/api/diff-the-trace.json"
+      },
+      "oracle": "pbwire",
+      "mode": "diff-the-trace"
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1
+        ],
+        "instruction": "On the \"Contract · REST OpenAPI 3.1\" panel, expand to and select the node that declares the\nMFA truth-field — `components.schemas.User.properties.mfa_enabled`. Read its declared JSON type.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "oas.components.schemas.User.properties.mfa_enabled"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "oas.components.schemas.User.properties.mfa_enabled",
+            "value": "boolean"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The contract is the FIRST place a control's truth lives — find the field that names mfa, before any live call."
+          },
+          {
+            "concept": "§4.1 — OpenAPI: paths→/users→get→200→schema→User→properties→mfa_enabled"
+          },
+          {
+            "reveal": "Select components.schemas.User.properties.mfa_enabled; its declared type is boolean"
+          }
+        ],
+        "explain": "Before you ever hit a live endpoint, the OpenAPI doc told you where the MFA truth-field is and\nthat it is a boolean. The static contract is collectible evidence — the auditor's first artifact.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Switch to \"Contract · SOAP WSDL + WS-SecurityPolicy\" and select the `sp:SignedParts` policy\nnode — the assertion proving the SOAP message Body MUST be signed (the integrity control SOAP invites).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "wsdl.binding.policy.SignedParts"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "wsdl.binding.policy.SignedParts",
+            "value": "MUST be signed"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "SOAP's control lives in the WS-SecurityPolicy, not an HTTP header — find the signing requirement."
+          },
+          {
+            "concept": "§4.1 — WSDL portType carries intent; sp:SignedParts requires the Body signed"
+          },
+          {
+            "reveal": "Select the sp:SignedParts node — it requires the SOAP Body be signed (message integrity)"
+          }
+        ],
+        "explain": "Unlike REST/GraphQL/gRPC (header bearer), SOAP protects the message itself. sp:SignedParts is\nthe WS-SecurityPolicy assertion that makes message-level integrity a contractual requirement.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          1
+        ],
+        "instruction": "Switch to \"Contract · GraphQL SDL\" and select the `User.mfaEnabled` field node. Read its\nGraphQL type. Then note: the SAME truth-field, a third name, a third shape.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "sdl.type.User.field.mfaEnabled"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "sdl.type.User.field.mfaEnabled",
+            "value": "Boolean"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "In SDL the truth-field is a typed field inside `type User { … }`."
+          },
+          {
+            "concept": "§4.1 — GraphQL SDL: type User { email mfaEnabled: Boolean! }"
+          },
+          {
+            "reveal": "Select User.mfaEnabled; its type is Boolean! (non-null boolean)"
+          }
+        ],
+        "explain": "REST calls it mfa_enabled (snake_case JSON), GraphQL calls it mfaEnabled (camelCase Boolean!).\nOne control-truth, four contract names — you LOCATE it by reading the contract, not from memory.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          1,
+          5
+        ],
+        "instruction": "Switch to \"Contract · gRPC .proto\" and select the `User.mfa_enabled` field. Read its field\nTAG — the load-bearing number `= 2` the wire encoder will turn into a byte.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "proto.message.User.field.mfa_enabled"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "proto.message.User.field.mfa_enabled",
+            "value": "field tag 2"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "In a .proto, every field has a `= N` tag — that N, not the name, is what the wire carries."
+          },
+          {
+            "concept": "§4.5 — bool mfa_enabled = 2; the `= 2` is the field tag the protobuf wire encodes"
+          },
+          {
+            "reveal": "Select bool mfa_enabled = 2; its field tag is 2 (the number the wire encodes)"
+          }
+        ],
+        "explain": "The .proto field tag `= 2` is the bridge to the wire: protobuf encodes tag = (2 << 3) | 0 = 0x10\nfor this VARINT bool field. You just read the number you will see as a byte two tasks from now.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "Switch to \"GraphQL · clean: precise\" and select the `max selection depth` node, then the\n`introspection present` node. Confirm the precise query is shallow and reveals no schema.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "gql.depth"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "gql.depth",
+            "value": "2"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A precise GraphQL query names only the fields it needs — its depth is small and it asks for no schema."
+          },
+          {
+            "concept": "§4.4 — precision is the feature: { users { email mfaEnabled } } is depth 2, no introspection"
+          },
+          {
+            "reveal": "Select max-selection-depth on the clean GraphQL query; it reads 2"
+          }
+        ],
+        "explain": "`{ users { email mfaEnabled } }` is depth 2 with introspection off — the precision GraphQL is\npraised for. The next panels show that same precision turned into a weapon.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          2,
+          5
+        ],
+        "instruction": "Switch to \"gRPC · clean\" and select the `:path` pseudo-header. gRPC carries intent in the\n`:path`, not an HTTP verb. Confirm it routes to the ListUsers RPC.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "req._path"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "req._path",
+            "value": "/userservice.UserService/ListUsers"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "gRPC has no GET/POST verb intent — the operation is the HTTP/2 :path pseudo-header."
+          },
+          {
+            "concept": "§4.2 — gRPC intent is the :path /package.Service/Method, not a verb"
+          },
+          {
+            "reveal": "Select the :path pseudo-header; it reads /userservice.UserService/ListUsers"
+          }
+        ],
+        "explain": "Where REST's intent is the verb and SOAP's is the body operation, gRPC's intent is the :path.\nSame question, fourth shape — and the :path is where an auditor reads which RPC was called.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Still on \"gRPC · clean\", drill the message body to the second user's `mfa_enabled` field\n(node `body.grpc.message.f1_2.f2_2`). Calibrate on protobuf.dev's a=150 → 08 96 01, then\nconfirm this field decodes to `false` via tag 0x10 (field 2, VARINT) and value 0x00.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "body.grpc.message.f1_2.f2_2"
+          },
+          {
+            "check": "decoded_artifact_matches",
+            "node_id": "body.grpc.message.f1_2.f2_2",
+            "value": "false"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "tag = (field_number << 3) | wire_type. Field 2 as a VARINT (wire type 0) is (2<<3)|0 = 0x10; a false bool is 0x00."
+          },
+          {
+            "concept": "§4.5 — protobuf: 0x10 is field 2 VARINT, 0x00 is false. mfa_enabled=false = 0x10 0x00"
+          },
+          {
+            "reveal": "Select body.grpc.message.f1_2.f2_2 — it decodes to false (tag 0x10, value 0x00)"
+          }
+        ],
+        "explain": "You just read a boolean off raw binary the same way you read JSON. `0x10 0x00` is `mfa_enabled =\nfalse` — the second seeded user lacks MFA, and the decoder proved it, byte by byte. The opaque\ngRPC frame is now as readable as any other paradigm.\n"
+      },
+      {
+        "id": "t8",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Switch to \"SOAP · clean\". Select the `recomputed PasswordDigest` node — the transform's live\noutput Base64(SHA-1(Nonce+Created+password)) — and confirm it reproduces the envelope's stated\ndigest. The credential lives INSIDE the SOAP message, not in a header.\n",
+        "verify": [
+          {
+            "check": "decoded_artifact_matches",
+            "node_id": "soap.recomputed-digest",
+            "value": "AtYMdWClJo7PIuTpqmhmEEoEZyc="
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A WS-Security PasswordDigest is recomputed, not trusted — feed Nonce, Created, and the password through the transform."
+          },
+          {
+            "concept": "§4.3 — PasswordDigest = Base64(SHA-1(nonce + created + password)); the transform is the oracle"
+          },
+          {
+            "reveal": "Select the recomputed-digest node; it reproduces the envelope's AtYMdWClJo7PIuTpqmhmEEoEZyc="
+          }
+        ],
+        "explain": "The recomputed digest matches the clean envelope — proof the credential is intact. On the broken\nSOAP twin, a stale Created makes this recompute disagree with the envelope, which is the replay\nfinding. You verify SOAP auth by recomputing, never by trusting the stamp.\n"
+      },
+      {
+        "id": "t9",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Switch to \"REST · broken\". This response over-returns fields the contract never declared.\nSelect the `salary` property node — the single field that breaks the BOPLA control (API3).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "oas.data.0.attributes.salary"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "oas.data.0.attributes.salary",
+            "value": "185000"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Diff the broken response against the clean sparse one — it carries properties the OpenAPI schema never declared."
+          },
+          {
+            "concept": "§4.6 — REST fails by FIELD: returning salary/ssn the caller can't see is API3 (BOPLA)"
+          },
+          {
+            "reveal": "Select data[0].attributes.salary on the broken REST panel — it reads 185000, a field the contract never declared"
+          }
+        ],
+        "explain": "The broken REST response leaks salary and ssn — Broken Object Property Level Authorization,\nOWASP API3:2023. The contract declared only email and mfa_enabled; the runtime returned more.\nThe finding is the extra property, and the contract is the evidence it shouldn't be there.\n"
+      },
+      {
+        "id": "t10",
+        "type": "action",
+        "objective": [
+          4,
+          5,
+          6
+        ],
+        "instruction": "Switch to \"GraphQL · broken\". Select the `max selection depth` node (a 12-deep circular query)\nand confirm the depth. This is the depth-DoS the limiter must reject (API4). The real limiter\nrun is wired to this panel.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "gql.depth"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "gql.depth",
+            "value": "12"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "depth"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The broken query nests a self-referencing field far past the cap — read its depth, then watch the real limiter reject it."
+          },
+          {
+            "concept": "§4.4 — depth/cost DoS is API4; a 12-deep circular query trips the real depth limiter"
+          },
+          {
+            "reveal": "Select max-selection-depth (12) on the broken GraphQL panel; the limiter rejects it (exit 1, depth error)"
+          }
+        ],
+        "explain": "Depth 12 past a cap of 6 is unrestricted resource consumption — OWASP API4:2023. The limiter\ndidn't say \"try again\"; it returned the real graphql-depth-limit error (exit 1). Proving the\ndepth and cost limiters are ON is the GraphQL control, not \"GraphQL is unsafe.\"\n"
+      },
+      {
+        "id": "t11",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Switch to \"gRPC · broken\". Select the `:path` pseudo-header — it routes to the server-reflection\nendpoint advertised in prod (API9). Confirm the reflection :path.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "req._path"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "req._path",
+            "value": "ServerReflection"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "gRPC fails by discoverability — a :path to the reflection service in prod leaks the whole API surface."
+          },
+          {
+            "concept": "§4.6 — gRPC server reflection in prod is API9 (improper inventory); alg:none JWT is API2"
+          },
+          {
+            "reveal": "Select the :path on the broken gRPC panel — it routes to /grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+          }
+        ],
+        "explain": "Server reflection in production lets anyone enumerate every RPC — Improper Inventory Management,\nOWASP API9:2023. Paired with the alg:none JWT in the same capture's authorization header (API2),\nthis twin fails by discoverability AND auth. Reflection must be OFF in prod.\n"
+      },
+      {
+        "id": "t12",
+        "type": "action",
+        "objective": [
+          3,
+          6
+        ],
+        "instruction": "Switch to \"SOAP · broken\". Select the `recomputed PasswordDigest` node and confirm it NO LONGER\nmatches the clean digest — the stale Created made the transform disagree with the envelope (replay, API2).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "soap.wsu.Created"
+          },
+          {
+            "check": "decoded_artifact_matches",
+            "node_id": "soap.recomputed-digest",
+            "value": "xsV9u/k/s5u5fCiDHO0Mx6IP92w="
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The broken envelope's wsu:Created is stale — recompute the digest over the stale values and it won't match the envelope's stated digest."
+          },
+          {
+            "concept": "§4.3 — a stale Created + a digest that no longer recomputes is a replay (API2)"
+          },
+          {
+            "reveal": "Select wsu:Created (stale) on the broken SOAP panel; the recomputed digest is now xsV9u/k/s5u5fCiDHO0Mx6IP92w=, not the envelope's value"
+          }
+        ],
+        "explain": "The stale Created (2001) makes the recomputed digest diverge from the envelope's stated digest —\na replayed message, OWASP API2:2023 Broken Authentication. The disagreement is computed by the\ntransform over the real bytes, not asserted. Recompute, don't trust.\n"
+      },
+      {
+        "id": "t13",
+        "type": "reflection",
+        "objective": [
+          2,
+          6
+        ],
+        "instruction": "In 5–7 sentences, for a non-technical colleague: explain why ONE control question (\"does every\nuser have MFA?\") takes four wire shapes, where each paradigm's contract lets you LOCATE the\ntruth-field, and the single control surface each invites (REST→field/API3, GraphQL→shape+\ndiscoverability/API4+API9, SOAP→time+integrity/API2, gRPC→discoverability+auth/API9+API2). Use\nthe §3 four-counters model, not jargon.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 model: four counters, one question — each takes your request and hands back the answer differently."
+          },
+          {
+            "concept": "§3 — The Mental Model + §4.6 the OWASP map"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z",
+  "visual": {
+    "mode": "diff-the-trace",
+    "oracle": "pbwire",
+    "panels": [
+      {
+        "id": "contract-oas",
+        "label": "Contract · REST OpenAPI 3.1",
+        "source": {
+          "oracle": "oas",
+          "raw": "{\n  \"openapi\": \"3.1.0\",\n  \"info\": {\n    \"title\": \"Acme Users API\",\n    \"version\": \"2.0.0\",\n    \"description\": \"List users and whether MFA is enabled (the shared control question).\"\n  },\n  \"servers\": [\n    {\n      \"url\": \"https://api.acme.example\"\n    }\n  ],\n  \"paths\": {\n    \"/users\": {\n      \"get\": {\n        \"operationId\": \"listUsers\",\n        \"summary\": \"List every user and MFA status\",\n        \"security\": [\n          {\n            \"bearerAuth\": []\n          }\n        ],\n        \"parameters\": [\n          {\n            \"name\": \"fields[users]\",\n            \"in\": \"query\",\n            \"schema\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"JSON:API sparse fieldset, e.g. email,mfa_enabled\"\n          }\n        ],\n        \"responses\": {\n          \"200\": {\n            \"description\": \"the user collection\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"$ref\": \"#/components/schemas/UserCollection\"\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  },\n  \"components\": {\n    \"securitySchemes\": {\n      \"bearerAuth\": {\n        \"type\": \"http\",\n        \"scheme\": \"bearer\",\n        \"bearerFormat\": \"JWT\"\n      }\n    },\n    \"schemas\": {\n      \"UserCollection\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"data\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"$ref\": \"#/components/schemas/User\"\n            }\n          }\n        }\n      },\n      \"User\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"email\",\n          \"mfa_enabled\"\n        ],\n        \"properties\": {\n          \"id\": {\n            \"type\": \"string\"\n          },\n          \"email\": {\n            \"type\": \"string\",\n            \"format\": \"email\"\n          },\n          \"mfa_enabled\": {\n            \"type\": \"boolean\",\n            \"description\": \"the MFA control truth-field\"\n          },\n          \"role\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"admin\",\n              \"member\"\n            ]\n          }\n        }\n      }\n    }\n  }\n}"
+        }
+      },
+      {
+        "id": "contract-wsdl",
+        "label": "Contract · SOAP WSDL + WS-SecurityPolicy",
+        "source": {
+          "oracle": "wsdl",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<wsdl:definitions name=\"UserService\"\n    targetNamespace=\"http://acme.example/users\"\n    xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\"\n    xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n    xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n    xmlns:wsp=\"http://www.w3.org/ns/ws-policy\"\n    xmlns:sp=\"http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702\"\n    xmlns:tns=\"http://acme.example/users\">\n  <wsdl:types>\n    <xsd:schema targetNamespace=\"http://acme.example/users\">\n      <xsd:complexType name=\"User\">\n        <xsd:sequence>\n          <xsd:element name=\"email\" type=\"xsd:string\"/>\n          <xsd:element name=\"mfaEnabled\" type=\"xsd:boolean\"/>\n          <xsd:element name=\"role\" type=\"xsd:string\"/>\n        </xsd:sequence>\n      </xsd:complexType>\n    </xsd:schema>\n  </wsdl:types>\n  <wsdl:message name=\"ListUsersRequest\"/>\n  <wsdl:message name=\"ListUsersResponse\">\n    <wsdl:part name=\"users\" type=\"tns:User\"/>\n  </wsdl:message>\n  <wsdl:portType name=\"UserPortType\">\n    <wsdl:operation name=\"ListUsers\">\n      <wsdl:input message=\"tns:ListUsersRequest\"/>\n      <wsdl:output message=\"tns:ListUsersResponse\"/>\n    </wsdl:operation>\n  </wsdl:portType>\n  <wsdl:binding name=\"UserBinding\" type=\"tns:UserPortType\">\n    <wsp:Policy>\n      <sp:SignedParts>\n        <sp:Body/>\n      </sp:SignedParts>\n      <sp:SupportingTokens>\n        <wsp:Policy><sp:UsernameToken/></wsp:Policy>\n      </sp:SupportingTokens>\n    </wsp:Policy>\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <wsdl:operation name=\"ListUsers\">\n      <soap:operation soapAction=\"http://acme.example/users/ListUsers\"/>\n    </wsdl:operation>\n  </wsdl:binding>\n</wsdl:definitions>\n"
+        }
+      },
+      {
+        "id": "contract-sdl",
+        "label": "Contract · GraphQL SDL",
+        "source": {
+          "oracle": "sdl",
+          "raw": "# Acme Users GraphQL schema — the shared \"list users + MFA\" control question.\ntype Query {\n  users: [User!]!\n  user(id: ID!): User\n}\n\ntype Mutation {\n  login(email: String!, password: String!): AuthResult!\n}\n\ntype User {\n  id: ID!\n  email: String!\n  mfaEnabled: Boolean!\n  role: Role!\n  manager: User\n}\n\ntype AuthResult {\n  token: String!\n  user: User!\n}\n\nenum Role {\n  ADMIN\n  MEMBER\n}\n"
+        }
+      },
+      {
+        "id": "contract-proto",
+        "label": "Contract · gRPC .proto",
+        "source": {
+          "oracle": "proto",
+          "raw": "// Acme Users gRPC service — the shared \"list users + MFA\" control question.\nsyntax = \"proto3\";\npackage userservice;\n\nservice UserService {\n  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);\n  rpc GetUser(GetUserRequest) returns (User);\n}\n\nmessage ListUsersRequest {\n}\n\nmessage ListUsersResponse {\n  repeated User users = 1;\n}\n\nmessage GetUserRequest {\n  string id = 1;\n}\n\nmessage User {\n  string email = 1;\n  bool mfa_enabled = 2;\n  string role = 3;\n}\n"
+        }
+      },
+      {
+        "id": "rest-clean",
+        "label": "REST · clean: sparse {email, mfa_enabled}",
+        "source": {
+          "oracle": "oas",
+          "raw": "{\n  \"data\": [\n    {\n      \"type\": \"users\",\n      \"id\": \"1\",\n      \"attributes\": {\n        \"email\": \"alice@acme.example\",\n        \"mfa_enabled\": true\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"2\",\n      \"attributes\": {\n        \"email\": \"bob@acme.example\",\n        \"mfa_enabled\": false\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"3\",\n      \"attributes\": {\n        \"email\": \"carol@acme.example\",\n        \"mfa_enabled\": true\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"4\",\n      \"attributes\": {\n        \"email\": \"dan@acme.example\",\n        \"mfa_enabled\": false\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"5\",\n      \"attributes\": {\n        \"email\": \"erin@acme.example\",\n        \"mfa_enabled\": true\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"6\",\n      \"attributes\": {\n        \"email\": \"frank@acme.example\",\n        \"mfa_enabled\": false\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"7\",\n      \"attributes\": {\n        \"email\": \"grace@acme.example\",\n        \"mfa_enabled\": true\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"8\",\n      \"attributes\": {\n        \"email\": \"heidi@acme.example\",\n        \"mfa_enabled\": false\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": "rest-broken",
+        "label": "REST · broken: over-returns salary + ssn (API3)",
+        "source": {
+          "oracle": "oas",
+          "raw": "{\n  \"data\": [\n    {\n      \"type\": \"users\",\n      \"id\": \"1\",\n      \"attributes\": {\n        \"email\": \"alice@acme.example\",\n        \"mfa_enabled\": true,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"2\",\n      \"attributes\": {\n        \"email\": \"bob@acme.example\",\n        \"mfa_enabled\": false,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"3\",\n      \"attributes\": {\n        \"email\": \"carol@acme.example\",\n        \"mfa_enabled\": true,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"4\",\n      \"attributes\": {\n        \"email\": \"dan@acme.example\",\n        \"mfa_enabled\": false,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"5\",\n      \"attributes\": {\n        \"email\": \"erin@acme.example\",\n        \"mfa_enabled\": true,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"6\",\n      \"attributes\": {\n        \"email\": \"frank@acme.example\",\n        \"mfa_enabled\": false,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"7\",\n      \"attributes\": {\n        \"email\": \"grace@acme.example\",\n        \"mfa_enabled\": true,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    },\n    {\n      \"type\": \"users\",\n      \"id\": \"8\",\n      \"attributes\": {\n        \"email\": \"heidi@acme.example\",\n        \"mfa_enabled\": false,\n        \"salary\": 185000,\n        \"ssn\": \"123-45-6789\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": "graphql-clean",
+        "label": "GraphQL · clean: precise { email mfaEnabled }",
+        "source": {
+          "oracle": "gqlsim",
+          "query": "query { users { email mfaEnabled } }"
+        }
+      },
+      {
+        "id": "graphql-broken",
+        "label": "GraphQL · broken: 12-deep circular + __schema (API4+API9)",
+        "source": {
+          "oracle": "gqlsim",
+          "query": "query { users { manager { manager { manager { manager { manager { manager { manager { manager { manager { manager { id } } } } } } } } } } __schema { types { name } } }"
+        }
+      },
+      {
+        "id": "soap-clean",
+        "label": "SOAP · clean: fresh Created + matching digest",
+        "source": {
+          "oracle": "soap",
+          "envelope": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n    xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"\n    xmlns:tns=\"http://acme.example/users\">\n  <soap:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>NNK</wsse:Username>\n        <wsse:Password Type=\"...#PasswordDigest\">AtYMdWClJo7PIuTpqmhmEEoEZyc=</wsse:Password>\n        <wsse:Nonce>WScqanjCEAC4mQoBE07sAQ==</wsse:Nonce>\n        <wsu:Created>2003-07-16T01:24:32Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </soap:Header>\n  <soap:Body>\n    <tns:ListUsersResponse>\n      <tns:User><tns:email>alice@acme.example</tns:email><tns:mfaEnabled>true</tns:mfaEnabled></tns:User>\n      <tns:User><tns:email>bob@acme.example</tns:email><tns:mfaEnabled>false</tns:mfaEnabled></tns:User>\n    </tns:ListUsersResponse>\n  </soap:Body>\n</soap:Envelope>\n",
+          "password": "taadtaadpstcsm"
+        }
+      },
+      {
+        "id": "soap-broken",
+        "label": "SOAP · broken: stale Created → digest mismatch (API2)",
+        "source": {
+          "oracle": "soap",
+          "envelope": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n    xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"\n    xmlns:tns=\"http://acme.example/users\">\n  <soap:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>NNK</wsse:Username>\n        <wsse:Password Type=\"...#PasswordDigest\">AtYMdWClJo7PIuTpqmhmEEoEZyc=</wsse:Password>\n        <wsse:Nonce>WScqanjCEAC4mQoBE07sAQ==</wsse:Nonce>\n        <wsu:Created>2001-01-01T00:00:00Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </soap:Header>\n  <soap:Body>\n    <tns:ListUsersResponse>\n      <tns:User><tns:email>alice@acme.example</tns:email><tns:mfaEnabled>true</tns:mfaEnabled></tns:User>\n      <tns:User><tns:email>bob@acme.example</tns:email><tns:mfaEnabled>false</tns:mfaEnabled></tns:User>\n    </tns:ListUsersResponse>\n  </soap:Body>\n</soap:Envelope>\n",
+          "password": "taadtaadpstcsm"
+        }
+      },
+      {
+        "id": "grpc-clean",
+        "label": "gRPC · clean: no reflection, signed JWT",
+        "source": {
+          "oracle": "pbwire",
+          "requestHeaders": [
+            {
+              "name": ":path",
+              "value": "/userservice.UserService/ListUsers"
+            },
+            {
+              "name": "authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+            },
+            {
+              "name": "grpc-server-reflection",
+              "value": "disabled"
+            }
+          ],
+          "frameHex": "00000000f70a1d0a12616c6963654061636d652e6578616d706c6510011a0561646d696e0a1c0a10626f624061636d652e6578616d706c6510001a066d656d6265720a1d0a126361726f6c4061636d652e6578616d706c6510011a0561646d696e0a1c0a1064616e4061636d652e6578616d706c6510001a066d656d6265720a1c0a116572696e4061636d652e6578616d706c6510011a0561646d696e0a1e0a126672616e6b4061636d652e6578616d706c6510001a066d656d6265720a1d0a1267726163654061636d652e6578616d706c6510011a0561646d696e0a1e0a1268656964694061636d652e6578616d706c6510001a066d656d626572",
+          "responseTrailers": [
+            {
+              "name": "grpc-status",
+              "value": "0"
+            }
+          ],
+          "fieldMap": {
+            "1": {
+              "name": "users",
+              "type": "message",
+              "sub": {
+                "1": {
+                  "name": "email",
+                  "type": "string"
+                },
+                "2": {
+                  "name": "mfa_enabled",
+                  "type": "bool"
+                },
+                "3": {
+                  "name": "role",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "grpc-broken",
+        "label": "gRPC · broken: reflection enabled + alg:none JWT (API9+API2)",
+        "source": {
+          "oracle": "pbwire",
+          "requestHeaders": [
+            {
+              "name": ":path",
+              "value": "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+            },
+            {
+              "name": "authorization",
+              "value": "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0."
+            },
+            {
+              "name": "grpc-server-reflection",
+              "value": "enabled"
+            }
+          ],
+          "frameHex": "00000000f70a1d0a12616c6963654061636d652e6578616d706c6510011a0561646d696e0a1c0a10626f624061636d652e6578616d706c6510001a066d656d6265720a1d0a126361726f6c4061636d652e6578616d706c6510011a0561646d696e0a1c0a1064616e4061636d652e6578616d706c6510001a066d656d6265720a1c0a116572696e4061636d652e6578616d706c6510011a0561646d696e0a1e0a126672616e6b4061636d652e6578616d706c6510001a066d656d6265720a1d0a1267726163654061636d652e6578616d706c6510011a0561646d696e0a1e0a1268656964694061636d652e6578616d706c6510001a066d656d626572",
+          "responseTrailers": [
+            {
+              "name": "grpc-status",
+              "value": "0"
+            }
+          ],
+          "fieldMap": {
+            "1": {
+              "name": "users",
+              "type": "message",
+              "sub": {
+                "1": {
+                  "name": "email",
+                  "type": "string"
+                },
+                "2": {
+                  "name": "mfa_enabled",
+                  "type": "bool"
+                },
+                "3": {
+                  "name": "role",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "buildAndBreak": {
+      "validatorRun": {
+        "stdout": "Query exceeds maximum operation depth of 6 (got 12) [graphql-depth-limit]",
+        "stderr": "",
+        "exit": 1
+      }
+    }
+  }
+}

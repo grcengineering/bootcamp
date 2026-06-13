@@ -1,0 +1,12 @@
+{"input": {"panel": "contract-oas", "select": "oas.components.schemas.User.properties.mfa_enabled", "read": "type=boolean"}}
+{"input": {"panel": "contract-wsdl", "select": "wsdl.binding.policy.SignedParts", "read": "the SOAP Body MUST be signed (sp:Body) — message-level integrity"}}
+{"input": {"panel": "contract-sdl", "select": "sdl.type.User.field.mfaEnabled", "read": "Boolean!"}}
+{"input": {"panel": "contract-proto", "select": "proto.message.User.field.mfa_enabled", "read": "bool mfa_enabled = 2 (field tag 2)"}}
+{"input": {"panel": "graphql-clean", "select": "gql.depth", "read": "2"}}
+{"input": {"panel": "grpc-clean", "select": "req._path", "read": "/userservice.UserService/ListUsers"}}
+{"input": {"panel": "grpc-clean", "select": "body.grpc.message.f1_2.f2_2", "read": "false — tag 0x10 = (field 2 << 3) | 0 (VARINT)"}}
+{"input": {"panel": "soap-clean", "select": "soap.recomputed-digest", "read": "AtYMdWClJo7PIuTpqmhmEEoEZyc="}}
+{"input": {"panel": "rest-broken", "select": "oas.data.0.attributes.salary", "read": "185000"}}
+{"input": {"panel": "graphql-broken", "select": "gql.depth", "read": "12"}}
+{"input": {"panel": "grpc-broken", "select": "req._path", "read": "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"}}
+{"input": {"panel": "soap-broken", "select": "soap.wsu.Created", "read": "2001-01-01T00:00:00Z", "decode": "xsV9u/k/s5u5fCiDHO0Mx6IP92w="}}

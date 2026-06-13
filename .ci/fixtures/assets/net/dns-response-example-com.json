@@ -1,0 +1,24 @@
+{
+  "id": "net-dns-response-example-com",
+  "kind": "dns-msg",
+  "description": "A REAL 61-byte DNS response for example.com A, captured live off the wire from 1.1.1.1 (2026-06-13). Header id 0x1234, flags 0x8180 (QR 1 response, RD 1, RA 1, RCODE 0 NOERROR), QDCOUNT 1, ANCOUNT 2. The question echoes example.com A IN, then two Answer A records using RFC 1035 §4.1.4 name compression (the 0xc00c pointer back to the QNAME at offset 12), TTL 40s, RDATA 104.20.23.154 and 172.66.147.243.",
+  "oracle": "dns",
+  "match": "byte-exact",
+  "provenance": {
+    "captured_with": "python3 UDP socket: sent the canonical example.com A query to 1.1.1.1:53 and recorded the raw 61-byte response",
+    "captured_at": "2026-06-13",
+    "verified_against": "the response header parses to QR=1 AA=0 RD=1 RA=1 RCODE=0 (NOERROR), ANCOUNT=2; the two A records' RDATA (104.20.23.154, 172.66.147.243) are example.com's real Cloudflare-fronted addresses at capture time. The 0xc00c compression pointer (RFC 1035 §4.1.4) points to the QNAME at offset 12.",
+    "rfc": "RFC 1035 §4.1.1 (header), §4.1.3 (RR), §4.1.4 (compression); RFC 4035 (AD bit)",
+    "honesty_note": "Real bytes off the wire. The two A records, TTL, and the compression pointer are the live response; the dissector's decode is the oracle, cross-checked against the manual byte read."
+  },
+  "hex": "123481800001000200000000076578616d706c6503636f6d0000010001c00c000100010000002800046814179ac00c00010001000000280004ac4293f3",
+  "rfc_field_truth": {
+    "header.flags": { "offset": "2-3", "value": "0x8180", "decode": "QR 1 (response), RD 1, RA 1, RCODE 0 NOERROR" },
+    "header.ancount": { "offset": "6-7", "value": 2 },
+    "answer.0.name": { "value": "example.com", "note": "compressed via 0xc00c pointer to offset 12" },
+    "answer.0.type": { "value": 1, "name": "A" },
+    "answer.0.ttl": { "value": 40 },
+    "answer.0.rdata": { "value": "104.20.23.154" },
+    "answer.1.rdata": { "value": "172.66.147.243" }
+  }
+}

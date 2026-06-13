@@ -13,10 +13,12 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { parse } from "yaml";
+import { loadManifest } from "./load-manifest";
 
 const HERE = join(import.meta.dir);
-const manifest = parse(readFileSync(join(HERE, "manifest.yaml"), "utf8"));
+// manifest.yaml PLUS every manifest.d/*.yaml fragment (Wave-4 fan-out): each module agent owns
+// its own fragment; the loader merges them and throws loudly on a duplicate id / seed collision.
+const manifest = loadManifest(HERE);
 
 const SOURCES = new Set(["docker-linux-userland", "docker-linux-booted", "macos-host", "pwsh-authored", "wasm-engine", "authored"]);
 const MATCHES = new Set(["byte-exact", "structured", "engine-pinned", "synthesized-porcelain", "authored-with-citation", "computed"]);

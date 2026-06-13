@@ -1,0 +1,18 @@
+{
+  "_comment": "Documentation of what the four contract parsers + protobuf/HTTP-2 decoder + SHA-1/Base64 digest transform decode from the REAL committed api artifacts (the oracles). No spec check uses from:generated — the visual primitives read the parse tree directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the parsers, never injected expectations.",
+  "_oas_mfa_type": "type=boolean · the MFA control truth-field",
+  "_wsdl_signedparts": "the SOAP Body MUST be signed (sp:Body) — message-level integrity",
+  "_sdl_mfa_type": "Boolean!",
+  "_proto_mfa_tag": "bool mfa_enabled = 2 (field tag 2)",
+  "_grpc_path_clean": "/userservice.UserService/ListUsers",
+  "_grpc_bob_mfa": "false — tag 0x10 = (field 2 << 3) | 0 (VARINT)",
+  "_protobuf_a150": "a=150 encodes as 08 96 01 (verified protobuf.dev)",
+  "_protobuf_b_testing": "b=\"testing\" encodes as 12 07 74 65 73 74 69 6e 67 (verified protobuf.dev)",
+  "_protobuf_mfa_false": "mfa_enabled=false (field 2) encodes as 10 00 (verified protobuf.dev)",
+  "_soap_digest_clean": "AtYMdWClJo7PIuTpqmhmEEoEZyc=",
+  "_soap_digest_broken_recomputed": "xsV9u/k/s5u5fCiDHO0Mx6IP92w=",
+  "_rest_broken_salary": "185000",
+  "_gql_clean_depth": "2",
+  "_gql_broken_depth": "12",
+  "_grpc_path_broken": "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+}

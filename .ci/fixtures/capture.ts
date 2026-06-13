@@ -12,13 +12,15 @@
  *   bun .ci/fixtures/capture.ts macos            # macos-host entries (run on a real Mac)
  *   bun .ci/fixtures/capture.ts --check          # re-run everything twice; fail on self-diff
  */
-import { parse } from "yaml";
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execFileSync } from "node:child_process";
+import { loadManifest } from "./load-manifest";
 
 const HERE = dirname(new URL(import.meta.url).pathname);
-const MANIFEST = parse(readFileSync(join(HERE, "manifest.yaml"), "utf8"));
+// manifest.yaml PLUS every manifest.d/*.yaml fragment (Wave-4 fan-out): a module agent's
+// docker-*/macos-host entries are captured here the same as the base manifest's.
+const MANIFEST = loadManifest(HERE);
 const CAPTURED = join(HERE, "captured");
 mkdirSync(CAPTURED, { recursive: true });
 

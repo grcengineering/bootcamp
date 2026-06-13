@@ -1,0 +1,371 @@
+{
+  "id": "api-payloads",
+  "kind": "payloads",
+  "description": "Real wire payloads over the shared 8-user seed for the side-by-side QUERY wall + the credential/digest tasks. Sizes are measured from these committed bytes (the file IS the oracle); the JSON:API 22.7KB->2.5KB figure is the published sparse-fieldset reference.",
+  "provenance": {
+    "match": "authored-with-citation",
+    "sources": "JSON:API sparse fieldsets (jsonapi.org); OASIS WSS UsernameTokenProfile 1.0 (nonce/created example, self-consistent recomputed digest); RFC 7519 (JWT); grpc PROTOCOL-HTTP2.md"
+  },
+  "rest": {
+    "full_bytes": 6603,
+    "sparse_bytes": 1249,
+    "full": {
+      "data": [
+        {
+          "type": "users",
+          "id": "1",
+          "attributes": {
+            "email": "alice@acme.example",
+            "name": "Alice Example",
+            "mfa_enabled": true,
+            "role": "admin",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/alice.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1000",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "2",
+          "attributes": {
+            "email": "bob@acme.example",
+            "name": "Bob Example",
+            "mfa_enabled": false,
+            "role": "member",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/bob.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1001",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "3",
+          "attributes": {
+            "email": "carol@acme.example",
+            "name": "Carol Example",
+            "mfa_enabled": true,
+            "role": "admin",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/carol.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1002",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "4",
+          "attributes": {
+            "email": "dan@acme.example",
+            "name": "Dan Example",
+            "mfa_enabled": false,
+            "role": "member",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/dan.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1003",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "5",
+          "attributes": {
+            "email": "erin@acme.example",
+            "name": "Erin Example",
+            "mfa_enabled": true,
+            "role": "admin",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/erin.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1004",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "6",
+          "attributes": {
+            "email": "frank@acme.example",
+            "name": "Frank Example",
+            "mfa_enabled": false,
+            "role": "member",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/frank.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1005",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "7",
+          "attributes": {
+            "email": "grace@acme.example",
+            "name": "Grace Example",
+            "mfa_enabled": true,
+            "role": "admin",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/grace.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1006",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "type": "users",
+          "id": "8",
+          "attributes": {
+            "email": "heidi@acme.example",
+            "name": "Heidi Example",
+            "mfa_enabled": false,
+            "role": "member",
+            "department": "Engineering",
+            "title": "Staff Engineer",
+            "created_at": "2024-01-15T09:00:00Z",
+            "last_login": "2026-06-12T14:22:31Z",
+            "phone": "+1-555-0100",
+            "timezone": "America/Los_Angeles",
+            "locale": "en-US",
+            "avatar_url": "https://cdn.acme.example/avatars/heidi.png",
+            "manager_id": "1",
+            "cost_center": "CC-4400",
+            "employee_number": "E1007",
+            "address": {
+              "street": "100 Market St",
+              "city": "San Francisco",
+              "state": "CA",
+              "zip": "94105",
+              "country": "US"
+            }
+          }
+        }
+      ],
+      "meta": {
+        "total": 8
+      }
+    },
+    "sparse": {
+      "data": [
+        {
+          "type": "users",
+          "id": "1",
+          "attributes": {
+            "email": "alice@acme.example",
+            "mfa_enabled": true
+          }
+        },
+        {
+          "type": "users",
+          "id": "2",
+          "attributes": {
+            "email": "bob@acme.example",
+            "mfa_enabled": false
+          }
+        },
+        {
+          "type": "users",
+          "id": "3",
+          "attributes": {
+            "email": "carol@acme.example",
+            "mfa_enabled": true
+          }
+        },
+        {
+          "type": "users",
+          "id": "4",
+          "attributes": {
+            "email": "dan@acme.example",
+            "mfa_enabled": false
+          }
+        },
+        {
+          "type": "users",
+          "id": "5",
+          "attributes": {
+            "email": "erin@acme.example",
+            "mfa_enabled": true
+          }
+        },
+        {
+          "type": "users",
+          "id": "6",
+          "attributes": {
+            "email": "frank@acme.example",
+            "mfa_enabled": false
+          }
+        },
+        {
+          "type": "users",
+          "id": "7",
+          "attributes": {
+            "email": "grace@acme.example",
+            "mfa_enabled": true
+          }
+        },
+        {
+          "type": "users",
+          "id": "8",
+          "attributes": {
+            "email": "heidi@acme.example",
+            "mfa_enabled": false
+          }
+        }
+      ],
+      "meta": {
+        "total": 8
+      }
+    },
+    "jsonapi_reference_note": "the published JSON:API sparse-fieldset example measures 22.7KB full vs 2.5KB sparse"
+  },
+  "soap": {
+    "envelope": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n    xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"\n    xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"\n    xmlns:tns=\"http://acme.example/users\">\n  <soap:Header>\n    <wsse:Security>\n      <wsse:UsernameToken>\n        <wsse:Username>NNK</wsse:Username>\n        <wsse:Password Type=\"...#PasswordDigest\">AtYMdWClJo7PIuTpqmhmEEoEZyc=</wsse:Password>\n        <wsse:Nonce>WScqanjCEAC4mQoBE07sAQ==</wsse:Nonce>\n        <wsu:Created>2003-07-16T01:24:32Z</wsu:Created>\n      </wsse:UsernameToken>\n    </wsse:Security>\n  </soap:Header>\n  <soap:Body>\n    <tns:ListUsersResponse>\n      <tns:User><tns:email>alice@acme.example</tns:email><tns:mfaEnabled>true</tns:mfaEnabled></tns:User>\n      <tns:User><tns:email>bob@acme.example</tns:email><tns:mfaEnabled>false</tns:mfaEnabled></tns:User>\n    </tns:ListUsersResponse>\n  </soap:Body>\n</soap:Envelope>\n"
+  },
+  "graphql": {
+    "query": "query { users { email mfaEnabled } }",
+    "response": {
+      "data": {
+        "users": [
+          {
+            "email": "alice@acme.example",
+            "mfaEnabled": true
+          },
+          {
+            "email": "bob@acme.example",
+            "mfaEnabled": false
+          },
+          {
+            "email": "carol@acme.example",
+            "mfaEnabled": true
+          },
+          {
+            "email": "dan@acme.example",
+            "mfaEnabled": false
+          },
+          {
+            "email": "erin@acme.example",
+            "mfaEnabled": true
+          },
+          {
+            "email": "frank@acme.example",
+            "mfaEnabled": false
+          },
+          {
+            "email": "grace@acme.example",
+            "mfaEnabled": true
+          },
+          {
+            "email": "heidi@acme.example",
+            "mfaEnabled": false
+          }
+        ]
+      }
+    }
+  },
+  "credential": {
+    "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+    "jwt_alg_none": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0.",
+    "ws_security": {
+      "username": "NNK",
+      "nonce": "WScqanjCEAC4mQoBE07sAQ==",
+      "created": "2003-07-16T01:24:32Z",
+      "password": "taadtaadpstcsm",
+      "password_digest": "AtYMdWClJo7PIuTpqmhmEEoEZyc="
+    }
+  }
+}

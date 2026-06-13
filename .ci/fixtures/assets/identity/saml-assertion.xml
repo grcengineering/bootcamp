@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OASIS SAML 2.0 example assertion (saml-core-2.0-os §2.3 / Appendix illustrative example).
+  match: authored-with-citation. SCOPE-BOUNDED: the saml-xml oracle reads the fields below
+  (Issuer, Subject NameID, Conditions NotBefore/NotOnOrAfter, AudienceRestriction, AuthnStatement
+  AuthnInstant, AuthnContextClassRef); it does NOT validate XML-DSig. The <Conditions>
+  NotOnOrAfter (2030-01-01T00:00:00Z) is the staleness break's target — compared to a supplied
+  "now" by evaluateConditions(). AuthnContextClassRef is PasswordProtectedTransport per
+  saml-core §2.7.2.2 + the SAML AuthnContext spec.
+-->
+<saml:Assertion
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+    Version="2.0"
+    ID="_a75adf55-01d7-40cc-929f-dbd8372ebdfc"
+    IssueInstant="2024-01-01T12:00:00Z">
+  <saml:Issuer>https://idp.example.com/saml</saml:Issuer>
+  <saml:Subject>
+    <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">jane.auditor@example.com</saml:NameID>
+    <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+      <saml:SubjectConfirmationData NotOnOrAfter="2030-01-01T00:00:00Z" Recipient="https://sp.example.org/acs"/>
+    </saml:SubjectConfirmation>
+  </saml:Subject>
+  <saml:Conditions NotBefore="2024-01-01T11:59:00Z" NotOnOrAfter="2030-01-01T00:00:00Z">
+    <saml:AudienceRestriction>
+      <saml:Audience>https://sp.example.org/saml</saml:Audience>
+    </saml:AudienceRestriction>
+  </saml:Conditions>
+  <saml:AuthnStatement AuthnInstant="2024-01-01T12:00:00Z" SessionIndex="_be9967abd904ddcae3c0eb4189adbe3f71e327cf93">
+    <saml:AuthnContext>
+      <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml:AuthnContextClassRef>
+    </saml:AuthnContext>
+  </saml:AuthnStatement>
+</saml:Assertion>

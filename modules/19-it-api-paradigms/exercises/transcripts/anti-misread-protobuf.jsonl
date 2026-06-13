@@ -1,0 +1,8 @@
+{"anti_for": "t7", "fails_check": 1, "reason": "right-region/wrong-decode near miss: selects the correct protobuf mfa_enabled byte node (region_labeled_correctly verify[0] passes) but DECODES it as 'true' instead of 'false' — misreading 0x10 0x00 — so decoded_artifact_matches (verify[1]) catches the wrong decode against the real protobuf decoder. Tasks t1-t6 complete correctly so the cheat reaches t7 (sticky near-miss)."}
+{"input": {"panel": "contract-oas", "select": "oas.components.schemas.User.properties.mfa_enabled", "read": "type=boolean"}}
+{"input": {"panel": "contract-wsdl", "select": "wsdl.binding.policy.SignedParts", "read": "the SOAP Body MUST be signed (sp:Body) — message-level integrity"}}
+{"input": {"panel": "contract-sdl", "select": "sdl.type.User.field.mfaEnabled", "read": "Boolean!"}}
+{"input": {"panel": "contract-proto", "select": "proto.message.User.field.mfa_enabled", "read": "bool mfa_enabled = 2 (field tag 2)"}}
+{"input": {"panel": "graphql-clean", "select": "gql.depth", "read": "2"}}
+{"input": {"panel": "grpc-clean", "select": "req._path", "read": "/userservice.UserService/ListUsers"}}
+{"input": {"panel": "grpc-clean", "select": "body.grpc.message.f1_2.f2_2", "decode": "true"}}

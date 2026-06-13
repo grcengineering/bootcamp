@@ -1,0 +1,2 @@
+{"anti_for": "t1", "fails_check": 0, "reason": "adjacent-node near miss: selects the sibling `email` property next to `mfa_enabled` in the OpenAPI contract — region_labeled_correctly (verify[0]) catches the wrong boundary; field_value_is (verify[1]) still reads the oracle's mfa_enabled node and the learner's 'boolean' read, proving the cheat reached the task rather than failing upstream."}
+{"input": {"panel": "contract-oas", "select": "oas.components.schemas.User.properties.email", "read": "boolean"}}

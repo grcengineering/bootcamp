@@ -1,0 +1,27 @@
+# Acme Users GraphQL schema — the shared "list users + MFA" control question.
+type Query {
+  users: [User!]!
+  user(id: ID!): User
+}
+
+type Mutation {
+  login(email: String!, password: String!): AuthResult!
+}
+
+type User {
+  id: ID!
+  email: String!
+  mfaEnabled: Boolean!
+  role: Role!
+  manager: User
+}
+
+type AuthResult {
+  token: String!
+  user: User!
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}

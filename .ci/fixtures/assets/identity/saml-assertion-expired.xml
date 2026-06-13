@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tampered twin of saml-assertion.xml for the Diff-the-Trace round: byte-identical EXCEPT the
+  <Conditions> NotOnOrAfter (and the matching SubjectConfirmationData NotOnOrAfter) is set to a
+  PAST instant (2024-01-02T00:00:00Z). The break is the stale window — evaluateConditions()
+  computes now >= NotOnOrAfter against a supplied "now", so the staleness is the parser's
+  computed verdict, never an authored answer. match: authored-with-citation
+  (saml-core-2.0-os §2.5.1.2 — NotOnOrAfter is exclusive). Maps to AC-3 / IA-2 / CC6.1.
+-->
+<saml:Assertion
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+    Version="2.0"
+    ID="_a75adf55-01d7-40cc-929f-dbd8372ebdfc"
+    IssueInstant="2024-01-01T12:00:00Z">
+  <saml:Issuer>https://idp.example.com/saml</saml:Issuer>
+  <saml:Subject>
+    <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">jane.auditor@example.com</saml:NameID>
+    <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+      <saml:SubjectConfirmationData NotOnOrAfter="2024-01-02T00:00:00Z" Recipient="https://sp.example.org/acs"/>
+    </saml:SubjectConfirmation>
+  </saml:Subject>
+  <saml:Conditions NotBefore="2024-01-01T11:59:00Z" NotOnOrAfter="2024-01-02T00:00:00Z">
+    <saml:AudienceRestriction>
+      <saml:Audience>https://sp.example.org/saml</saml:Audience>
+    </saml:AudienceRestriction>
+  </saml:Conditions>
+  <saml:AuthnStatement AuthnInstant="2024-01-01T12:00:00Z" SessionIndex="_be9967abd904ddcae3c0eb4189adbe3f71e327cf93">
+    <saml:AuthnContext>
+      <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml:AuthnContextClassRef>
+    </saml:AuthnContext>
+  </saml:AuthnStatement>
+</saml:Assertion>

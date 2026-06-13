@@ -1,0 +1,25 @@
+// Acme Users gRPC service — the shared "list users + MFA" control question.
+syntax = "proto3";
+package userservice;
+
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (User);
+}
+
+message ListUsersRequest {
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message User {
+  string email = 1;
+  bool mfa_enabled = 2;
+  string role = 3;
+}

@@ -1,0 +1,14 @@
+module: 19-it-api-paradigms
+title: "Four Counters, One Question: REST / SOAP / GraphQL / gRPC and Where the Control Lives"
+tier: 1
+loop_stages: [UNDERSTAND, QUERY, EVALUATE, EVIDENCE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B                      # paradigm fundamentals stable; OWASP API list + spec errata drift
+sections_tiering: "1-5=A, 6=B, 7=A, 8=C"
+last_reviewed: 2026-06-13
+review_due: 2026-12-13              # Tier-B cadence: 6 months
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [owasp-api-top10-revision, openapi-graphql-spec-change, supplemental-link-dead]

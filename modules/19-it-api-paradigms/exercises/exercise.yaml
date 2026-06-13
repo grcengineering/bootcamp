@@ -1,0 +1,307 @@
+id: lab-19
+module: 19-it-api-paradigms
+title: Four counters, one control question
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: every-user-has-mfa
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: mapi
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact set: the four-paradigm Diff-the-Trace fixture. The surface prepends the four
+# real machine-readable CONTRACTS (OpenAPI/WSDL/SDL/.proto) as PEELable panels, then the four
+# clean/broken payload pairs (REST/GraphQL/SOAP/gRPC). Every node is the ported parser/decoder/
+# transform over the real artifact — fidelity-checked against protobuf.dev's verified byte
+# examples and the spec grammars. Oracle `pbwire` keys the heaviest (byte-exact protobuf) leg;
+# the diff seed dispatches each pair to its own contract oracle.
+visual:
+  artifact:
+    kind: grpc-http2
+    from: assets/api/diff-the-trace.json
+  oracle: pbwire
+  mode: diff-the-trace
+
+intro: |
+  One control question — "list every user and whether MFA is on" — takes four wire shapes. You are
+  handed the four machine-readable contracts (OpenAPI, WSDL, GraphQL SDL, .proto) and four real
+  clean/broken capture pairs over the SAME eight users, and asked to LOCATE the MFA truth-field in
+  each contract, decode the gRPC frame down to the literal bytes, recompute a SOAP credential
+  digest, and click the single field where each broken capture breaks its control.
+
+  Every value you reveal is the real parser/decoder/transform over the real artifact — the same
+  bytes protobuf.dev verifies (a=150 → 08 96 01) and the spec grammars define. Nothing is invented;
+  the decoder is the answer key. Start on the REST OpenAPI contract panel.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1]
+    instruction: |
+      On the "Contract · REST OpenAPI 3.1" panel, expand to and select the node that declares the
+      MFA truth-field — `components.schemas.User.properties.mfa_enabled`. Read its declared JSON type.
+    verify:
+      - check: region_labeled_correctly
+        node_id: oas.components.schemas.User.properties.mfa_enabled
+      - check: field_value_is
+        node_id: oas.components.schemas.User.properties.mfa_enabled
+        value: "boolean"
+    hints:
+      - nudge: The contract is the FIRST place a control's truth lives — find the field that names mfa, before any live call.
+      - concept: "§4.1 — OpenAPI: paths→/users→get→200→schema→User→properties→mfa_enabled"
+      - reveal: "Select components.schemas.User.properties.mfa_enabled; its declared type is boolean"
+    explain: |
+      Before you ever hit a live endpoint, the OpenAPI doc told you where the MFA truth-field is and
+      that it is a boolean. The static contract is collectible evidence — the auditor's first artifact.
+
+  - id: t2
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Switch to "Contract · SOAP WSDL + WS-SecurityPolicy" and select the `sp:SignedParts` policy
+      node — the assertion proving the SOAP message Body MUST be signed (the integrity control SOAP invites).
+    verify:
+      - check: region_labeled_correctly
+        node_id: wsdl.binding.policy.SignedParts
+      - check: field_value_is
+        node_id: wsdl.binding.policy.SignedParts
+        value: "MUST be signed"
+    hints:
+      - nudge: SOAP's control lives in the WS-SecurityPolicy, not an HTTP header — find the signing requirement.
+      - concept: "§4.1 — WSDL portType carries intent; sp:SignedParts requires the Body signed"
+      - reveal: "Select the sp:SignedParts node — it requires the SOAP Body be signed (message integrity)"
+    explain: |
+      Unlike REST/GraphQL/gRPC (header bearer), SOAP protects the message itself. sp:SignedParts is
+      the WS-SecurityPolicy assertion that makes message-level integrity a contractual requirement.
+
+  - id: t3
+    type: action
+    objective: [1]
+    instruction: |
+      Switch to "Contract · GraphQL SDL" and select the `User.mfaEnabled` field node. Read its
+      GraphQL type. Then note: the SAME truth-field, a third name, a third shape.
+    verify:
+      - check: region_labeled_correctly
+        node_id: sdl.type.User.field.mfaEnabled
+      - check: field_value_is
+        node_id: sdl.type.User.field.mfaEnabled
+        value: "Boolean"
+    hints:
+      - nudge: In SDL the truth-field is a typed field inside `type User { … }`.
+      - concept: "§4.1 — GraphQL SDL: type User { email mfaEnabled: Boolean! }"
+      - reveal: "Select User.mfaEnabled; its type is Boolean! (non-null boolean)"
+    explain: |
+      REST calls it mfa_enabled (snake_case JSON), GraphQL calls it mfaEnabled (camelCase Boolean!).
+      One control-truth, four contract names — you LOCATE it by reading the contract, not from memory.
+
+  - id: t4
+    type: action
+    objective: [1, 5]
+    instruction: |
+      Switch to "Contract · gRPC .proto" and select the `User.mfa_enabled` field. Read its field
+      TAG — the load-bearing number `= 2` the wire encoder will turn into a byte.
+    verify:
+      - check: region_labeled_correctly
+        node_id: proto.message.User.field.mfa_enabled
+      - check: field_value_is
+        node_id: proto.message.User.field.mfa_enabled
+        value: "field tag 2"
+    hints:
+      - nudge: In a .proto, every field has a `= N` tag — that N, not the name, is what the wire carries.
+      - concept: "§4.5 — bool mfa_enabled = 2; the `= 2` is the field tag the protobuf wire encodes"
+      - reveal: "Select bool mfa_enabled = 2; its field tag is 2 (the number the wire encodes)"
+    explain: |
+      The .proto field tag `= 2` is the bridge to the wire: protobuf encodes tag = (2 << 3) | 0 = 0x10
+      for this VARINT bool field. You just read the number you will see as a byte two tasks from now.
+
+  - id: t5
+    type: action
+    objective: [2, 4]
+    instruction: |
+      Switch to "GraphQL · clean: precise" and select the `max selection depth` node, then the
+      `introspection present` node. Confirm the precise query is shallow and reveals no schema.
+    verify:
+      - check: region_labeled_correctly
+        node_id: gql.depth
+      - check: field_value_is
+        node_id: gql.depth
+        value: "2"
+    hints:
+      - nudge: A precise GraphQL query names only the fields it needs — its depth is small and it asks for no schema.
+      - concept: "§4.4 — precision is the feature: { users { email mfaEnabled } } is depth 2, no introspection"
+      - reveal: "Select max-selection-depth on the clean GraphQL query; it reads 2"
+    explain: |
+      `{ users { email mfaEnabled } }` is depth 2 with introspection off — the precision GraphQL is
+      praised for. The next panels show that same precision turned into a weapon.
+
+  - id: t6
+    type: action
+    objective: [2, 5]
+    instruction: |
+      Switch to "gRPC · clean" and select the `:path` pseudo-header. gRPC carries intent in the
+      `:path`, not an HTTP verb. Confirm it routes to the ListUsers RPC.
+    verify:
+      - check: region_labeled_correctly
+        node_id: req._path
+      - check: field_value_is
+        node_id: req._path
+        value: "/userservice.UserService/ListUsers"
+    hints:
+      - nudge: gRPC has no GET/POST verb intent — the operation is the HTTP/2 :path pseudo-header.
+      - concept: "§4.2 — gRPC intent is the :path /package.Service/Method, not a verb"
+      - reveal: "Select the :path pseudo-header; it reads /userservice.UserService/ListUsers"
+    explain: |
+      Where REST's intent is the verb and SOAP's is the body operation, gRPC's intent is the :path.
+      Same question, fourth shape — and the :path is where an auditor reads which RPC was called.
+
+  - id: t7
+    type: action
+    objective: [4]
+    instruction: |
+      Still on "gRPC · clean", drill the message body to the second user's `mfa_enabled` field
+      (node `body.grpc.message.f1_2.f2_2`). Calibrate on protobuf.dev's a=150 → 08 96 01, then
+      confirm this field decodes to `false` via tag 0x10 (field 2, VARINT) and value 0x00.
+    verify:
+      - check: region_labeled_correctly
+        node_id: body.grpc.message.f1_2.f2_2
+      - check: decoded_artifact_matches
+        node_id: body.grpc.message.f1_2.f2_2
+        value: "false"
+    hints:
+      - nudge: "tag = (field_number << 3) | wire_type. Field 2 as a VARINT (wire type 0) is (2<<3)|0 = 0x10; a false bool is 0x00."
+      - concept: "§4.5 — protobuf: 0x10 is field 2 VARINT, 0x00 is false. mfa_enabled=false = 0x10 0x00"
+      - reveal: "Select body.grpc.message.f1_2.f2_2 — it decodes to false (tag 0x10, value 0x00)"
+    explain: |
+      You just read a boolean off raw binary the same way you read JSON. `0x10 0x00` is `mfa_enabled =
+      false` — the second seeded user lacks MFA, and the decoder proved it, byte by byte. The opaque
+      gRPC frame is now as readable as any other paradigm.
+
+  - id: t8
+    type: action
+    objective: [3]
+    instruction: |
+      Switch to "SOAP · clean". Select the `recomputed PasswordDigest` node — the transform's live
+      output Base64(SHA-1(Nonce+Created+password)) — and confirm it reproduces the envelope's stated
+      digest. The credential lives INSIDE the SOAP message, not in a header.
+    verify:
+      - check: decoded_artifact_matches
+        node_id: soap.recomputed-digest
+        value: "AtYMdWClJo7PIuTpqmhmEEoEZyc="
+    hints:
+      - nudge: A WS-Security PasswordDigest is recomputed, not trusted — feed Nonce, Created, and the password through the transform.
+      - concept: "§4.3 — PasswordDigest = Base64(SHA-1(nonce + created + password)); the transform is the oracle"
+      - reveal: "Select the recomputed-digest node; it reproduces the envelope's AtYMdWClJo7PIuTpqmhmEEoEZyc="
+    explain: |
+      The recomputed digest matches the clean envelope — proof the credential is intact. On the broken
+      SOAP twin, a stale Created makes this recompute disagree with the envelope, which is the replay
+      finding. You verify SOAP auth by recomputing, never by trusting the stamp.
+
+  - id: t9
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Switch to "REST · broken". This response over-returns fields the contract never declared.
+      Select the `salary` property node — the single field that breaks the BOPLA control (API3).
+    verify:
+      - check: region_labeled_correctly
+        node_id: oas.data.0.attributes.salary
+      - check: field_value_is
+        node_id: oas.data.0.attributes.salary
+        value: "185000"
+    hints:
+      - nudge: Diff the broken response against the clean sparse one — it carries properties the OpenAPI schema never declared.
+      - concept: "§4.6 — REST fails by FIELD: returning salary/ssn the caller can't see is API3 (BOPLA)"
+      - reveal: "Select data[0].attributes.salary on the broken REST panel — it reads 185000, a field the contract never declared"
+    explain: |
+      The broken REST response leaks salary and ssn — Broken Object Property Level Authorization,
+      OWASP API3:2023. The contract declared only email and mfa_enabled; the runtime returned more.
+      The finding is the extra property, and the contract is the evidence it shouldn't be there.
+
+  - id: t10
+    type: action
+    objective: [4, 5, 6]
+    instruction: |
+      Switch to "GraphQL · broken". Select the `max selection depth` node (a 12-deep circular query)
+      and confirm the depth. This is the depth-DoS the limiter must reject (API4). The real limiter
+      run is wired to this panel.
+    verify:
+      - check: region_labeled_correctly
+        node_id: gql.depth
+      - check: field_value_is
+        node_id: gql.depth
+        value: "12"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "depth"
+    hints:
+      - nudge: The broken query nests a self-referencing field far past the cap — read its depth, then watch the real limiter reject it.
+      - concept: "§4.4 — depth/cost DoS is API4; a 12-deep circular query trips the real depth limiter"
+      - reveal: "Select max-selection-depth (12) on the broken GraphQL panel; the limiter rejects it (exit 1, depth error)"
+    explain: |
+      Depth 12 past a cap of 6 is unrestricted resource consumption — OWASP API4:2023. The limiter
+      didn't say "try again"; it returned the real graphql-depth-limit error (exit 1). Proving the
+      depth and cost limiters are ON is the GraphQL control, not "GraphQL is unsafe."
+
+  - id: t11
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Switch to "gRPC · broken". Select the `:path` pseudo-header — it routes to the server-reflection
+      endpoint advertised in prod (API9). Confirm the reflection :path.
+    verify:
+      - check: region_labeled_correctly
+        node_id: req._path
+      - check: field_value_is
+        node_id: req._path
+        value: "ServerReflection"
+    hints:
+      - nudge: gRPC fails by discoverability — a :path to the reflection service in prod leaks the whole API surface.
+      - concept: "§4.6 — gRPC server reflection in prod is API9 (improper inventory); alg:none JWT is API2"
+      - reveal: "Select the :path on the broken gRPC panel — it routes to /grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+    explain: |
+      Server reflection in production lets anyone enumerate every RPC — Improper Inventory Management,
+      OWASP API9:2023. Paired with the alg:none JWT in the same capture's authorization header (API2),
+      this twin fails by discoverability AND auth. Reflection must be OFF in prod.
+
+  - id: t12
+    type: action
+    objective: [3, 6]
+    instruction: |
+      Switch to "SOAP · broken". Select the `recomputed PasswordDigest` node and confirm it NO LONGER
+      matches the clean digest — the stale Created made the transform disagree with the envelope (replay, API2).
+    verify:
+      - check: region_labeled_correctly
+        node_id: soap.wsu.Created
+      - check: decoded_artifact_matches
+        node_id: soap.recomputed-digest
+        value: "xsV9u/k/s5u5fCiDHO0Mx6IP92w="
+    hints:
+      - nudge: The broken envelope's wsu:Created is stale — recompute the digest over the stale values and it won't match the envelope's stated digest.
+      - concept: "§4.3 — a stale Created + a digest that no longer recomputes is a replay (API2)"
+      - reveal: "Select wsu:Created (stale) on the broken SOAP panel; the recomputed digest is now xsV9u/k/s5u5fCiDHO0Mx6IP92w=, not the envelope's value"
+    explain: |
+      The stale Created (2001) makes the recomputed digest diverge from the envelope's stated digest —
+      a replayed message, OWASP API2:2023 Broken Authentication. The disagreement is computed by the
+      transform over the real bytes, not asserted. Recompute, don't trust.
+
+  - id: t13
+    type: reflection
+    objective: [2, 6]
+    instruction: |
+      In 5–7 sentences, for a non-technical colleague: explain why ONE control question ("does every
+      user have MFA?") takes four wire shapes, where each paradigm's contract lets you LOCATE the
+      truth-field, and the single control surface each invites (REST→field/API3, GraphQL→shape+
+      discoverability/API4+API9, SOAP→time+integrity/API2, gRPC→discoverability+auth/API9+API2). Use
+      the §3 four-counters model, not jargon.
+    hints:
+      - nudge: "The §3 model: four counters, one question — each takes your request and hands back the answer differently."
+      - concept: "§3 — The Mental Model + §4.6 the OWASP map"
+
+completion:
+  evidence_pack: true

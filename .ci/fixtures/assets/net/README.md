@@ -21,6 +21,23 @@ Every byte in this directory came off a real wire. Nothing here is authored or i
 - `google-search-tcp-handshake.json` — the three TRACE handshake cards (SYN 0x02, SYN+ACK 0x12, ACK 0x10).
 - `diff-the-trace.json` — three real clean/broken pairs for the assessment.
 
+## How-the-internet-works fixtures (DNS + TLS, oracles `dns` / `dnsres` / `tls13`)
+
+- `dns-query-example-com.json` — the canonical 29-byte RFC 1035 example.com A query (oracle `dns`,
+  PEEL). match: authored-with-citation — built from RFC 1035 §4.1, its decode matches `dig`'s
+  `;example.com. IN A` question; the QNAME label bytes `076578616d706c6503636f6d00` decode to
+  example.com by hand.
+- `dns-response-example-com.json` — a REAL 61-byte response captured live off the wire from
+  1.1.1.1 (2026-06-13): two A records (104.20.23.154, 172.66.147.243), RFC 1035 §4.1.4 name
+  compression (the 0xc00c pointer). match: byte-exact.
+- `dns-delegation.json` — the REAL root→.com TLD→authoritative delegation (oracle `dnsres`, TRACE):
+  IANA root list (a.root-servers.net 198.41.0.4), live .com TLD NS (a.gtld-servers.net 192.5.6.30,
+  TTL 11246), example.com's authoritative NS (cloudflare). The sim is the consequence engine —
+  root refers, TLD refers, only authoritative answers.
+- `tls13-handshake.json` — the RFC 8446 §4.1.1 full-handshake cards (oracle `tls13`,
+  build-and-break). match: authored-with-citation — the message NAMES + alert CODES (10/40/42/45/70)
+  are RFC 8446 §6.2 / IANA literal values; the §A.1 state machine raises them on wrong moves.
+
 ## Why this is the oracle, not an answer key
 
 Each fixture's `rfc_field_truth` block lists the field, its byte offset, the value, and the RFC that fixes it

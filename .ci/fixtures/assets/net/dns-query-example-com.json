@@ -1,0 +1,23 @@
+{
+  "id": "net-dns-query-example-com",
+  "kind": "dns-msg",
+  "description": "The canonical RFC 1035 §4.1 DNS query for example.com A — a 29-byte message: 12-byte header (ID 0x1234, flags 0x0100 = RD set, QDCOUNT 1), then the QNAME as length-prefixed labels (07 'example' 03 'com' 00), QTYPE 1 (A), QCLASS 1 (IN). This is the PEEL exemplar: select QDCOUNT, decode the QNAME labels, read QTYPE/QCLASS.",
+  "oracle": "dns",
+  "match": "authored-with-citation",
+  "provenance": {
+    "built_with": "python3 struct.pack of the RFC 1035 §4.1 header + length-prefixed QNAME, this session (2026-06-13)",
+    "verified_against": "dig +qr +question example.com A — dig's parsed question reads `;example.com. IN A`, identical to this message's decode (QNAME=example.com, QTYPE=A, QCLASS=IN). A learner can paste the QNAME bytes 076578616d706c6503636f6d00 and decode them by hand to example.com.",
+    "rfc": "RFC 1035 §4.1.1 (header), §4.1.2 (question), §3.1 (labels)",
+    "honesty_note": "Authored from the RFC with the citation because dig does not emit raw query wire bytes; every field is the RFC-fixed value and the decode matches dig's question section. The 29-byte length and the QNAME label decode are reproducible."
+  },
+  "hex": "123401000001000000000000076578616d706c6503636f6d0000010001",
+  "rfc_field_truth": {
+    "header.id": { "offset": "0-1", "value": "0x1234" },
+    "header.flags": { "offset": "2-3", "value": "0x0100", "decode": "QR 0 (query), Opcode QUERY, RD 1" },
+    "header.qdcount": { "offset": "4-5", "value": 1 },
+    "qname": { "offset": "12-24", "value": "example.com", "labels": "07 'example' 03 'com' 00" },
+    "qtype": { "offset": "25-26", "value": 1, "name": "A" },
+    "qclass": { "offset": "27-28", "value": 1, "name": "IN" },
+    "length": 29
+  }
+}

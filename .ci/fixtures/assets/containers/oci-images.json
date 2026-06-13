@@ -1,0 +1,88 @@
+{
+  "id": "containers-oci-images",
+  "kind": "oci-manifest",
+  "match": "real-capture",
+  "description": "Two REAL OCI images for the containers module's PEEL + Diff-the-Trace legs. The 'clean' twin is stock alpine:latest (arm64v8) straight off Docker Hub; the 'misconfigured' twin is a real `docker build` over it that adds the control-truth the module diagnoses — User root, ExposedPorts 22+8080, an expanded Env, and a SECOND layer whose tar bakes in a test AWS credential. Every region the PEEL surface shows is read by web/src/engines/visual/oci.ts straight from these committed real blobs; the discriminating field in each diff is the parser's computed divergence, never an answer key.",
+  "provenance": {
+    "captured_with": "clean: `docker pull alpine:latest && docker save alpine:latest` (OCI-layout tarball), arm64v8 manifest sha256:74e11dac… → config sha256:92385f4b…. misconfigured: a real `docker build` (buildkit) from the Dockerfile committed below, then `docker save`, image manifest sha256:7869dc00… → config sha256:2cd49630… with layers c05efffa… (stock rootfs) + 48092d72… (the secret layer).",
+    "captured_at": "2026-06-13",
+    "host_platform": "arm64 / linux (Apple Silicon, OrbStack docker)",
+    "misconfigured_dockerfile": [
+      "FROM alpine:latest",
+      "RUN echo \"AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\" > /app-credentials.env",
+      "ENV APP_ENV=production DB_HOST=db.internal",
+      "EXPOSE 8080 22",
+      "USER root",
+      "CMD [\"/bin/sh\",\"-c\",\"sleep infinity\"]"
+    ],
+    "cross_checked_against": "docker inspect / docker save output, and the content-addressable digest chain itself: each manifest cites its config and layers by sha256:<hex>, and those digests equal the recomputed SHA-256 of the committed blobs (verified locally with shasum -a 256 and by web/tests/oci-fidelity.test.ts via crypto.subtle). skopeo was unavailable on the capture host; docker inspect/save is the equivalent reference reader and the digest recompute is the stronger check (it cannot pass on a tampered blob).",
+    "honesty_note": "The 'clean' twin is the upstream stock image, NOT a fully-hardened one — stock alpine has no explicit User, which per the OCI runtime default means it too runs as root; the parser reports that honestly ('absent → defaults to root'). The teaching contrast in the diff is the set of findings the misconfigured build ADDS (exposed ports, an expanded Env, a real secret-bearing second layer), each a genuine on-disk fact. The baked credential is a documented AWS *example* key (…CYEXAMPLEKEY), not a live secret, but it is really written into the real layer tar — exactly the antipattern. Nothing is invented; anyone can `docker save` the same tags and recompute the identical digests."
+  },
+  "images": {
+    "clean": {
+      "label": "stock alpine:latest (arm64v8)",
+      "manifest_blob": "clean-manifest.json",
+      "config_blob": "clean-config.json",
+      "manifest_digest": "sha256:74e11dac2962377a1603ed54a419897aac44c1cb30e4f0668d423e7f987577c0",
+      "config_digest": "sha256:92385f4b6d5d9fd8cf8b90b6dad8e526713035b6be25862d98807ea6421c534a",
+      "oci_truth": {
+        "layers": 1,
+        "config.user": "absent → root (uid 0)",
+        "config.exposed_ports": "none",
+        "config.env": ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
+        "config.cmd": ["/bin/sh"],
+        "baked_secret": false
+      }
+    },
+    "misconfigured": {
+      "label": "real `docker build` twin (root, exposed ports, baked secret)",
+      "manifest_blob": "misconfigured-manifest.json",
+      "config_blob": "misconfigured-config.json",
+      "secret_layer_blob": "secret-layer.tar.gz",
+      "manifest_digest": "sha256:7869dc00b984c667a61c9c49b4f65bfa0a9e0faa1a5cf671603b7e79b4fa5d79",
+      "config_digest": "sha256:2cd49630dfb8bfb6d69c6235612f9e55f7d8903815304725e5ef08ad0f25ff22",
+      "secret_layer_digest": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74",
+      "oci_truth": {
+        "layers": 2,
+        "config.user": "root → ROOT (uid 0)",
+        "config.exposed_ports": ["22/tcp", "8080/tcp"],
+        "config.env": ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "APP_ENV=production", "DB_HOST=db.internal"],
+        "config.cmd": ["/bin/sh", "-c", "sleep infinity"],
+        "baked_secret": {
+          "in_layer": 1,
+          "layer_digest": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74",
+          "file": "app-credentials.env",
+          "pattern": "AWS secret access key",
+          "match": "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        }
+      }
+    }
+  },
+  "diff_pairs": [
+    {
+      "id": "pair-runs-as-root",
+      "control_claim": "containers do not run as root (CM-6 / NIST 800-190 / CIS Docker 4.1)",
+      "framework_ref": "CM-6, NIST 800-190 §4.4.2, CIS Docker 4.1",
+      "discriminating_field": "config.user",
+      "note": "Both stock alpine and the twin run as root; the twin makes it explicit (User: root). The hardened ideal is an explicit non-root uid. The parser reads the real User field in each."
+    },
+    {
+      "id": "pair-exposed-ports",
+      "control_claim": "only the service port is exposed (CM-7 least functionality)",
+      "framework_ref": "CM-7, CIS Docker 5.7",
+      "discriminating_field": "config.exposed_ports",
+      "clean_value": "none",
+      "broken_value": "22/tcp, 8080/tcp",
+      "note": "The misconfigured build EXPOSEs 22 (SSH) alongside the app port — the CM-7 finding the parser surfaces from ExposedPorts."
+    },
+    {
+      "id": "pair-baked-secret",
+      "control_claim": "no secrets are baked into the image (IA-5 / SC-28 / CIS Docker 4.10)",
+      "framework_ref": "IA-5, SC-28, CIS Docker 4.10",
+      "discriminating_field": "layer1 (secret-bearing)",
+      "clean_value": "1 layer, no secret",
+      "broken_value": "2 layers; layer 1 (sha256:48092d72…) carries /app-credentials.env",
+      "note": "The parser walks the real layer tar and the secret-scanner pattern set trips on the real AWS-style credential in the second layer — the secret glows in the layer that added it, cited by its real digest."
+    }
+  ]
+}

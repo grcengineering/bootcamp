@@ -19,10 +19,13 @@ import { join } from "node:path";
 import { parse } from "yaml";
 import { ExerciseSpecSchema, findBannedKeys } from "../web/src/lib/exercise-spec";
 import { PRIMITIVES } from "../web/src/verifiers/registry";
+import { loadManifest } from "./fixtures/load-manifest";
 
 const ROOT = join(import.meta.dir, "..");
 const MODULES = join(ROOT, "modules");
-const manifest = parse(readFileSync(join(ROOT, ".ci/fixtures/manifest.yaml"), "utf8"));
+// manifest.yaml PLUS every manifest.d/*.yaml fragment (Wave-4 fan-out) — completability checks a
+// task's reveal commands against the merged surface, so a fragment's entries count.
+const manifest = loadManifest(join(ROOT, ".ci/fixtures"));
 
 // Builtins + operators always available in the sim (engine surface, not per-module).
 const ALWAYS = new Set([

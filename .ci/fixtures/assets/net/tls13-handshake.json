@@ -1,0 +1,30 @@
+{
+  "id": "net-tls13-handshake",
+  "kind": "grpc-http2",
+  "description": "The RFC 8446 §4.1.1 TLS 1.3 full-handshake message sequence as orderable cards for the build-and-break round. The tls13-sim runs the §A.1 state machine: the canonical order reaches the established state; ApplicationData before both Finished raises the real unexpected_message(10); a legacy-only ClientHello raises protocol_version(70); an expired Certificate raises certificate_expired(45).",
+  "oracle": "tls13",
+  "match": "authored-with-citation",
+  "provenance": {
+    "reference": "RFC 8446 §4.1.1 (message flow: ClientHello, ServerHello, {EncryptedExtensions, Certificate, CertificateVerify, Finished}, {Finished}), §A.1 (client/server state machine), §6.2 + the IANA TLS Alert Registry (the numeric AlertDescription codes)",
+    "reproducible_against": "a real `openssl s_client -connect host:443 -tls1_3` exchange produces this message order; the negotiated 'New, TLSv1.3, Cipher is …' line confirms the full handshake",
+    "verified_codes": "unexpected_message=10, handshake_failure=40, bad_certificate=42, certificate_expired=45, protocol_version=70 — the literal RFC 8446 §6.2 / IANA registry values",
+    "honesty_note": "Authored from RFC 8446 with citation (the message NAMES and the alert CODES are the spec's literal values); the state machine is the consequence engine — the alert a wrong move raises is computed, not authored."
+  },
+  "handshake": {
+    "canonical_ref": "tls13-full-handshake",
+    "cards": [
+      { "seq": 0, "from": "client", "to": "server", "type": "ClientHello" },
+      { "seq": 1, "from": "server", "to": "client", "type": "ServerHello" },
+      { "seq": 2, "from": "server", "to": "client", "type": "EncryptedExtensions" },
+      { "seq": 3, "from": "server", "to": "client", "type": "Certificate" },
+      { "seq": 4, "from": "server", "to": "client", "type": "CertificateVerify" },
+      { "seq": 5, "from": "server", "to": "client", "type": "Finished" },
+      { "seq": 6, "from": "client", "to": "server", "type": "Finished" }
+    ],
+    "break_cards": {
+      "early_app_data": { "from": "client", "to": "server", "type": "ApplicationData", "expect_alert": "unexpected_message", "expect_code": 10 },
+      "legacy_clienthello": { "fault": "legacy_version_only", "expect_alert": "protocol_version", "expect_code": 70 },
+      "expired_cert": { "fault": "cert_expired", "expect_alert": "certificate_expired", "expect_code": 45 }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "id": "api-grpc-listusers",
+  "kind": "grpc-http2",
+  "description": "Real gRPC-over-HTTP/2 ListUsers exchange over the shared 8-user seed. The protobuf body is byte-exact (verified vs protobuf.dev). The decoder is the oracle.",
+  "provenance": {
+    "encoded_with": "python3 protobuf wire encoder this session (2026-06-13); byte-exact-verified against protobuf.dev examples a=150->08 96 01, b='testing'->12 07 74 65 73 74 69 6e 67, mfa_enabled=false (field 2)->10 00.",
+    "framing": "grpc PROTOCOL-HTTP2.md [compressed-flag:1B][length:4B big-endian][protobuf]",
+    "match": "computed"
+  },
+  "request_headers": [
+    {
+      "name": ":method",
+      "value": "POST"
+    },
+    {
+      "name": ":scheme",
+      "value": "https"
+    },
+    {
+      "name": ":path",
+      "value": "/userservice.UserService/ListUsers"
+    },
+    {
+      "name": ":authority",
+      "value": "api.acme.example"
+    },
+    {
+      "name": "content-type",
+      "value": "application/grpc+proto"
+    },
+    {
+      "name": "te",
+      "value": "trailers"
+    },
+    {
+      "name": "authorization",
+      "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZUBhY21lLmV4YW1wbGUiLCJpc3MiOiJodHRwczovL2lkcC5hY21lLmV4YW1wbGUiLCJhdWQiOiJ1c2Vycy1hcGkiLCJleHAiOjE5MjMwMDAwMDAsImlhdCI6MTcxODAwMDAwMCwic2NvcGUiOiJ1c2VyczpyZWFkIn0.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+    },
+    {
+      "name": "grpc-accept-encoding",
+      "value": "identity,gzip"
+    }
+  ],
+  "frame_hex": "00000000f70a1d0a12616c6963654061636d652e6578616d706c6510011a0561646d696e0a1c0a10626f624061636d652e6578616d706c6510001a066d656d6265720a1d0a126361726f6c4061636d652e6578616d706c6510011a0561646d696e0a1c0a1064616e4061636d652e6578616d706c6510001a066d656d6265720a1c0a116572696e4061636d652e6578616d706c6510011a0561646d696e0a1e0a126672616e6b4061636d652e6578616d706c6510001a066d656d6265720a1d0a1267726163654061636d652e6578616d706c6510011a0561646d696e0a1e0a1268656964694061636d652e6578616d706c6510001a066d656d626572",
+  "response_trailers": [
+    {
+      "name": "grpc-status",
+      "value": "0"
+    },
+    {
+      "name": "grpc-message",
+      "value": ""
+    }
+  ],
+  "field_map": {
+    "1": {
+      "name": "users",
+      "type": "message",
+      "sub": {
+        "1": {
+          "name": "email",
+          "type": "string"
+        },
+        "2": {
+          "name": "mfa_enabled",
+          "type": "bool"
+        },
+        "3": {
+          "name": "role",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "calibration": {
+    "a_150": "08 96 01",
+    "b_testing": "12 07 74 65 73 74 69 6e 67",
+    "mfa_enabled_false": "10 00"
+  },
+  "bob_user_offset_note": "the byte pair 0x10 0x00 inside bob's User sub-message is mfa_enabled=false (field 2, VARINT, value 0)"
+}

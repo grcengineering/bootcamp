@@ -1,0 +1,11 @@
+{"anti_for": "t10", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct max-selection-depth node on the broken GraphQL panel (region_labeled_correctly verify[0] passes) but mis-reads the depth as 6 (the cap) instead of 12 — field_value_is (verify[1]) catches the wrong read; validator_passes (verify[2]) still passes because the real limiter rejected the query, so the near-miss is surgical. Tasks t1-t9 complete correctly so the cheat reaches t10 (sticky near-miss)."}
+{"input": {"panel": "contract-oas", "select": "oas.components.schemas.User.properties.mfa_enabled", "read": "type=boolean"}}
+{"input": {"panel": "contract-wsdl", "select": "wsdl.binding.policy.SignedParts", "read": "the SOAP Body MUST be signed (sp:Body) — message-level integrity"}}
+{"input": {"panel": "contract-sdl", "select": "sdl.type.User.field.mfaEnabled", "read": "Boolean!"}}
+{"input": {"panel": "contract-proto", "select": "proto.message.User.field.mfa_enabled", "read": "bool mfa_enabled = 2 (field tag 2)"}}
+{"input": {"panel": "graphql-clean", "select": "gql.depth", "read": "2"}}
+{"input": {"panel": "grpc-clean", "select": "req._path", "read": "/userservice.UserService/ListUsers"}}
+{"input": {"panel": "grpc-clean", "select": "body.grpc.message.f1_2.f2_2", "read": "false — tag 0x10 = (field 2 << 3) | 0 (VARINT)"}}
+{"input": {"panel": "soap-clean", "select": "soap.recomputed-digest", "read": "AtYMdWClJo7PIuTpqmhmEEoEZyc="}}
+{"input": {"panel": "rest-broken", "select": "oas.data.0.attributes.salary", "read": "185000"}}
+{"input": {"panel": "graphql-broken", "select": "gql.depth", "read": "6"}}

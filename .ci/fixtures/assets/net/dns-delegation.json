@@ -1,0 +1,20 @@
+{
+  "id": "net-dns-delegation",
+  "kind": "dns-msg",
+  "description": "The REAL iterative-resolution delegation chain for example.com: root → .com TLD → authoritative. The dnsres-sim runs this as a state machine — a root server REFERS to the .com TLD servers (it never answers a leaf A record); the .com TLD server REFERS to example.com's authoritative NS; only the authoritative server answers. Routing a leaf query to root/TLD yields the real referral.",
+  "oracle": "dnsres",
+  "match": "byte-exact",
+  "provenance": {
+    "captured_with": "dig (system resolver), this session (2026-06-13): `.` root list, `dig com NS` for the .com TLD servers, `dig example.com NS` for the authoritative NS, `dig +short a.root-servers.net` and `dig +short a.gtld-servers.net` for the IPs",
+    "captured_at": "2026-06-13",
+    "verified_against": "IANA root-server list (root-servers.org / iana.org/domains/root/servers): a.root-servers.net = 198.41.0.4. The .com TLD NS list (a.gtld-servers.net … m.gtld-servers.net), a.gtld-servers.net = 192.5.6.30, captured TTL 11246. example.com's authoritative NS at capture = elliott.ns.cloudflare.com / hera.ns.cloudflare.com.",
+    "rfc": "RFC 1034 §4.3.2 (resolution algorithm), §6 (delegation); RFC 1035 §7 (resolver)",
+    "honesty_note": "Real delegation data. The referral targets and the accepted hand-off order are the protocol's behaviour run by the state machine, not an answer key."
+  },
+  "delegation": {
+    "qname": "example.com",
+    "root": { "server": "a.root-servers.net", "ip": "198.41.0.4", "refers_to": "a.gtld-servers.net … m.gtld-servers.net" },
+    "tld": { "zone": "com", "server": "a.gtld-servers.net", "ip": "192.5.6.30", "ttl": 11246, "refers_to": "elliott.ns.cloudflare.com / hera.ns.cloudflare.com" },
+    "authoritative": { "zone": "example.com", "servers": ["elliott.ns.cloudflare.com", "hera.ns.cloudflare.com"], "answer": "104.20.23.154" }
+  }
+}
