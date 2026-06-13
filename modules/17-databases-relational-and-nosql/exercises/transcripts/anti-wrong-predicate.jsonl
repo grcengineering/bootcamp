@@ -1,0 +1,2 @@
+{"anti_for": "t1", "fails_check": 0, "reason": "wrong-predicate near miss: runs the right table/column on the relational store but inverts the predicate to mfa_enabled = 1, returning the MFA-ON users instead of the MFA-OFF violators — engine_result_equals (verify[0]) catches the wrong result set; history_contains (verify[1]) still passes because the query shape SELECT email FROM users WHERE mfa_enabled matched, proving the cheat reached the seam (surgical near-miss)."}
+{"input": "SELECT email FROM users WHERE mfa_enabled = 1 ORDER BY email;"}

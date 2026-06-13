@@ -1,0 +1,8 @@
+{"input": {"panel": "jwt-valid", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "jwt-valid", "select": "jwt.payload.exp", "read": "1718203600"}}
+{"input": {"panel": "jwt-valid", "select": "jwt.payload.iss", "read": "https://accounts.grcbootcamp.example"}}
+{"input": {"order": [0, 1, 2, 3, 4, 5]}}
+{"input": {"panel": "saml-clean", "select": "saml.authn.contextclassref", "read": "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"}}
+{"input": {"panel": "saml-clean", "select": "saml.conditions.notonorafter", "read": "2030-01-01T00:00:00Z"}}
+{"input": {"panel": "jwt-algnone", "select": "jwt.header.alg", "read": "none"}}
+{"input": {"panel": "saml-expired", "select": "saml.conditions.notonorafter", "read": "2024-01-02T00:00:00Z"}}

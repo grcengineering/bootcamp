@@ -1,0 +1,37 @@
+# manifest.d/18.yaml — web-application-architecture (module 18) fidelity-manifest fragment.
+#
+# Visual module: the taught "command surface" is the set of real HTTP-header / JWT artifacts the
+# `hdr` and `jwt` oracles parse over RFC-literal bytes (no shell, no PATH tools). Each entry names
+# the real artifact + its citation; the parser over the bytes is the oracle (honesty doctrine).
+seeds:
+  m18:
+    kind: visual                       # real header/token bytes under .ci/fixtures/assets/web/*.json
+
+entries:
+  - id: m18-forwarded-proto
+    module: "18"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 7239 §4 — Forwarded for=/by=/proto= forwarded-element; the literal example shape (for=192.0.2.43;proto=https;by=203.0.113.43). proto= is the client-protocol provenance after upstream TLS termination."
+    cmd: "hdr parse Forwarded 'for=192.0.2.43;proto=https;by=203.0.113.43'"
+
+  - id: m18-set-cookie-secure-httponly
+    module: "18"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 6265 §3.1 (Set-Cookie literal SID=31d4d96e407aad42; Path=/; Secure; HttpOnly) + §4.1.2 (Secure/HttpOnly cookie-av). The broken twin strips Secure+HttpOnly — the session-control gap."
+    cmd: "hdr parse Set-Cookie 'SID=31d4d96e407aad42; Path=/; Secure; HttpOnly'"
+
+  - id: m18-cache-control-no-store
+    module: "18"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 9111 §5.2 (Cache-Control private, no-store — sensitive-response control truth) + §5.1 (Age: a cache served the response). The broken twin is public, max-age=300 + Age: 142."
+    cmd: "hdr parse Cache-Control 'private, no-store'"
+
+  - id: m18-jwt-stateless-token
+    module: "18"
+    source: authored
+    match: computed
+    citation: "RFC 7519 (JWT) / RFC 7515 (JWS HS256) / RFC 8725 §2.1 (alg:none). A real three-segment HS256 token minted this session (HMAC-SHA-256 over base64url(header).base64url(payload)); the alg:none twin is a real unprotected-token instance."
+    cmd: "jwt decode eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguYWNtZS5leGFtcGxlIiwic3ViIjoidS04ODQyIiwiYXVkIjoiYWNtZS1hcHAiLCJleHAiOjE3ODIwMDAwMDAsImlhdCI6MTc4MTk5NjQwMH0.CyXRn6yOrrzwa-1Ih9vUC_Zv8q9jgjqbJvRZUrBVnAs"

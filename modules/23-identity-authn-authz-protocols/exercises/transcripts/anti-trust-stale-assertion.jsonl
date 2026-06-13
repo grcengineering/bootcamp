@@ -1,0 +1,9 @@
+{"anti_for": "t8", "fails_check": 1, "reason": "trust-the-stale-assertion cheat: on the expired SAML twin, selects the correct saml.conditions.notonorafter region (region_labeled_correctly verify[0] passes) but reads it as the clean assertion's future window 2030-01-01 — claiming the assertion is still valid — instead of the real stale value 2024-01-02 the parser decoded from this twin. field_value_is (verify[1], value '2024-01-02T00:00:00Z') catches that the learner's read does not contain the field the parser decoded. Tasks t1-t7 complete correctly so the cheat reaches t8 (sticky near-miss)."}
+{"input": {"panel": "jwt-valid", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "jwt-valid", "select": "jwt.payload.exp", "read": "1718203600"}}
+{"input": {"panel": "jwt-valid", "select": "jwt.payload.iss", "read": "https://accounts.grcbootcamp.example"}}
+{"input": {"order": [0, 1, 2, 3, 4, 5]}}
+{"input": {"panel": "saml-clean", "select": "saml.authn.contextclassref", "read": "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"}}
+{"input": {"panel": "saml-clean", "select": "saml.conditions.notonorafter", "read": "2030-01-01T00:00:00Z"}}
+{"input": {"panel": "jwt-algnone", "select": "jwt.header.alg", "read": "none"}}
+{"input": {"panel": "saml-expired", "select": "saml.conditions.notonorafter", "read": "2030-01-01T00:00:00Z"}}

@@ -1,0 +1,16 @@
+{
+  "_comment": "Documentation of what the oracles decode from the REAL committed bytes (the answer key is the parser / state-machine, never an authored value). No spec check uses from:generated — the visual primitives read the parse tree / trace probe directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the live oracle, never injected expectations.",
+  "_query_qdcount": "1",
+  "_query_qname": "example.com",
+  "_query_qtype": "1 = A",
+  "_query_qclass": "1 = IN",
+  "_response_ancount": "2",
+  "_response_answer0_rdata": "104.20.23.154",
+  "_response_answer1_rdata": "172.66.147.243",
+  "_response_flags_ad": "AD 0",
+  "_delegation_canonical_ref": "example.com",
+  "_tls13_canonical_ref": "tls13-full-handshake",
+  "_tls13_early_data_alert": "unexpected_message(10)",
+  "_leaf_san": "DNS:www.google.com",
+  "_wronghost_san": "DNS:*.badssl.com, DNS:badssl.com"
+}

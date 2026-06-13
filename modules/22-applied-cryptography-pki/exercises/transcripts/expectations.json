@@ -1,0 +1,15 @@
+{
+  "_comment": "Documentation of what the xform / jwt / x509 oracles + the tls13-sim decode from the REAL committed crypto fixtures (the oracles). No spec check uses from:generated — the visual primitives read the parse tree / trace probe directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the oracles, never injected expectations.",
+  "_sha256_hello": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+  "_sha256_empty": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "_base64_hello": "aGVsbG8= (reversible with no key — ENCODE)",
+  "_jwt_header_decoded": "{\"alg\":\"HS256\",\"typ\":\"JWT\"} (base64url, decodes with no key)",
+  "_leaf_notafter": "2026-08-17T08:39:10Z",
+  "_leaf_san": "DNS:www.google.com",
+  "_leaf_basicconstraints": "CA:FALSE",
+  "_leaf_issuer": "C=US, O=Google Trust Services, CN=WR2",
+  "_expired_notafter": "2015-04-12T23:59:59Z",
+  "_wronghost_san": "DNS:*.badssl.com, DNS:badssl.com",
+  "_tls_canonical": "ClientHello, ServerHello, EncryptedExtensions, Certificate, CertificateVerify, server Finished, client Finished (RFC 8446 §4.1.1)",
+  "_tls_break_alert": "unexpected_message(10) — RFC 8446 §6.2, application data before {Finished}"
+}

@@ -1,0 +1,5 @@
+{"anti_for": "t4", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct cert.validity.notAfter region on the leaf (region_labeled_correctly verify[0] passes) but mis-reads the value as the notBefore date 2026-05-25 instead of the notAfter 2026-08-17 — field_value_is (verify[1]) catches the wrong decode against the x509-parser. Tasks t1-t3 complete correctly so the cheat reaches t4 (sticky near-miss)."}
+{"input": {"panel": "scramble", "select": "sha256-hello", "layer": "HASH", "read": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"}}
+{"input": {"panel": "scramble", "select": "base64-hello", "layer": "ENCODE", "decode": "aGVsbG8="}}
+{"input": {"panel": "jwt", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "cert-leaf", "select": "cert.validity.notAfter", "read": "2026-05-25T08:39:11Z"}}

@@ -1,0 +1,7 @@
+{"anti_for": "t2", "fails_check": 0, "reason": "wrong-boundary near miss: t1's two anchors are placed correctly (t1 latches), then on IaaS guest-OS and application code go to YOU correctly but the network/firewall card is dragged to PROVIDER (the SaaS answer at the IaaS position) — mapping_correct (verify[0]) fails naming the misplaced card while t1 stays recorded (sticky)."}
+{"input": {"slider": "IaaS"}}
+{"input": {"place": "physical-facility", "zone": "provider"}}
+{"input": {"place": "customer-data", "zone": "you"}}
+{"input": {"place": "guest-os-patching", "zone": "you"}}
+{"input": {"place": "application-code", "zone": "you"}}
+{"input": {"place": "network-firewall-config", "zone": "provider"}}

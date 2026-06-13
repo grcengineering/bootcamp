@@ -1,0 +1,9 @@
+{
+  "_comment": "Generated expectations (ISC-60): each value is the REAL sql.js result-set rendering produced by replaying the golden transcript against the seeded three-store database. Keyed ${taskId}:${checkIndex}. Underscore-prefixed keys are documentation the replay test strips; the t* keys are injected into engine_result_equals via from:generated. The engine is the oracle — these strings are recorded from its output, never authored.",
+  "t1:0": "email\nbob@acme.example\ndave@acme.example\nfrank@acme.example\nheidi@acme.example\n",
+  "t2:0": "n\n8\n",
+  "t3:0": "email\nbob@acme.example\ndave@acme.example\nfrank@acme.example\nheidi@acme.example\n",
+  "t4:0": "k\nuser:u_002\nuser:u_004\nuser:u_006\nuser:u_008\n",
+  "t5:0": "email\nalice@acme.example\nbob@acme.example\ncarol@acme.example\ndave@acme.example\nerin@acme.example\nfrank@acme.example\ngrace@acme.example\nheidi@acme.example\n",
+  "t6:0": ""
+}

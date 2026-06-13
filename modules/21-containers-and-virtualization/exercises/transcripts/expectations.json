@@ -1,0 +1,14 @@
+{
+  "_comment": "Documentation of what the OCI reader (oracle `oci`) decodes from the REAL committed image blobs. No spec check uses from:generated — the visual primitives read the parse tree / map probe directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the reader, never injected expectations. Every value is read off the real manifest/config/layer-tar; the content-addressable digest chain (oci-fidelity.test.ts) proves the blobs are unmodified.",
+  "_misconfigured_user": "root → ROOT (uid 0)",
+  "_misconfigured_exposed_ports": "22/tcp, 8080/tcp",
+  "_misconfigured_layer1_digest": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74",
+  "_misconfigured_secret_file": "/app-credentials.env",
+  "_clean_user": "absent → defaults to root (uid 0)",
+  "_clean_exposed_ports": "none",
+  "_map_runs_as_root_zone": "CM-6 (run as non-root)",
+  "_map_exposed_ports_zone": "CM-7 (least functionality)",
+  "_map_baked_secret_zone": "IA-5 / SC-28 (secrets)",
+  "_map_vm_zone": "own host kernel",
+  "_map_container_zone": "shared host kernel"
+}

@@ -1,0 +1,56 @@
+# manifest.d/24.yaml — how-the-internet-works (module 24) fidelity-manifest fragment.
+#
+# Visual module: the taught "command surface" is the set of real lifecycle artifacts the `dns`
+# (RFC 1035 message parser), `dnsres` (RFC 1034 delegation state machine), `tls13` (RFC 8446
+# handshake state machine), and `x509` (certificate parser) oracles parse / run over REAL bytes
+# (no shell, no PATH tools). Each entry names the real artifact + its citation/capture; the
+# parser / state-machine over the bytes is the oracle (honesty doctrine). The DNS query is authored
+# from RFC 1035 with citation (dig does not emit raw query wire bytes); the DNS response is REAL
+# bytes captured live off the wire; the delegation chain is REAL dig/IANA data run by the state
+# machine; the TLS handshake order + alert codes are authored from RFC 8446 with citation; the
+# certificate is a REAL www.google.com leaf (openssl s_client). All four reuse the Wave-4 oracles
+# the networking + applied-crypto modules already ship.
+seeds:
+  m24:
+    kind: visual                       # real lifecycle bytes under .ci/fixtures/assets/net + /crypto
+
+entries:
+  # The DNS lifecycle's first stage — the canonical RFC 1035 query (PEEL: QDCOUNT, QNAME, QTYPE).
+  - id: m24-dns-query-peel
+    module: "24"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 1035 §4.1.1 (header: ID, flags word, QDCOUNT/ANCOUNT/NSCOUNT/ARCOUNT), §4.1.2 (question), §3.1 (length-prefixed labels). The 29-byte example.com A query is authored from the RFC because dig does not emit raw query wire bytes; its decode matches dig's question `;example.com. IN A` (QNAME=example.com, QTYPE=A, QCLASS=IN). Bytes 076578616d706c6503636f6d00 decode to example.com by hand. Fixture: .ci/fixtures/assets/net/dns-query-example-com.json."
+    cmd: "dig +qr +question example.com A"
+
+  # The DNS response — REAL bytes off the wire (PEEL: ANCOUNT, A-record RDATA, the AD flag).
+  - id: m24-dns-response-peel
+    module: "24"
+    source: authored
+    match: byte-exact
+    citation: "RFC 1035 §4.1.1 (header flags 0x8180 = QR/RD/RA, RCODE NOERROR, ANCOUNT 2), §4.1.3 (RR), §4.1.4 (name compression 0xc00c); RFC 4035 (AD bit). The 61-byte response was captured live (python3 UDP socket to a public resolver, 2026-06-13); the two A records 104.20.23.154 / 172.66.147.243, TTL, and the compression pointer are the real wire. AD=0 — this answer was NOT DNSSEC-validated (the honest control reading, SC-12/SC-17). Fixture: .ci/fixtures/assets/net/dns-response-example-com.json."
+    cmd: "dig example.com A"
+
+  # The DNS delegation treasure-hunt — REAL dig/IANA data run by the dnsres state machine (TRACE).
+  - id: m24-dns-delegation-trace
+    module: "24"
+    source: authored
+    match: engine-pinned
+    citation: "RFC 1034 §4.3.2 (resolution algorithm), §6 (delegation); RFC 1035 §7 (resolver). The delegation data is REAL (dig: root list, `dig com NS`, `dig example.com NS`, 2026-06-13; cross-checked vs the IANA root-server list, a.root-servers.net=198.41.0.4, a.gtld-servers.net=192.5.6.30 TTL 11246). The dnsres-sim runs the real referral state machine: a root server REFERS to .com, it never answers a leaf — the accepted hand-off order is the protocol's behaviour, not an answer key. Fixture: .ci/fixtures/assets/net/dns-delegation.json."
+    cmd: "dig +trace example.com A"
+
+  # The TLS 1.3 handshake — the RFC 8446 message order + the real alert (tls13-sim, TRACE).
+  - id: m24-tls13-handshake-trace
+    module: "24"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 8446 §4.1.1 (message flow: ClientHello, ServerHello, {EncryptedExtensions, Certificate, CertificateVerify, Finished}, {Finished}), §A.1 (state machine), §6.2 (AlertDescription). The tls13-sim is the consequence engine: the canonical order reaches the established state; application data before {Finished} raises the real unexpected_message(10). Reproducible against `openssl s_client -tls1_3`. Reuses the applied-crypto module's tls13 oracle. Fixture: .ci/fixtures/assets/net/tls13-handshake.json."
+    cmd: "openssl s_client -connect www.google.com:443 -tls1_3 -servername www.google.com"
+
+  # The identity stage — the REAL www.google.com leaf + the broken twin (x509 PEEL / Diff-the-Trace).
+  - id: m24-cert-identity-diff
+    module: "24"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 5280 §4.2.1.6 (SAN dNSName), §4.1.2 (validity), §4.2.1.9 (BasicConstraints cA); RFC 6125 (host verification). The leaf is REAL (openssl s_client www.google.com:443, 2026-06-13): SAN=DNS:www.google.com — the host the plaintext ClientHello SNI named. The broken twin is wrong.host.badssl.com (SAN=*.badssl.com/badssl.com, does NOT cover the three-label host per RFC 6125 → openssl verify code 62, SC-23). Reuses the applied-crypto module's x509 oracle + cert-diff-the-trace fixture. Fixtures: .ci/fixtures/assets/crypto/google-cert-chain.json, cert-diff-the-trace.json."
+    cmd: "openssl x509 -text -noout -in www.google.com.leaf.pem"

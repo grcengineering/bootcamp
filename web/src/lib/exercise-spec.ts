@@ -69,12 +69,18 @@ export const VisualSpecSchema = z.object({
       "pcap", "dns-msg", "doh-json", "pem-chain", "jwt", "saml-xml",
       "oci-manifest", "syslog-5424", "set-cookie", "forwarded", "http-cache",
       "openapi", "wsdl", "graphql-sdl", "proto", "grpc-http2", "json-store", "kv-store",
+      "responsibility-matrix",
     ]),
     /** Provenance: the committed real fixture under .ci/fixtures/assets/. */
     from: z.string(),
   }),
-  /** Which ported oracle produces the parse tree / state machine (the canary uses `pkt`). */
-  oracle: z.enum(["pkt", "dns", "x509", "jwt", "xform", "tls13", "dnsres", "oauth", "hdr", "oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim", "syslog", "oci", "saml"]),
+  /**
+   * Which ported oracle produces the parse tree / state machine (the canary uses `pkt`).
+   * `csa` is the MAP-mode label for the cited Cloud Security Alliance / AWS shared-responsibility
+   * matrix — not a byte parser but the committed authoritative key the `mapping_correct` verifier
+   * reads (the cited matrix IS the oracle for a conceptual MAP module; VISUAL-ENGINE-SPEC §1.4).
+   */
+  oracle: z.enum(["pkt", "dns", "x509", "jwt", "xform", "tls13", "dnsres", "oauth", "hdr", "oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim", "syslog", "oci", "saml", "csa"]),
   /** Surface mode (PEEL fully implemented for the canary; TRACE/MAP stubbed for later waves). */
   mode: z.enum(["peel", "trace", "map", "build-and-break", "diff-the-trace"]),
 }).strict();

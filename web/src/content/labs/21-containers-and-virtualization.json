@@ -1,0 +1,456 @@
+{
+  "spec": {
+    "id": "lab-21",
+    "module": "21-containers-and-virtualization",
+    "title": "Peel the image, read the control baked in",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-13",
+    "engine": "visual",
+    "claim_thread": "no-secrets-in-the-image",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m21",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "An image is the unit a control claim is made about — \"containers don't run as root,\" \"no secrets\nin the image,\" \"only the service port is exposed.\" You are handed two REAL OCI images: a clean\nstock alpine and a misconfigured twin built by a real `docker build`, and asked to read each claim\nstraight off the image's manifest and config, find the secret baked into a layer, and click the\nexact field where the twin contradicts its claim.\n\nThis surface is the image, rendered as nested selectable regions: the config (User, ExposedPorts,\nEnv, Cmd) and the manifest's ordered layer descriptors, each with its real sha256 digest. Every\nvalue you reveal is the OCI reader's real decode of the real blob — the same field `docker inspect`\nshows, and the layer's secret is read straight from the real (decompressed) tar by the same pattern\nset a secret scanner uses. Nothing is invented; the image is the answer key. Start on the broken\ntwin.\n",
+    "visual": {
+      "artifact": {
+        "kind": "oci-manifest",
+        "from": "assets/containers/oci-images.json"
+      },
+      "oracle": "oci",
+      "mode": "diff-the-trace"
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "On the misconfigured twin, descend into the `image config` and select the `User` field. Read\nthe uid the container runs as. This field decides the \"containers don't run as root\" claim (CM-6).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "config.user"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "config.user",
+            "value": "ROOT (uid 0)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The runtime config says who the process runs as — find the User field inside the config region."
+          },
+          {
+            "concept": "§4.2 — OCI config.User is the effective uid; uid 0 = root (CIS Docker 4.1 / CM-6)"
+          },
+          {
+            "reveal": "Select config → User; it reads root → ROOT (uid 0), the CM-6 finding"
+          }
+        ],
+        "explain": "`User: root` makes every process in the container uid 0 — a CIS Docker 4.1 / CM-6 finding. The\nreader read it straight off the real config the build produced; the hardened ideal is an explicit\nnon-root uid. (Note the honest subtlety: stock alpine has no `User` at all, which per the OCI\nruntime default ALSO means root — the twin just makes the dangerous default explicit.)\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "Still on the misconfigured twin, select the config's `ExposedPorts` field. Read which ports the\nimage declares it listens on. This field decides the \"only the service port is exposed\" claim (CM-7).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "config.exposed_ports"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "config.exposed_ports",
+            "value": "22/tcp, 8080/tcp"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The config lists every port the image advertises — find ExposedPorts."
+          },
+          {
+            "concept": "§4.2 — ExposedPorts is the declared listening surface; an extra port is a CM-7 finding"
+          },
+          {
+            "reveal": "Select config → ExposedPorts; it reads 22/tcp, 8080/tcp — SSH exposed alongside the app port"
+          }
+        ],
+        "explain": "The build `EXPOSE`d 22 (SSH) alongside the 8080 app port. Least functionality (CM-7 / CIS Docker\n5.7) says expose only what the service needs; an SSH port on an app image is the finding. The\nnumber came off the real config, not your guess.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "Open the `image manifest` and select the topmost layer descriptor (`layer1`). Read how many\nlayers this image has and the topmost layer's real sha256 digest — the provenance you cite.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "layer1"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "layer1",
+            "value": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "An image is an ordered stack of content-addressed layers — the manifest lists them as descriptors."
+          },
+          {
+            "concept": "§4.3 — manifest.layers[] is ordered; each descriptor is a sha256 digest you cite as provenance"
+          },
+          {
+            "reveal": "Select layer 1 (the topmost descriptor); its digest is sha256:48092d72… (178 bytes)"
+          }
+        ],
+        "explain": "The misconfigured twin has two layers; the topmost (`layer1`, sha256:48092d72…, 178 bytes) is the\none the build ADDED on top of the stock rootfs. A layer's digest is content-addressed — it is the\nprovenance you cite when you find something in it, which is exactly the next task.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Peel layer 1's tar and select the baked-secret region (`layer1.secret`). Report the secret's\nfilename and the layer digest that carries it. This is the \"no secrets in the image\" claim (IA-5).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "layer1.secret"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "layer1.secret",
+            "value": "/app-credentials.env"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A secret added in one layer survives even if a later layer \"removes\" it — peel the layer that added it."
+          },
+          {
+            "concept": "§4.4 — each layer is a content-addressed tar diff; the secret lives in the layer that ADDED it"
+          },
+          {
+            "reveal": "Select layer1.secret — the reader's tar walk found /app-credentials.env, cited by sha256:48092d72…"
+          }
+        ],
+        "explain": "The reader decompressed the real layer tar, and the secret-scanner pattern set tripped on a real\nAWS-style credential in `/app-credentials.env`. The secret glows in the layer that added it, cited\nby its digest — IA-5 / SC-28 / CIS Docker 4.10. A `RUN rm` in a later layer would not erase it.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          5,
+          1
+        ],
+        "instruction": "Move to the findings board. Map each of the three findings (runs-as-root, exposed ports, baked\nsecret) onto its CIS/NIST control zone, then place the VM and container cards onto the kernel\neach uses — to show which isolates more strongly and why.\n",
+        "verify": [
+          {
+            "check": "mapping_correct"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Each misconfiguration maps to a hardening control; isolation strength depends on whether you share a kernel."
+          },
+          {
+            "concept": "§4.5 — runs-as-root→CM-6, extra port→CM-7, baked secret→IA-5/SC-28; VM=own kernel, container=shared kernel"
+          },
+          {
+            "reveal": "runs-as-root→CM-6; exposed ports→CM-7; baked secret→IA-5/SC-28; VM→own host kernel; container→shared host kernel"
+          }
+        ],
+        "explain": "The findings the reader surfaced now carry framework refs (CIS Docker + NIST 800-190 + 800-53),\nand the VM-vs-container split is the why: a VM runs its own guest kernel, a container shares the\nhost's — so a container escape has a larger blast radius. The mapping is the cited key, the\nfindings are the real config.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          6
+        ],
+        "instruction": "You already read the twin's `ExposedPorts` (22/tcp, 8080/tcp) in t2 — that is the broken half of\nthe finding. Now switch to the CLEAN panel and select its `ExposedPorts` to read the hardened\nbaseline the twin violates. The diff is real only once you have BOTH values: the same field, the\nclean baseline AND the twin's value, the control, and the framework ref are your evidence finding.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "config.exposed_ports"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "config.exposed_ports",
+            "value": "none"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Both images are real and nearly identical — read the SAME field on the clean panel to get the baseline the twin diverges from."
+          },
+          {
+            "concept": "§4.6 — a control is a predicate over the config; the diff is clean-baseline vs twin at ExposedPorts (CM-7)"
+          },
+          {
+            "reveal": "Switch to the clean panel, select config → ExposedPorts — it reads none, the baseline the twin's 22/tcp, 8080/tcp violates"
+          }
+        ],
+        "explain": "The discriminating field is the reader's computed divergence over two real images, not your\nopinion: the clean image exposes nothing (none), the twin exposes 22 + 8080 — CM-7 / CIS Docker\n5.7. Reading BOTH halves is what makes it a diff, not a single observation: your finding names the\nfield (ExposedPorts), both values (none vs 22/tcp, 8080/tcp), the control (CM-7), and the ref — and\nanyone can re-derive it by `docker save`-ing the same tags.\n"
+      },
+      {
+        "id": "t7",
+        "type": "reflection",
+        "objective": [
+          1
+        ],
+        "instruction": "In 4–6 sentences, for a non-technical colleague: explain the difference between a VM (its own\nguest kernel, hardware-virtualized) and a container (shares the host kernel, isolated by\nnamespaces and cgroups), and why that difference changes the blast radius of a compromise. Then\nexplain why a secret baked into an image layer survives even after a later layer \"deletes\" the\nfile. Use the §3 shipping-container model, not jargon.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 model: a VM ships its own engine room; containers share the ship's engine but get their own locked cabin."
+          },
+          {
+            "concept": "§3 — The Mental Model"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z",
+  "visual": {
+    "mode": "diff-the-trace",
+    "oracle": "oci",
+    "panels": [
+      {
+        "id": "clean",
+        "label": "Image · clean: stock alpine:latest",
+        "source": {
+          "oracle": "oci",
+          "manifest": {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {
+              "mediaType": "application/vnd.oci.image.config.v1+json",
+              "digest": "sha256:92385f4b6d5d9fd8cf8b90b6dad8e526713035b6be25862d98807ea6421c534a",
+              "size": 627
+            },
+            "layers": [
+              {
+                "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+                "digest": "sha256:c05efffaed614b5ff4e3b9a80136e7c0eed0b47f434802c81baf254c0defca91",
+                "size": 4202330
+              }
+            ],
+            "annotations": {
+              "com.docker.official-images.bashbrew.arch": "arm64v8",
+              "org.opencontainers.image.base.name": "scratch",
+              "org.opencontainers.image.created": "2026-06-09T20:11:00Z",
+              "org.opencontainers.image.revision": "a60f0dddfb2941ccbac3107563aae1f1956392a9",
+              "org.opencontainers.image.source": "https://github.com/alpinelinux/docker-alpine.git#a60f0dddfb2941ccbac3107563aae1f1956392a9:aarch64",
+              "org.opencontainers.image.url": "https://hub.docker.com/_/alpine",
+              "org.opencontainers.image.version": "3.24.0"
+            }
+          },
+          "config": {
+            "architecture": "arm64",
+            "config": {
+              "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+              ],
+              "Cmd": [
+                "/bin/sh"
+              ],
+              "WorkingDir": "/"
+            },
+            "created": "2026-06-09T20:11:09.495714431Z",
+            "history": [
+              {
+                "created": "2026-06-09T20:11:09.495714431Z",
+                "created_by": "ADD alpine-minirootfs-3.24.0-aarch64.tar.gz / # buildkit",
+                "comment": "buildkit.dockerfile.v0"
+              },
+              {
+                "created": "2026-06-09T20:11:09.495714431Z",
+                "created_by": "CMD [\"/bin/sh\"]",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              }
+            ],
+            "os": "linux",
+            "rootfs": {
+              "type": "layers",
+              "diff_ids": [
+                "sha256:375591c23c8de111a75382d674cf6688f56adecb5e3018d29ada57c10135db5e"
+              ]
+            },
+            "variant": "v8"
+          }
+        }
+      },
+      {
+        "id": "misconfigured",
+        "label": "Image · broken: docker build twin (root, ports, secret)",
+        "source": {
+          "oracle": "oci",
+          "manifest": {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": {
+              "mediaType": "application/vnd.oci.image.config.v1+json",
+              "digest": "sha256:2cd49630dfb8bfb6d69c6235612f9e55f7d8903815304725e5ef08ad0f25ff22",
+              "size": 1656
+            },
+            "layers": [
+              {
+                "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+                "digest": "sha256:c05efffaed614b5ff4e3b9a80136e7c0eed0b47f434802c81baf254c0defca91",
+                "size": 4202330
+              },
+              {
+                "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+                "digest": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74",
+                "size": 178
+              }
+            ]
+          },
+          "config": {
+            "architecture": "arm64",
+            "config": {
+              "User": "root",
+              "ExposedPorts": {
+                "22/tcp": {},
+                "8080/tcp": {}
+              },
+              "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "APP_ENV=production",
+                "DB_HOST=db.internal"
+              ],
+              "Cmd": [
+                "/bin/sh",
+                "-c",
+                "sleep infinity"
+              ],
+              "WorkingDir": "/",
+              "ArgsEscaped": true
+            },
+            "created": "2026-06-13T15:36:32.080594815-04:00",
+            "history": [
+              {
+                "created": "2026-06-09T20:11:09.495714431Z",
+                "created_by": "ADD alpine-minirootfs-3.24.0-aarch64.tar.gz / # buildkit",
+                "comment": "buildkit.dockerfile.v0"
+              },
+              {
+                "created": "2026-06-09T20:11:09.495714431Z",
+                "created_by": "CMD [\"/bin/sh\"]",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              },
+              {
+                "created": "2026-06-13T15:36:32.080594815-04:00",
+                "created_by": "RUN /bin/sh -c echo \"AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\" > /app-credentials.env # buildkit",
+                "comment": "buildkit.dockerfile.v0"
+              },
+              {
+                "created": "2026-06-13T15:36:32.080594815-04:00",
+                "created_by": "ENV APP_ENV=production DB_HOST=db.internal",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              },
+              {
+                "created": "2026-06-13T15:36:32.080594815-04:00",
+                "created_by": "EXPOSE [22/tcp 8080/tcp]",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              },
+              {
+                "created": "2026-06-13T15:36:32.080594815-04:00",
+                "created_by": "USER root",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              },
+              {
+                "created": "2026-06-13T15:36:32.080594815-04:00",
+                "created_by": "CMD [\"/bin/sh\" \"-c\" \"sleep infinity\"]",
+                "comment": "buildkit.dockerfile.v0",
+                "empty_layer": true
+              }
+            ],
+            "os": "linux",
+            "rootfs": {
+              "type": "layers",
+              "diff_ids": [
+                "sha256:375591c23c8de111a75382d674cf6688f56adecb5e3018d29ada57c10135db5e",
+                "sha256:ecc7283282b9ad4279e85e48ab90bc649c8dfbe3ac4df4e2be93ab786de725cd"
+              ]
+            }
+          },
+          "layerTarHex": "6170702d63726564656e7469616c732e656e76000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000303030303634340030303030303030003030303030303000303030303030303030373700313532313333333035303000303133303235002030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007573746172003030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003030303030303000303030303030300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004157535f5345435245545f4143434553535f4b45593d774a616c725855746e46454d492f4b374d44454e472f62507852666943594558414d504c454b45590a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "secretLayerIndex": 1
+        }
+      }
+    ],
+    "map": {
+      "zones": [
+        "CM-6 (run as non-root)",
+        "CM-7 (least functionality)",
+        "IA-5 / SC-28 (secrets)",
+        "own host kernel",
+        "shared host kernel"
+      ],
+      "items": [
+        {
+          "id": "finding-runs-as-root",
+          "label": "config.User = root (uid 0)",
+          "keyZone": "CM-6 (run as non-root)",
+          "keyRef": "CIS Docker 4.1 / NIST 800-190 §4.4.2 / NIST 800-53 CM-6"
+        },
+        {
+          "id": "finding-exposed-ports",
+          "label": "ExposedPorts 22/tcp + 8080/tcp",
+          "keyZone": "CM-7 (least functionality)",
+          "keyRef": "CIS Docker 5.7 / NIST 800-53 CM-7"
+        },
+        {
+          "id": "finding-baked-secret",
+          "label": "layer 1 bakes /app-credentials.env",
+          "keyZone": "IA-5 / SC-28 (secrets)",
+          "keyRef": "CIS Docker 4.10 / NIST 800-53 IA-5, SC-28"
+        },
+        {
+          "id": "vm-card",
+          "label": "Virtual machine (hardware-virtualized guest)",
+          "keyZone": "own host kernel",
+          "keyRef": "NIST 800-190 §2.1 (VM = own guest kernel; container = shared host kernel)"
+        },
+        {
+          "id": "container-card",
+          "label": "Container (namespace/cgroup isolation)",
+          "keyZone": "shared host kernel",
+          "keyRef": "NIST 800-190 §2.1 / §2.3 (containers share the host kernel — a larger blast radius)"
+        }
+      ]
+    }
+  }
+}

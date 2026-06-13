@@ -1,0 +1,4 @@
+{"anti_for": "t3", "fails_check": 1, "reason": "encoding-is-protection cheat: selects the correct jwt.header segment (region_labeled_correctly verify[0] passes) but claims it is opaque/encrypted instead of decoding it — decoded_artifact_matches (verify[1]) catches the wrong decode against the real base64url transform. The whole point: a JWT header decodes with NO key. Tasks t1-t2 complete correctly so the cheat reaches t3 (sticky near-miss)."}
+{"input": {"panel": "scramble", "select": "sha256-hello", "layer": "HASH", "read": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"}}
+{"input": {"panel": "scramble", "select": "base64-hello", "layer": "ENCODE", "decode": "aGVsbG8="}}
+{"input": {"panel": "jwt", "select": "jwt.header", "decode": "opaque-encrypted-blob"}}

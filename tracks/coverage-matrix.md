@@ -22,6 +22,23 @@ shared Role Capstone showcase.
 | 13 — Continuous Controls Monitoring | D | W | W | **D** | D |
 | 14 — Product, ownership, build-vs-buy + risk quantification | D | A | **D** | W | **D** |
 | 15 — Capstone: ship one control, fully engineered | D | D | D | D | D |
+| **IT-foundations band (16–25)** — *the substrate every control claim rides on* | | | | | |
+| 16 — IT networking fundamentals (on the wire) | W | W | W | W | **D** |
+| 17 — Databases relational & NoSQL (truth at rest) | W | W | W | D | W |
+| 18 — Web application architecture (the tiers) | W | W | W | W | **D** |
+| 19 — IT API paradigms (REST/SOAP/GraphQL/gRPC) | W | W | W | W | **D** |
+| 20 — Cloud shared responsibility (the boundary) | W | **D** | W | D | **D** |
+| 21 — Containers & virtualization (peel the image) | W | W | W | W | **D** |
+| 22 — Applied cryptography & PKI (read the cert) | W | W | W | W | **D** |
+| 23 — Identity, AuthN/AuthZ protocols (the valet key) | W | W | W | W | **D** |
+| 24 — How the internet works (the request lifecycle) | W | W | W | W | **D** |
+| 25 — Logging, telemetry & observability (the proof) | D | W | W | **D** | D |
+
+**IT-foundations band (16–25):** the technical substrate the GRC canon sits on — *where a control
+claim's truth physically lives, travels, and how to read it*. Shared by all tracks at Working depth;
+the Customer Trust & Assurance track goes Deep on the wire/web/API/crypto/identity modules (the
+auditor-facing evidence surface). Placement-gated like Tier 1: demonstrated competence skips the
+module. Every module is framed by its loop question, never "learn this stack."
 
 **Fleet split (03 vs 04):** each learner goes Deep on the org's dominant endpoint platform and
 takes the other at Awareness only. Nobody does both deeply unless their role demands it.

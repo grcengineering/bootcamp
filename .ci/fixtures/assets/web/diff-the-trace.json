@@ -1,0 +1,63 @@
+{
+  "id": "web-diff-the-trace",
+  "kind": "http-header-pairs",
+  "description": "Real HTTP-header artifacts for the web-application-architecture module: a request tracing through the three tiers, the session/token state, and four clean/broken pairs for the EVALUATE-stage Diff-the-Trace assessment. Each header value is parsed by the `hdr` oracle (RFC 7239 Forwarded / RFC 6265 Set-Cookie / RFC 9111 Cache-Control) or the `jwt` oracle (RFC 7519); the discriminating field in each pair is the oracle's computed divergence over the real header bytes, never an answer key.",
+  "provenance": {
+    "authored_with": "RFC literal example values + a locally-minted real HS256 JWT",
+    "captured_at": "2026-06-13",
+    "match": "authored-with-citation (RFC literals) + computed (the JWT signature + the digest divergence)",
+    "cited": [
+      "RFC 7239 §4 — Forwarded for=/by=/proto= forwarded-element (the literal example shape)",
+      "RFC 6265 §3.1 / §4.1.2 — Set-Cookie SID=31d4d96e407aad42; Path=/; Secure; HttpOnly (the literal example) and its Secure/HttpOnly-stripped near-twin",
+      "RFC 9111 §5.2 / §5.1 — Cache-Control private, no-store (the sensitive-response control truth) vs public, max-age=300 + Age:142 (a cache served it)",
+      "RFC 7519 (JWT) / RFC 8725 §2.1 (alg:none) — the stateless Bearer token, minted this session with HMAC-SHA-256 over header.payload"
+    ],
+    "honesty_note": "Every header is a real RFC-literal value the `hdr` oracle parses per its RFC grammar; the JWT is a real three-segment token (HS256-signed; the alg:none twin is a real RFC 8725 §2.1 unprotected-token instance). The oracle's parse tree IS the answer key — the divergence in each pair (proto= present vs absent, Secure/HttpOnly present vs stripped, no-store vs a cached HIT) is the parser's computed difference, not a stored verdict."
+  },
+  "tokens": {
+    "jwt_stateless": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguYWNtZS5leGFtcGxlIiwic3ViIjoidS04ODQyIiwiYXVkIjoiYWNtZS1hcHAiLCJleHAiOjE3ODIwMDAwMDAsImlhdCI6MTc4MTk5NjQwMH0.CyXRn6yOrrzwa-1Ih9vUC_Zv8q9jgjqbJvRZUrBVnAs",
+    "jwt_alg_none": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2F1dGguYWNtZS5leGFtcGxlIiwic3ViIjoidS04ODQyIiwiYXVkIjoiYWNtZS1hcHAiLCJleHAiOjE3ODIwMDAwMDAsImlhdCI6MTc4MTk5NjQwMH0."
+  },
+  "pairs": [
+    {
+      "id": "pair-a-provenance",
+      "oracle": "forwarded",
+      "tier": "edge -> app",
+      "control_claim": "the app reads the CLIENT's protocol after upstream TLS termination (AU-3 provenance; SC-8 only if proto=https)",
+      "framework_ref": "AU-3, SC-8",
+      "discriminating_node": "fwd.el0.proto",
+      "clean": { "label": "Forwarded carries proto=https (TLS provenance recovered)", "header": "for=192.0.2.43;proto=https;by=203.0.113.43" },
+      "broken": { "label": "Forwarded with no proto= (TLS truth unverifiable at the app)", "header": "for=192.0.2.60" }
+    },
+    {
+      "id": "pair-b-session",
+      "oracle": "set-cookie",
+      "tier": "application",
+      "control_claim": "the session cookie is HTTPS-only and out of JavaScript's reach (SC-8 / CC6.7 / SC-23 session protection)",
+      "framework_ref": "SC-8, SC-23",
+      "discriminating_node": "cookie.safety",
+      "clean": { "label": "Set-Cookie with Secure + HttpOnly", "header": "SID=31d4d96e407aad42; Path=/; Secure; HttpOnly" },
+      "broken": { "label": "Set-Cookie missing Secure + HttpOnly (the session gap)", "header": "SID=31d4d96e407aad42; Path=/" }
+    },
+    {
+      "id": "pair-c-caching",
+      "oracle": "cache-control",
+      "tier": "edge cache",
+      "control_claim": "the /account response is never cached (SC-28-adjacent confidentiality at the edge; RFC 9111 private, no-store)",
+      "framework_ref": "SC-8, SC-28",
+      "discriminating_node": "cache.age",
+      "clean": { "label": "Cache-Control: private, no-store on /account", "header": "private, no-store" },
+      "broken": { "label": "public, max-age=300 + a cache served it (Age: 142)", "header": "public, max-age=300", "age": "142" }
+    },
+    {
+      "id": "pair-d-token",
+      "oracle": "jwt",
+      "tier": "application",
+      "control_claim": "the stateless Bearer token is cryptographically signed (IA-2 / CC6.1; an alg:none token is unprotected)",
+      "framework_ref": "IA-2, AC-3",
+      "discriminating_node": "jwt.header.alg",
+      "clean": { "label": "HS256-signed JWT", "token_ref": "jwt_stateless" },
+      "broken": { "label": "alg:none JWT (RFC 8725 §2.1 unprotected token)", "token_ref": "jwt_alg_none" }
+    }
+  ]
+}

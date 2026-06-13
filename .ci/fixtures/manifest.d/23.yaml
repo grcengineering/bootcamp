@@ -1,0 +1,114 @@
+# manifest.d/23.yaml — identity-authn-authz-protocols (module 23) fidelity-manifest fragment.
+#
+# Module 23 is a pure-VISUAL module (engine: visual, seed `m23` = kind: visual). It teaches no
+# replayable SHELL command; its taught "command surface" is the set of real identity artifacts the
+# `jwt` (RFC 7519 token decode), `saml` (SAML 2.0 assertion field reader), and `oauth` (RFC 6749 /
+# OIDC authorization-code state machine) oracles parse/run over real bytes — no shell, no PATH tools.
+#
+# Honesty doctrine: the parser / state-machine over each REAL artifact IS the oracle; there is no
+# authored answer key. The JWT (and its alg:none / past-exp tamper twin) is a real RFC 7519 token,
+# computed-verified against a base64url decode in web/tests/crypto-fidelity.test.ts. The SAML
+# assertion (and its expired-Conditions twin) is the OASIS example, authored-with-citation; the
+# OAuth/OIDC dance is authored from RFC 6749 / OIDC Core with citation (the act NAMES and error
+# STRINGS are the spec's literal values), the sim being the consequence engine. The assertion-field
+# read and the dance order/errors are checked against the cited values in
+# web/tests/identity-protocol.test.ts. Every fixture path is a REAL committed artifact under
+# .ci/fixtures/assets/crypto/ (jwt-tokens.json) and .ci/fixtures/assets/identity/. See those dirs'
+# README.md files for full provenance.
+seeds:
+  m23:
+    kind: visual                       # real identity bytes under .ci/fixtures/assets/{crypto,identity}/*
+
+entries:
+  # --- PEEL the JWT — a signed claim, not a secret (objectives O1/O2) -------------------------------
+  - id: m23-jwt-claims-decode
+    module: "23"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "jwt decode eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdyY2Jvb3RjYW1wLmV4YW1wbGUiLCJzdWIiOiJ1c2VyLTdmM2EiLCJhdWQiOiJncmMtYm9vdGNhbXAtbGFiIiwiaWF0IjoxNzE4MjAwMDAwLCJleHAiOjE3MTgyMDM2MDAsIm5hbWUiOiJBdmVyeSBMaW4iLCJyb2xlIjoiYXVkaXRvciJ9.J9SkdtAQCO-2M2--8pdgsuRJMx12RzL_ZbcZKxBcJZU"
+    citation: >-
+      RFC 7519 (JWT) / RFC 7515 §4 (JWS header) / RFC 4648 §5 (base64url). Artifact:
+      .ci/fixtures/assets/crypto/jwt-tokens.json — a real three-segment HS256 token. The header
+      decodes to {"alg":"HS256","typ":"JWT"} and the payload to its reserved claims (iss=
+      https://accounts.grcbootcamp.example, exp=1718203600, iat=1718200000, sub=user-7f3a) with NO
+      key — proof that a JWT is a signed claim, not an encrypted secret. Decoded by the `jwt` oracle;
+      the base64url decode over the real bytes IS the answer key (match: computed), byte-verified in
+      web/tests/crypto-fidelity.test.ts.
+    notes: >-
+      The reserved claims are plaintext base64url; an auditor reads iss/exp the same way a holder of
+      a stolen token would, which is why short exp windows and issuer pinning are the controls.
+      Module 23 §4.1/§4.2.
+
+  # --- The alg:none tamper twin — the broken-authentication leg (objective O5) ----------------------
+  - id: m23-jwt-algnone-twin
+    module: "23"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "jwt decode eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdyY2Jvb3RjYW1wLmV4YW1wbGUiLCJzdWIiOiJ1c2VyLTdmM2EiLCJhdWQiOiJncmMtYm9vdGNhbXAtbGFiIiwiaWF0IjoxNzE4MjAwMDAwLCJleHAiOjE3MTgyMDM2MDAsIm5hbWUiOiJBdmVyeSBMaW4iLCJyb2xlIjoiYXVkaXRvciJ9."
+    citation: >-
+      RFC 8725 §2.1 (JWT BCP — the unprotected-token / alg:none attack), RFC 7519. Artifact:
+      .ci/fixtures/assets/crypto/jwt-tokens.json (tokens.algnone_twin) — a real tampered instance:
+      the header alg is swapped to "none" and the signature segment is emptied. A verifier that honors
+      alg:none accepts an unsigned, forgeable token (OWASP API2; IA-2 / AC-3 / CC6.1). Decoded by the
+      `jwt` oracle — header.alg reads "none" over the real tampered bytes (match: computed).
+    notes: >-
+      The break is one field — header.alg = none — and the same base64url decode reveals it. The exp
+      (1718203600) is also genuinely in the past, so this twin doubles as a real expired-token leg.
+      Module 23 §4.5/§5.4.
+
+  # --- TRACE the OAuth2 / OIDC valet-key dance (objective O3) ---------------------------------------
+  - id: m23-oauth-oidc-dance
+    module: "23"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "oauth dance --grant authorization_code   # authorization_request -> code -> token_request -> token_response -> resource_request(Bearer) -> resource_response"
+    citation: >-
+      RFC 6749 §4.1 (authorization-code grant), §4.1.2.1 + §5.2 (error codes incl. invalid_request),
+      RFC 6750 §3.1 (Bearer / 401), OpenID Connect Core 1.0 §3.1 (authentication request / id_token).
+      Artifact: .ci/fixtures/assets/identity/oauth-oidc-dance.json. The act NAMES and error STRINGS are
+      the spec's literal values; the example code 'SplxlOBeZQQYbYS6WxSbIA' and access_token
+      '2YotnFZFEjr1zCsicMWpAA' are RFC 6749 §4.1.2/§5.1's own examples. The `oauth` oracle runs the
+      state machine: the canonical order reaches resource access; a resource call before the token
+      exchange raises the real invalid_request (no valet key was issued) — the consequence is computed,
+      not authored. Checked in web/tests/identity-protocol.test.ts.
+    notes: >-
+      The valet-key separation made spatial: the credential goes to the authorization server once, a
+      short-lived scoped token rides every later call. Module 23 §4.3/§5.3.
+
+  # --- PEEL the SAML assertion — who / how / until-when (objective O4) ------------------------------
+  - id: m23-saml-assertion-read
+    module: "23"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "saml read assertion.xml   # <AuthnContextClassRef> = PasswordProtectedTransport; <Conditions NotOnOrAfter> = 2030-01-01T00:00:00Z"
+    citation: >-
+      OASIS saml-core-2.0-os §2.3 (Assertion), §2.5.1 (Conditions; §2.5.1.2 NotOnOrAfter is EXCLUSIVE),
+      §2.7.2 (AuthnStatement / AuthnContextClassRef). Artifact:
+      .ci/fixtures/assets/identity/saml-assertion.xml — the OASIS example assertion. SCOPE-BOUNDED
+      HONESTLY: the `saml` oracle reads the fields (Issuer, Subject/NameID, Conditions
+      NotBefore/NotOnOrAfter, AudienceRestriction, AuthnStatement AuthnInstant, AuthnContextClassRef);
+      it does NOT validate XML-DSig. The parse tree over the real XML is the answer key.
+    notes: >-
+      AuthnContextClassRef is the SP's evidence for the authentication-strength control;
+      PasswordProtectedTransport is password-over-TLS, not MFA. Module 23 §4.4.
+
+  # --- Diff-the-Trace — the expired-Conditions tamper twin (objectives O5/O6) -----------------------
+  - id: m23-saml-assertion-expired-twin
+    module: "23"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "saml read assertion-expired.xml   # <Conditions NotOnOrAfter> = 2024-01-02T00:00:00Z (PAST) -> now >= NotOnOrAfter -> reject"
+    citation: >-
+      OASIS saml-core-2.0-os §2.5.1.2 (NotOnOrAfter is exclusive: valid only while now < NotOnOrAfter).
+      Artifact: .ci/fixtures/assets/identity/saml-assertion-expired.xml — byte-identical to
+      saml-assertion.xml EXCEPT the <Conditions> (and matching SubjectConfirmationData) NotOnOrAfter is
+      a PAST instant (2024-01-02T00:00:00Z). The staleness is evaluateConditions()'s computed verdict
+      (now >= NotOnOrAfter) against a supplied "now," never an authored answer (AC-3 / IA-2 / CC6.1).
+    notes: >-
+      The control claim reduces to a predicate over one timestamp; the clean (2030) and tampered
+      (2024) twins differ in exactly one field, and the reject verdict is computed. Module 23 §4.6/§5.4.

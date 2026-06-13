@@ -1,0 +1,190 @@
+id: lab-21
+module: 21-containers-and-virtualization
+title: Peel the image, read the control baked in
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: no-secrets-in-the-image
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m21
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifacts the `oci` oracle parses: two committed OCI images. The clean twin is stock
+# alpine:latest off Docker Hub; the misconfigured twin is a real `docker build` over it (`docker
+# save` + the recorded Dockerfile) that ADDS the control-truth this module diagnoses — User root,
+# ExposedPorts 22 + 8080, an expanded Env, and a SECOND layer whose tar bakes in a test AWS credential.
+# The fixture wires both images plus the findings→controls MAP key. Oracle `oci` = the ported OCI
+# image reader (manifest + config + layer-tar walk) over the real blobs; the parse tree IS the answer
+# key, and the content-addressable digest chain (oci-fidelity.test.ts) proves the blobs are unmodified.
+visual:
+  artifact:
+    kind: oci-manifest
+    from: assets/containers/oci-images.json
+  oracle: oci
+  mode: diff-the-trace
+
+intro: |
+  An image is the unit a control claim is made about — "containers don't run as root," "no secrets
+  in the image," "only the service port is exposed." You are handed two REAL OCI images: a clean
+  stock alpine and a misconfigured twin built by a real `docker build`, and asked to read each claim
+  straight off the image's manifest and config, find the secret baked into a layer, and click the
+  exact field where the twin contradicts its claim.
+
+  This surface is the image, rendered as nested selectable regions: the config (User, ExposedPorts,
+  Env, Cmd) and the manifest's ordered layer descriptors, each with its real sha256 digest. Every
+  value you reveal is the OCI reader's real decode of the real blob — the same field `docker inspect`
+  shows, and the layer's secret is read straight from the real (decompressed) tar by the same pattern
+  set a secret scanner uses. Nothing is invented; the image is the answer key. Start on the broken
+  twin.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [2, 4]
+    instruction: |
+      On the misconfigured twin, descend into the `image config` and select the `User` field. Read
+      the uid the container runs as. This field decides the "containers don't run as root" claim (CM-6).
+    verify:
+      - check: region_labeled_correctly
+        node_id: config.user
+      - check: field_value_is
+        node_id: config.user
+        value: "ROOT (uid 0)"
+    hints:
+      - nudge: The runtime config says who the process runs as — find the User field inside the config region.
+      - concept: "§4.2 — OCI config.User is the effective uid; uid 0 = root (CIS Docker 4.1 / CM-6)"
+      - reveal: "Select config → User; it reads root → ROOT (uid 0), the CM-6 finding"
+    explain: |
+      `User: root` makes every process in the container uid 0 — a CIS Docker 4.1 / CM-6 finding. The
+      reader read it straight off the real config the build produced; the hardened ideal is an explicit
+      non-root uid. (Note the honest subtlety: stock alpine has no `User` at all, which per the OCI
+      runtime default ALSO means root — the twin just makes the dangerous default explicit.)
+
+  - id: t2
+    type: action
+    objective: [2, 4]
+    instruction: |
+      Still on the misconfigured twin, select the config's `ExposedPorts` field. Read which ports the
+      image declares it listens on. This field decides the "only the service port is exposed" claim (CM-7).
+    verify:
+      - check: region_labeled_correctly
+        node_id: config.exposed_ports
+      - check: field_value_is
+        node_id: config.exposed_ports
+        value: "22/tcp, 8080/tcp"
+    hints:
+      - nudge: The config lists every port the image advertises — find ExposedPorts.
+      - concept: "§4.2 — ExposedPorts is the declared listening surface; an extra port is a CM-7 finding"
+      - reveal: "Select config → ExposedPorts; it reads 22/tcp, 8080/tcp — SSH exposed alongside the app port"
+    explain: |
+      The build `EXPOSE`d 22 (SSH) alongside the 8080 app port. Least functionality (CM-7 / CIS Docker
+      5.7) says expose only what the service needs; an SSH port on an app image is the finding. The
+      number came off the real config, not your guess.
+
+  - id: t3
+    type: action
+    objective: [2]
+    instruction: |
+      Open the `image manifest` and select the topmost layer descriptor (`layer1`). Read how many
+      layers this image has and the topmost layer's real sha256 digest — the provenance you cite.
+    verify:
+      - check: region_labeled_correctly
+        node_id: layer1
+      - check: field_value_is
+        node_id: layer1
+        value: "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74"
+    hints:
+      - nudge: An image is an ordered stack of content-addressed layers — the manifest lists them as descriptors.
+      - concept: "§4.3 — manifest.layers[] is ordered; each descriptor is a sha256 digest you cite as provenance"
+      - reveal: "Select layer 1 (the topmost descriptor); its digest is sha256:48092d72… (178 bytes)"
+    explain: |
+      The misconfigured twin has two layers; the topmost (`layer1`, sha256:48092d72…, 178 bytes) is the
+      one the build ADDED on top of the stock rootfs. A layer's digest is content-addressed — it is the
+      provenance you cite when you find something in it, which is exactly the next task.
+
+  - id: t4
+    type: action
+    objective: [3]
+    instruction: |
+      Peel layer 1's tar and select the baked-secret region (`layer1.secret`). Report the secret's
+      filename and the layer digest that carries it. This is the "no secrets in the image" claim (IA-5).
+    verify:
+      - check: region_labeled_correctly
+        node_id: layer1.secret
+      - check: field_value_is
+        node_id: layer1.secret
+        value: "/app-credentials.env"
+    hints:
+      - nudge: A secret added in one layer survives even if a later layer "removes" it — peel the layer that added it.
+      - concept: "§4.4 — each layer is a content-addressed tar diff; the secret lives in the layer that ADDED it"
+      - reveal: "Select layer1.secret — the reader's tar walk found /app-credentials.env, cited by sha256:48092d72…"
+    explain: |
+      The reader decompressed the real layer tar, and the secret-scanner pattern set tripped on a real
+      AWS-style credential in `/app-credentials.env`. The secret glows in the layer that added it, cited
+      by its digest — IA-5 / SC-28 / CIS Docker 4.10. A `RUN rm` in a later layer would not erase it.
+
+  - id: t5
+    type: action
+    objective: [5, 1]
+    instruction: |
+      Move to the findings board. Map each of the three findings (runs-as-root, exposed ports, baked
+      secret) onto its CIS/NIST control zone, then place the VM and container cards onto the kernel
+      each uses — to show which isolates more strongly and why.
+    verify:
+      - check: mapping_correct
+    hints:
+      - nudge: Each misconfiguration maps to a hardening control; isolation strength depends on whether you share a kernel.
+      - concept: "§4.5 — runs-as-root→CM-6, extra port→CM-7, baked secret→IA-5/SC-28; VM=own kernel, container=shared kernel"
+      - reveal: "runs-as-root→CM-6; exposed ports→CM-7; baked secret→IA-5/SC-28; VM→own host kernel; container→shared host kernel"
+    explain: |
+      The findings the reader surfaced now carry framework refs (CIS Docker + NIST 800-190 + 800-53),
+      and the VM-vs-container split is the why: a VM runs its own guest kernel, a container shares the
+      host's — so a container escape has a larger blast radius. The mapping is the cited key, the
+      findings are the real config.
+
+  - id: t6
+    type: action
+    objective: [6]
+    instruction: |
+      You already read the twin's `ExposedPorts` (22/tcp, 8080/tcp) in t2 — that is the broken half of
+      the finding. Now switch to the CLEAN panel and select its `ExposedPorts` to read the hardened
+      baseline the twin violates. The diff is real only once you have BOTH values: the same field, the
+      clean baseline AND the twin's value, the control, and the framework ref are your evidence finding.
+    verify:
+      - check: region_labeled_correctly
+        node_id: config.exposed_ports
+      - check: field_value_is
+        node_id: config.exposed_ports
+        value: "none"
+    hints:
+      - nudge: Both images are real and nearly identical — read the SAME field on the clean panel to get the baseline the twin diverges from.
+      - concept: "§4.6 — a control is a predicate over the config; the diff is clean-baseline vs twin at ExposedPorts (CM-7)"
+      - reveal: "Switch to the clean panel, select config → ExposedPorts — it reads none, the baseline the twin's 22/tcp, 8080/tcp violates"
+    explain: |
+      The discriminating field is the reader's computed divergence over two real images, not your
+      opinion: the clean image exposes nothing (none), the twin exposes 22 + 8080 — CM-7 / CIS Docker
+      5.7. Reading BOTH halves is what makes it a diff, not a single observation: your finding names the
+      field (ExposedPorts), both values (none vs 22/tcp, 8080/tcp), the control (CM-7), and the ref — and
+      anyone can re-derive it by `docker save`-ing the same tags.
+
+  - id: t7
+    type: reflection
+    objective: [1]
+    instruction: |
+      In 4–6 sentences, for a non-technical colleague: explain the difference between a VM (its own
+      guest kernel, hardware-virtualized) and a container (shares the host kernel, isolated by
+      namespaces and cgroups), and why that difference changes the blast radius of a compromise. Then
+      explain why a secret baked into an image layer survives even after a later layer "deletes" the
+      file. Use the §3 shipping-container model, not jargon.
+    hints:
+      - nudge: "The §3 model: a VM ships its own engine room; containers share the ship's engine but get their own locked cabin."
+      - concept: "§3 — The Mental Model"
+
+completion:
+  evidence_pack: true

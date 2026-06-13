@@ -1,0 +1,245 @@
+id: lab-23
+module: 23-identity-authn-authz-protocols
+title: The valet key — read who you are and what you may do
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: access-is-authenticated-and-authorized
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m23
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact set: a real three-segment RFC 7519 JWT (header.payload.signature) + its real
+# alg:none / past-exp tamper twin (jwt); the OASIS SAML 2.0 example assertion + its expired-Conditions
+# twin (saml); and the RFC 6749 §4.1 authorization-code + OIDC dance as orderable cards driving the
+# oauth-oidc-sim state machine. Every node is the ported parser / state-machine over the REAL
+# committed bytes — the base64url decode, the assertion-field read, and the accepted dance order are
+# the oracle, fidelity-checked in identity-protocol.test.ts + crypto-fidelity.test.ts. Oracle `jwt`
+# keys the heaviest leg (the signed-claim PEEL); the seed dispatches each panel to its own oracle and
+# the dance to the sim. Diff-the-Trace is the assessment shape: clean artifact vs real tamper twin.
+visual:
+  artifact:
+    kind: jwt
+    from: assets/crypto/jwt-tokens.json
+  oracle: jwt
+  mode: diff-the-trace
+
+intro: |
+  A control claims "access is authenticated and authorized." That truth does not live in a slide
+  deck — it lives in the bytes the protocols carry: the claims you can decode out of a JWT, the
+  short-lived token the OAuth dance hands you in place of a password, and the assertion fields a
+  SAML IdP signs and an SP must read before it trusts you. You are handed real identity artifacts
+  and asked to read each claim's truth directly off them, then diagnose the single field where a
+  real tampered twin contradicts its claim.
+
+  Every value you reveal is the real parser / state-machine over the real artifact — the same JSON a
+  base64url decode produces with no key, the same dance order a conformant authorization server
+  accepts, the same window an SP computes against "now." Nothing is invented; the decode is the
+  answer key. Start on the "JWT · header.payload.signature" panel.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 2]
+    instruction: |
+      On the "JWT" panel, select the header segment (`jwt.header`) and decode it live. It is
+      base64url — it decodes with NO key. State in your decode what algorithm the token claims, and
+      note that you just read a JWT field without any secret: a JWT is a SIGNED claim about identity,
+      not an encrypted secret.
+    verify:
+      - check: region_labeled_correctly
+        node_id: jwt.header
+      - check: decoded_artifact_matches
+        node_id: jwt.header
+        value: "HS256"
+    hints:
+      - nudge: You need no key to decode a JWT header — try it; the result is readable JSON.
+      - concept: "§4.1 — a JWT is header.payload.signature; the header is base64url, decodable with no key"
+      - reveal: "Decode jwt.header — it is {\"alg\":\"HS256\",\"typ\":\"JWT\"}, readable with no key"
+    explain: |
+      The header decodes to {"alg":"HS256","typ":"JWT"} with no key — proof that a JWT is signed for
+      integrity, not encrypted for confidentiality. Everything in the payload is readable by anyone
+      holding the token; the signature only stops tampering. "It looks scrambled" is not "it is
+      protected" — the base64url decode you just ran is the whole demonstration.
+
+  - id: t2
+    type: action
+    objective: [2]
+    instruction: |
+      Select the payload's expiry claim (`jwt.payload.exp`) and read its value. This reserved claim
+      (RFC 7519 §4.1.4) is the deadline past which the token is no longer valid — the field an
+      auditor reads to decide whether an access token is live or stale.
+    verify:
+      - check: region_labeled_correctly
+        node_id: jwt.payload.exp
+      - check: field_value_is
+        node_id: jwt.payload.exp
+        value: "1718203600"
+    hints:
+      - nudge: The reserved claims live in the payload; the expiry one is a NumericDate (seconds since epoch).
+      - concept: "§4.2 — reserved claims: exp (expiry), iat (issued-at), iss (issuer), aud, sub"
+      - reveal: "Select jwt.payload.exp; it reads 1718203600 (a Unix timestamp, RFC 7519 §4.1.4)"
+    explain: |
+      exp=1718203600 is the token's deadline as a NumericDate. Reading exp against "now" is how a
+      verifier decides a token is expired — and this same token's exp is genuinely in the past, which
+      is exactly the broken-auth leg you diagnose later. The claim is plaintext: you read the expiry
+      with no key, just as anyone holding the token can.
+
+  - id: t3
+    type: action
+    objective: [2]
+    instruction: |
+      Select the issuer claim (`jwt.payload.iss`) and read its value. This reserved claim names the
+      identity provider that minted the token — the party a verifier must trust (and pin) before it
+      honors any claim inside.
+    verify:
+      - check: region_labeled_correctly
+        node_id: jwt.payload.iss
+      - check: field_value_is
+        node_id: jwt.payload.iss
+        value: "accounts.grcbootcamp.example"
+    hints:
+      - nudge: The issuer is a reserved claim in the payload, a URI naming who minted the token.
+      - concept: "§4.2 — iss is the issuer; a verifier MUST check the token came from a trusted issuer"
+      - reveal: "Select jwt.payload.iss; it reads the issuer URI for accounts.grcbootcamp.example"
+    explain: |
+      iss names the authority behind every other claim. A verifier that does not pin the issuer will
+      honor a token minted by anyone — so iss is the claim that anchors trust. You located it the same
+      way you located exp: a base64url field read off the wire, no key required.
+
+  - id: t4
+    type: action
+    objective: [3]
+    instruction: |
+      Switch to the OAuth2 / OIDC dance builder and order the message cards into the authorization-code
+      + OIDC sequence, routing each between user-agent, client, authorization server, and resource
+      server. The dance completes only when the client trades a one-time code for a short-lived token
+      and the resource call rides that token — the sim runs the real RFC 6749 state machine.
+    verify:
+      - check: sequence_matches
+        canonical_ref: oauth-authz-code
+        check_routing: true
+    hints:
+      - nudge: The user proves identity to the IdP, not the app; the app gets a code, then trades it for a token.
+      - concept: "§4.3 — the valet key: authorization_request -> code -> token exchange -> resource call with Bearer"
+      - reveal: "Order: authorization_request, authorization_response, token_request, token_response, resource_request, resource_response"
+    explain: |
+      The order is the valet-key separation made literal: the long-lived credential goes to the
+      authorization server ONCE, and a short-lived scoped token rides every subsequent resource call.
+      The sim reaching its end-state is the consequence, not a stored "correct"; calling the resource
+      before the token exchange raises the real invalid_request, because no valet key was ever issued.
+
+  - id: t5
+    type: action
+    objective: [4]
+    instruction: |
+      Switch to the "SAML · assertion (clean)" panel and select the AuthnContext class reference
+      (`saml.authn.contextclassref`). Read its value — this is HOW the IdP says the user authenticated,
+      the field a control like "MFA was enforced at login" actually lives in.
+    verify:
+      - check: region_labeled_correctly
+        node_id: saml.authn.contextclassref
+      - check: field_value_is
+        node_id: saml.authn.contextclassref
+        value: "PasswordProtectedTransport"
+    hints:
+      - nudge: The <AuthnStatement> says how the user authenticated; its class reference is a URI.
+      - concept: "§4.4 — SAML <AuthnStatement>/<AuthnContextClassRef> records the authentication method"
+      - reveal: "Select saml.authn.contextclassref; it reads urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
+    explain: |
+      AuthnContextClassRef is the SP's evidence for the authentication-strength control: a ref of
+      PasswordProtectedTransport means password-over-TLS, not MFA. An SP that requires MFA must read
+      THIS field and reject anything weaker — the control truth is a string in the signed assertion,
+      not an assumption.
+
+  - id: t6
+    type: action
+    objective: [4]
+    instruction: |
+      Still on the clean assertion, select the validity deadline (`saml.conditions.notonorafter`) and
+      read its value. The <Conditions> window bounds how long the assertion may be trusted — an SP must
+      reject any assertion at or after this instant (it is exclusive, saml-core §2.5.1.2).
+    verify:
+      - check: region_labeled_correctly
+        node_id: saml.conditions.notonorafter
+      - check: field_value_is
+        node_id: saml.conditions.notonorafter
+        value: "2030-01-01T00:00:00Z"
+    hints:
+      - nudge: An assertion is only good inside a time window — find the END of that window.
+      - concept: "§4.4 — <Conditions NotOnOrAfter> bounds validity; the SP rejects at/after it (exclusive)"
+      - reveal: "Select saml.conditions.notonorafter; on the clean assertion it reads 2030-01-01T00:00:00Z (still in the future)"
+    explain: |
+      NotOnOrAfter=2030-01-01T00:00:00Z is in the future, so this assertion's window is open — the SP
+      may trust it. The staleness break (next, on the twin) turns on exactly this field: an assertion
+      replayed past its window is the broken-auth failure, and the verdict is the SP's computed
+      comparison to "now," never an authored answer.
+
+  - id: t7
+    type: action
+    objective: [5]
+    instruction: |
+      Switch to the "JWT · alg:none twin (broken)" panel. This is a real tampered token. Select the
+      header's algorithm field (`jwt.header.alg`) and read it — the value here defeats signature
+      verification, and a verifier that honors it trusts an unsigned token.
+    verify:
+      - check: region_labeled_correctly
+        node_id: jwt.header.alg
+      - check: field_value_is
+        node_id: jwt.header.alg
+        value: "none"
+    hints:
+      - nudge: A signature only protects you if the verifier actually checks it — read what alg this twin claims.
+      - concept: "§4.5 — alg:none (RFC 8725 §2.1) declares 'no signature'; honoring it accepts an unsigned token"
+      - reveal: "On the alg:none twin, select jwt.header.alg — it reads none, and the signature segment is empty"
+    explain: |
+      alg:none is the RFC 8725 §2.1 unprotected-token attack: the header declares no signature and the
+      signature segment is empty. A verifier that accepts alg:none trusts a token anyone could forge —
+      a broken authentication control (OWASP API2), mapped to IA-2 / AC-3 / CC6.1. The discriminating
+      field is the parser's real decode of the real tampered bytes.
+
+  - id: t8
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Switch to the "SAML · assertion (expired twin, broken)" panel. This real twin is byte-identical
+      to the clean assertion except its validity window has closed. Click the single field where it
+      diverges from the clean leg (`saml.conditions.notonorafter`) and read its value — the assertion
+      is past its window, so honoring it is the broken-auth failure.
+    verify:
+      - check: region_labeled_correctly
+        node_id: saml.conditions.notonorafter
+      - check: field_value_is
+        node_id: saml.conditions.notonorafter
+        value: "2024-01-02T00:00:00Z"
+    hints:
+      - nudge: Both assertions are real and nearly identical — one field puts this one outside its window.
+      - concept: "§4.6 — a control is a predicate over fields; the staleness break is at <Conditions NotOnOrAfter>"
+      - reveal: "On the expired twin, select saml.conditions.notonorafter — it reads 2024-01-02T00:00:00Z, in the past"
+    explain: |
+      NotOnOrAfter=2024-01-02T00:00:00Z is years in the past, so the SP's window check (now >=
+      NotOnOrAfter, exclusive) fails: the assertion is stale and must be rejected (AC-3 / IA-2 /
+      CC6.1). The discriminating field is the parser's computed divergence over two real assertions,
+      not your opinion — your finding names the field, both values, the control, and the framework ref.
+
+  - id: t9
+    type: reflection
+    objective: [1, 6]
+    instruction: |
+      In 5-7 sentences, for a non-technical colleague: explain the difference between authentication
+      (who you are) and authorization (what you may do), and why a JWT is a signed claim you can read
+      with no key rather than an encrypted secret. Then explain the valet-key idea — why handing the
+      app a short-lived token instead of your password is safer — and name the ONE field you would read
+      to decide whether a SAML assertion is still valid. Use the §3 model, not jargon.
+    hints:
+      - nudge: "The §3 model: a passport (who you are), a building pass (what you may do), a valet key (a limited token)."
+      - concept: "§3 — The Mental Model + §4.4 the assertion field that bounds validity"
+
+completion:
+  evidence_pack: true

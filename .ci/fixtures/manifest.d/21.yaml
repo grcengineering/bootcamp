@@ -1,0 +1,71 @@
+# manifest.d/21.yaml — module 21 (containers-and-virtualization) fidelity fragment.
+#
+# Module 21 is a pure-VISUAL module (engine: visual, oracle `oci`, seed `m21` = kind: visual). It
+# teaches no replayable SHELL command, so it adds no byte-exact terminal entries. What it DOES add to
+# the fidelity surface is the REAL OCI image artifacts the module PEELs — the manifest + config JSON
+# of two real images and the secret-bearing layer tar — framed as the collectible static evidence an
+# auditor reads off an image before trusting a scan summary.
+#
+# Honesty doctrine: the ported OCI reader (web/src/engines/visual/oci.ts) over each REAL blob IS the
+# oracle; there is no authored answer key. The blobs were produced by real docker tooling (clean:
+# `docker pull alpine:latest && docker save`; misconfigured: a real `docker build` of the recorded
+# Dockerfile + `docker save`), and the content-addressable digest chain is recomputed over the
+# committed blobs in web/tests/oci-fidelity.test.ts (match: computed — each manifest cites its config
+# and layers by sha256, and those digests equal the recomputed SHA-256 of the committed bytes; a
+# tampered blob cannot pass). Every fixture path is a REAL committed artifact under
+# .ci/fixtures/assets/containers/. See that directory's README.md for full provenance.
+#
+# `meta` / `hole_defs` are global to manifest.yaml (the loader rejects either in a fragment).
+
+seeds:
+  m21:
+    kind: visual                    # Wave-4 visual engine (module 21, containers): REAL OCI blobs
+                                    # committed under .ci/fixtures/assets/containers/*.json (+ the
+                                    # secret-layer .tar.gz). No home tree, no PATH tools. The exercise
+                                    # spec's visual.artifact.from names the wiring fixture (oci-images.json)
+                                    # the `oci` reader parses; oci-seed.ts builds the panels.
+
+entries:
+  # --- The two real OCI images the module PEELs + diffs (LOCATE the control-truth — O2/O4) ----------
+  - id: m21-image-clean
+    module: "21"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "docker pull alpine:latest && docker save alpine:latest   # clean twin: stock arm64v8 image, manifest sha256:74e11dac… → config sha256:92385f4b…"
+    citation: >-
+      OCI Image Format Specification (github.com/opencontainers/image-spec — image-manifest, image-config).
+      Artifacts: .ci/fixtures/assets/containers/clean-manifest.json + clean-config.json — the real stock
+      alpine:latest (arm64v8) blobs straight off Docker Hub. The config has no explicit User (per the OCI
+      runtime default = root) and exposes no ports — the hardened-baseline leg of the diff. Parsed by the
+      `oci` oracle; the parse tree over the real blobs is the answer key. match: computed — the manifest
+      cites its config by sha256:92385f4b…, recomputed over the committed blob in oci-fidelity.test.ts.
+
+  - id: m21-image-misconfigured
+    module: "21"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "docker build -t twin . && docker save twin   # misconfigured twin: User root, EXPOSE 22 8080, baked secret; manifest sha256:7869dc00… → config sha256:2cd49630…"
+    citation: >-
+      OCI Image Format Specification (github.com/opencontainers/image-spec). Artifacts:
+      .ci/fixtures/assets/containers/misconfigured-manifest.json + misconfigured-config.json — a real
+      `docker build` (buildkit) of the Dockerfile recorded in oci-images.json, then `docker save`. The
+      config reads User root (CM-6), ExposedPorts 22/tcp + 8080/tcp (CM-7), an expanded Env, and two
+      layers. Parsed by the `oci` oracle; match: computed — the manifest cites config sha256:2cd49630…
+      and layers c05efffa… + 48092d72…, all recomputed over the committed blobs in oci-fidelity.test.ts.
+
+  - id: m21-secret-layer
+    module: "21"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "tar tzvf <layer>.tar.gz   # the misconfigured twin's added layer (sha256:48092d72…, 178 bytes); its single entry is /app-credentials.env"
+    citation: >-
+      OCI Image Format Specification (layer tar) + the misconfigured Dockerfile's `RUN echo
+      AWS_SECRET_ACCESS_KEY=… > /app-credentials.env`. Artifact: .ci/fixtures/assets/containers/secret-layer.tar.gz —
+      the REAL gzip'd tar of the twin's second layer (sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74).
+      walkLayerTar decompresses it and findBakedSecret trips on the real AWS *example* credential (a
+      documented non-live key, but really written into the layer) with the same pattern set a secret
+      scanner uses — the secret genuinely lives in the bytes. match: computed — the layer digest equals
+      the recomputed SHA-256 of the committed .tar.gz in oci-fidelity.test.ts; the reader is the oracle.

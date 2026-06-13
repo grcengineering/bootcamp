@@ -1,0 +1,14 @@
+{
+  "_comment": "Documentation of what the cited shared-responsibility matrix (the MAP oracle) assigns at each slider position. No spec check uses from:generated — mapping_correct reads ctx.map directly against the cited keyByModel/keyZone — so these underscore-prefixed keys are documentation the replay test asserts against the matrix, never injected expectations. The cited matrix (AWS SRM + CSA CAIQ + NIST 800-53) is the oracle; there is no authored per-render answer key.",
+  "_physical_iaas": "provider",
+  "_physical_saas": "provider",
+  "_customer_data_iaas": "you",
+  "_customer_data_saas": "you",
+  "_encryption_at_rest_iaas": "you",
+  "_encryption_at_rest_saas": "provider",
+  "_application_code_iaas": "you",
+  "_application_code_saas": "provider",
+  "_iam_policy_change_plane": "control-plane",
+  "_object_read_write_plane": "data-plane",
+  "_audit_logging_planes": "control-plane+data-plane"
+}

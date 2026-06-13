@@ -1,0 +1,2 @@
+{"anti_for": "t1", "fails_check": 0, "reason": "adjacent-field near miss: selects ANCOUNT (the next 16-bit count, dns.ancount) instead of QDCOUNT and enters the read 1 anyway — region_labeled_correctly (verify[0]) catches the wrong boundary; field_value_is (verify[1]) still passes because it reads the oracle's dns.qdcount node, proving the cheat reached the task."}
+{"input": {"panel": "dns-query", "select": "dns.ancount", "read": "1"}}

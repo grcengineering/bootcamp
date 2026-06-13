@@ -1,0 +1,12 @@
+{"anti_for": "t11", "fails_check": 1, "reason": "trust-the-padlock cheat: on the wrong.host.badssl.com broken panel, selects the correct cert.san region (region_labeled_correctly verify[0] passes) but reads it as covering www.google.com — claiming the green padlock proves the host — instead of the real SAN (*.badssl.com, badssl.com) which does NOT cover wrong.host.badssl.com. field_value_is (verify[1], value 'badssl.com') catches that the learner's read does not contain the SAN the parser decoded. Tasks t1-t10 complete correctly so the cheat reaches t11 (sticky near-miss)."}
+{"input": {"panel": "scramble", "select": "sha256-hello", "layer": "HASH", "read": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"}}
+{"input": {"panel": "scramble", "select": "base64-hello", "layer": "ENCODE", "decode": "aGVsbG8="}}
+{"input": {"panel": "jwt", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "cert-leaf", "select": "cert.validity.notAfter", "read": "2026-08-17T08:39:10Z"}}
+{"input": {"panel": "cert-leaf", "select": "cert.basicConstraints", "read": "CA:FALSE"}}
+{"input": {"panel": "cert-leaf", "select": "cert.san", "read": "DNS:www.google.com"}}
+{"input": {"panel": "cert-leaf", "select": "cert.issuer", "read": "C=US, O=Google Trust Services, CN=WR2"}}
+{"input": {"order": [0, 1, 2, 3, 4, 5, 6]}}
+{"input": {"order": [0, 1, 7]}}
+{"input": {"panel": "cert-expired-broken", "select": "cert.validity.notAfter", "read": "2015-04-12T23:59:59Z"}}
+{"input": {"panel": "cert-wrong-host-broken", "select": "cert.san", "read": "DNS:www.google.com"}}

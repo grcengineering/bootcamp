@@ -1,0 +1,11 @@
+{"input": {"panel": "misconfigured", "select": "config.user", "read": "root → ROOT (uid 0)"}}
+{"input": {"panel": "misconfigured", "select": "config.exposed_ports", "read": "22/tcp, 8080/tcp"}}
+{"input": {"panel": "misconfigured", "select": "layer1", "read": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74 (178 bytes)"}}
+{"input": {"panel": "misconfigured", "select": "layer1.secret", "read": "/app-credentials.env (AWS secret access key)"}}
+{"input": {"place": "finding-runs-as-root", "zone": "CM-6 (run as non-root)"}}
+{"input": {"place": "finding-exposed-ports", "zone": "CM-7 (least functionality)"}}
+{"input": {"place": "finding-baked-secret", "zone": "IA-5 / SC-28 (secrets)"}}
+{"input": {"place": "vm-card", "zone": "own host kernel"}}
+{"input": {"place": "container-card", "zone": "shared host kernel"}}
+{"input": {"panel": "misconfigured", "select": "config.exposed_ports", "read": "22/tcp, 8080/tcp"}}
+{"input": {"panel": "clean", "select": "config.exposed_ports", "read": "none"}}

@@ -1,0 +1,412 @@
+{
+  "spec": {
+    "id": "lab-18",
+    "module": "18-web-application-architecture",
+    "title": "Where the claim can be true",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-13",
+    "engine": "visual",
+    "claim_thread": "encrypted-in-transit",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m18",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "A control truth is produced by exactly one tier and can only be read where that tier produces it.\nYou are handed a real HTTP request as it crosses the three-tier path (edge → app → data) and the\nreal headers it accretes, and asked to read each control claim off the header the owning tier\nwrites — the client's protocol from Forwarded proto=, the session from Set-Cookie, the token from\nthe JWT — then diagnose, in clean/broken pairs, the single field where a control breaks at its tier.\n\nEvery value you reveal is the header parser's real decode of the real header bytes (per RFC 7239 /\n6265 / 9111) or the JWT decoder over the real token segments (RFC 7519 / 8725). Nothing is invented;\nthe parser's parse tree is the answer key. Start on the clean provenance panel.\n",
+    "visual": {
+      "artifact": {
+        "kind": "forwarded",
+        "from": "assets/web/diff-the-trace.json"
+      },
+      "oracle": "hdr",
+      "mode": "diff-the-trace"
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "On the clean request (panel \"pair-a-provenance-clean\"), select the `Forwarded` header's\n`proto=` parameter. This is how the app learns the client used HTTPS after TLS was terminated\nupstream — read its value.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "fwd.el0.proto"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "fwd.el0.proto",
+            "value": "https"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The app never saw the client's TLS connection — a trusted upstream hop wrote the protocol down."
+          },
+          {
+            "concept": "§4.4 — proxy-injected provenance: RFC 7239 Forwarded carries for=/by=/proto="
+          },
+          {
+            "reveal": "Select the proto= parameter inside the Forwarded element; it reads https"
+          }
+        ],
+        "explain": "`proto=https` is the only way the tiers behind the edge can confirm the client used HTTPS — the\nsocket the app sees is the edge's connection, not the client's. This is where the SC-8\nin-transit claim is recoverable at the app tier.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          3,
+          6
+        ],
+        "instruction": "Still on the clean request, select the `for=` parameter and read the real client IP the app\nrecovers for its audit log (AU-3) — the client address the edge stamped before forwarding.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "fwd.el0.for"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "fwd.el0.for",
+            "value": "192.0.2.43"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The app's socket sees the proxy's IP, not the client's — the real client IP rides in a forwarded parameter."
+          },
+          {
+            "concept": "§4.4 — the app recovers src_ip from Forwarded for= / X-Forwarded-For for AU-3"
+          },
+          {
+            "reveal": "Select the for= parameter; it reads 192.0.2.43 — the client IP for the audit log"
+          }
+        ],
+        "explain": "The structured access-log line's `src_ip` is recovered from `for=`, not from the socket. Without\nit, every log line would attribute traffic to the load balancer. AU-3 (content of audit records)\nis owned by the app tier reading this byte.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "Switch to the session cookie (panel \"pair-b-session-clean\"). Select the `Secure` attribute and\nread it. State which tier holds the session state this cookie's safety attributes protect.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "cookie.av.secure"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "cookie.av.secure",
+            "value": "flag attribute"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One attribute keeps the cookie off plaintext HTTP; find it in the Set-Cookie attribute list."
+          },
+          {
+            "concept": "§4.5 — Secure (HTTPS-only) + HttpOnly (no document.cookie) protect the session cookie"
+          },
+          {
+            "reveal": "Select the Secure attribute; it is a flag attribute (present) — the session lives in the application tier's store"
+          }
+        ],
+        "explain": "`Secure` keeps the opaque SID off plaintext HTTP. The SID is a pointer at the application tier's\nsession store — the state is server-side, the cookie is just the claim ticket. The control\n(SC-23 session protection) is owned by the application tier that wrote this cookie.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Switch to the stateless token (panel \"pair-d-token-clean\"). Open the JWT, select its header\n`alg`, and read the signature algorithm. A JWT is a signed claim that IS the state — name the\ntier that verifies it.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "jwt.header.alg"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "jwt.header.alg",
+            "value": "HS256"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The JWT header is the first base64url segment — it names the signature algorithm."
+          },
+          {
+            "concept": "§4.5 — stateless: the JWT IS the state, signature-verified by the app on every call"
+          },
+          {
+            "reveal": "Select jwt.header.alg; it reads HS256 — the application tier verifies the signature"
+          }
+        ],
+        "explain": "`HS256` means the token is HMAC-signed; the app re-verifies the signature on every request. Unlike\nthe cookie's opaque SID (which points AT server state), the JWT carries the state — no server\nstore. The application tier holds the verification, not a session box.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Still on the JWT, select the payload `iss` claim and read the issuer. The payload is readable\nbase64url, not ciphertext — confirm you can decode it with no key (encoding is not encryption).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "jwt.payload.iss"
+          },
+          {
+            "check": "decoded_artifact_matches",
+            "node_id": "jwt.payload.iss",
+            "value": "auth.acme.example"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The second base64url segment is the payload — its claims decode with no secret at all."
+          },
+          {
+            "concept": "§4.5 — a JWT is a SIGNED claim, not an encrypted secret; the payload is plaintext"
+          },
+          {
+            "reveal": "Select jwt.payload.iss; it decodes to auth.acme.example — readable by anyone, no key needed"
+          }
+        ],
+        "explain": "You decoded the issuer with no key — proof that a JWT's payload is not secret. \"Scrambled\" (base64url)\nis not \"protected.\" The signature protects integrity, not confidentiality; never put a secret in a\nJWT payload expecting it to be hidden.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "Switch to the broken request (panel \"pair-a-provenance-broken\"). The edge's provenance is\nincomplete — select the Forwarded element and confirm the `proto=` parameter is gone. A request\nreaching the app without it may have bypassed the edge (WAF un-traversed).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "fwd.el0.for"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "fwd.el0.for",
+            "value": "192.0.2.60"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Diff the broken Forwarded against the clean one — a parameter the edge should have stamped is missing."
+          },
+          {
+            "concept": "§4.7 — defense-in-depth fails at the hop a control can't see; absent provenance = un-traversed WAF"
+          },
+          {
+            "reveal": "On the broken panel, select the for= parameter (192.0.2.60) — note proto= is absent: the app can't confirm HTTPS"
+          }
+        ],
+        "explain": "The broken request carries only `for=192.0.2.60` — no `proto=`. The app cannot confirm the client\nused HTTPS, and a request reaching the app without the edge's full provenance is one that may have\nskipped the edge entirely, so \"WAF blocks the OWASP Top 10\" is structurally unverifiable here. The\nabsence is the finding.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Switch to the bad-twin cookie (panel \"pair-b-session-broken\"). Select the session-safety summary\nand read which safety attributes are ABSENT — this is the session-control gap (SC-23).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "cookie.safety"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "cookie.safety",
+            "value": "absent: secure, httponly"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Diff the bad twin against the good cookie — the parser summarizes which safety attributes are present vs absent."
+          },
+          {
+            "concept": "§4.5 — a session cookie without Secure rides plaintext HTTP; without HttpOnly it is readable by JS"
+          },
+          {
+            "reveal": "Select the session-safety attributes summary; it reads absent: secure, httponly — the SC-23 gap"
+          }
+        ],
+        "explain": "The bad-twin cookie dropped `Secure` and `HttpOnly`. Without `Secure` the SID can leak over plaintext\nHTTP; without `HttpOnly` it is readable by injected JavaScript (XSS). The application tier wrote this\ncookie, so the SC-23 session-protection gap is owned by the application team.\n"
+      },
+      {
+        "id": "t8",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Switch to the broken `/account` response (panel \"pair-c-caching-broken\"). Select the `Age`\nheader — its presence proves a shared cache stored and SERVED a sensitive response (RFC 9111\n§5.1) that should have carried `private, no-store`.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "cache.age"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "cache.age",
+            "value": "142 seconds"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A private response should never be cached — an Age header on it is the tell that a cache served it."
+          },
+          {
+            "concept": "§4.6 — sensitive responses carry private, no-store; a public response + an Age value is the finding"
+          },
+          {
+            "reveal": "Select the Age region; it reads 142 seconds — a shared cache served this /account response from store"
+          }
+        ],
+        "explain": "`Age: 142` means a shared edge cache served this `/account` response from store, 142 seconds after it\nwas generated — to whoever asked next. The clean response carried `Cache-Control: private, no-store`;\nthis one is `public, max-age=300`. The break is owned by the edge/CDN cache tier, not the app developers.\n"
+      },
+      {
+        "id": "t9",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "Switch to the broken token (panel \"pair-d-token-broken\"). Open the JWT and select its header\n`alg` — confirm it is the unprotected `none` (RFC 8725 §2.1), the token that defeats signature\nverification (IA-2).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "jwt.header.alg"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "jwt.header.alg",
+            "value": "none"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Diff the bad token's header against the HS256 one — its algorithm field is the giveaway."
+          },
+          {
+            "concept": "§4.5 — an alg:none JWT is an RFC 8725 §2.1 unprotected token; a JWT must be a signed claim"
+          },
+          {
+            "reveal": "Select jwt.header.alg on the broken token; it reads none — no signature, the IA-2 break"
+          }
+        ],
+        "explain": "`alg:none` means the token carries no signature — anyone can forge its claims. A JWT that is supposed\nto be a signed claim is, here, unprotected (RFC 8725 §2.1). The application tier that accepts it has an\nIA-2 / AC-3 break: identity is asserted but never cryptographically verified.\n"
+      },
+      {
+        "id": "t10",
+        "type": "reflection",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "In 4–6 sentences, for a non-technical colleague: explain why a web app is split into tiers and\nhow a control truth is produced by exactly one tier (so the diagram is the control-evidence map);\nwhy \"encrypted in transit and at rest\" is two controls owned by two tiers; and why a request that\nbypasses the edge makes the WAF control unverifiable. Use the §3 relay-of-clerks model, not jargon.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 model: a relay of clerks, each stamping the envelope — only the clerk who did the job can vouch for it."
+          },
+          {
+            "concept": "§3 — The Mental Model + §4.2 a claim lives at the tier that can produce its truth"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z",
+  "visual": {
+    "mode": "diff-the-trace",
+    "oracle": "hdr",
+    "panels": [
+      {
+        "id": "pair-a-provenance-clean",
+        "label": "pair-a-provenance · clean: Forwarded carries proto=https (TLS provenance recovered)",
+        "source": {
+          "oracle": "forwarded",
+          "header": "for=192.0.2.43;proto=https;by=203.0.113.43"
+        }
+      },
+      {
+        "id": "pair-a-provenance-broken",
+        "label": "pair-a-provenance · broken: Forwarded with no proto= (TLS truth unverifiable at the app)",
+        "source": {
+          "oracle": "forwarded",
+          "header": "for=192.0.2.60"
+        }
+      },
+      {
+        "id": "pair-b-session-clean",
+        "label": "pair-b-session · clean: Set-Cookie with Secure + HttpOnly",
+        "source": {
+          "oracle": "set-cookie",
+          "header": "SID=31d4d96e407aad42; Path=/; Secure; HttpOnly"
+        }
+      },
+      {
+        "id": "pair-b-session-broken",
+        "label": "pair-b-session · broken: Set-Cookie missing Secure + HttpOnly (the session gap)",
+        "source": {
+          "oracle": "set-cookie",
+          "header": "SID=31d4d96e407aad42; Path=/"
+        }
+      },
+      {
+        "id": "pair-c-caching-clean",
+        "label": "pair-c-caching · clean: Cache-Control: private, no-store on /account",
+        "source": {
+          "oracle": "cache-control",
+          "header": "private, no-store"
+        }
+      },
+      {
+        "id": "pair-c-caching-broken",
+        "label": "pair-c-caching · broken: public, max-age=300 + a cache served it (Age: 142)",
+        "source": {
+          "oracle": "cache-control",
+          "header": "public, max-age=300",
+          "age": "142"
+        }
+      },
+      {
+        "id": "pair-d-token-clean",
+        "label": "pair-d-token · clean: HS256-signed JWT",
+        "source": {
+          "oracle": "jwt",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguYWNtZS5leGFtcGxlIiwic3ViIjoidS04ODQyIiwiYXVkIjoiYWNtZS1hcHAiLCJleHAiOjE3ODIwMDAwMDAsImlhdCI6MTc4MTk5NjQwMH0.CyXRn6yOrrzwa-1Ih9vUC_Zv8q9jgjqbJvRZUrBVnAs"
+        }
+      },
+      {
+        "id": "pair-d-token-broken",
+        "label": "pair-d-token · broken: alg:none JWT (RFC 8725 §2.1 unprotected token)",
+        "source": {
+          "oracle": "jwt",
+          "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2F1dGguYWNtZS5leGFtcGxlIiwic3ViIjoidS04ODQyIiwiYXVkIjoiYWNtZS1hcHAiLCJleHAiOjE3ODIwMDAwMDAsImlhdCI6MTc4MTk5NjQwMH0."
+        }
+      }
+    ]
+  }
+}

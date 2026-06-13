@@ -1,0 +1,3 @@
+{"anti_for": "t2", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct QNAME region (region_labeled_correctly verify[0] passes) but mis-reads the decoded name as example.org instead of example.com — field_value_is (verify[1]) catches the wrong decode against the oracle. Prior task t1 is completed correctly so the cheat reaches t2 (sticky near-miss)."}
+{"input": {"panel": "dns-query", "select": "dns.qdcount", "read": "1"}}
+{"input": {"panel": "dns-query", "select": "dns.qname", "read": "example.org"}}

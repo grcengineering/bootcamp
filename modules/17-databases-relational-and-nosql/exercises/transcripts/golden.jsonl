@@ -1,0 +1,6 @@
+{"input": "SELECT email FROM users WHERE mfa_enabled = 0 ORDER BY email;"}
+{"input": "SELECT COUNT(*) AS n FROM users;"}
+{"input": "SELECT json_extract(doc, '$.email') AS email FROM users_doc WHERE json_extract(doc, '$.mfa_enabled') = 0 ORDER BY email;"}
+{"input": "SELECT k FROM users_kv WHERE v LIKE '%|mfa=0|%' ORDER BY k;"}
+{"input": "SELECT email FROM users WHERE email = '' OR '1'='1';"}
+{"input": "SELECT email FROM users WHERE email = ''' OR ''1''=''1';"}

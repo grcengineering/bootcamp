@@ -1,0 +1,18 @@
+{"input": {"slider": "IaaS"}}
+{"input": {"place": "physical-facility", "zone": "provider"}}
+{"input": {"place": "customer-data", "zone": "you"}}
+{"input": {"place": "guest-os-patching", "zone": "you"}}
+{"input": {"place": "application-code", "zone": "you"}}
+{"input": {"place": "network-firewall-config", "zone": "you"}}
+{"input": {"place": "iam-policy-change", "zone": "control-plane"}}
+{"input": {"place": "security-group-edit", "zone": "control-plane"}}
+{"input": {"place": "kms-key-rotation", "zone": "control-plane"}}
+{"input": {"place": "object-read-write", "zone": "data-plane"}}
+{"input": {"place": "request-traffic", "zone": "data-plane"}}
+{"input": {"toggle": "audit-logging", "zone": "control-plane"}}
+{"input": {"toggle": "audit-logging", "zone": "data-plane"}}
+{"input": {"slider": "SaaS"}}
+{"input": {"place": "guest-os-patching", "zone": "provider"}}
+{"input": {"place": "application-code", "zone": "provider"}}
+{"input": {"place": "network-firewall-config", "zone": "provider"}}
+{"input": {"place": "encryption-at-rest", "zone": "provider"}}

@@ -52,7 +52,20 @@ const vec = JSON.parse(readFileSync(join(ASSETS, "transform-vectors.json"), "utf
 // x509-parser — REAL www.google.com chain vs openssl x509 -text / openssl verify
 // ============================================================================
 describe("x509-parser fidelity — real DER bytes vs openssl ground truth", () => {
-  const certs = chain.certs as Array<{ role: string; der_hex: string; openssl_text_truth: Record<string, unknown> }>;
+  const certs = chain.certs as Array<{
+    role: string;
+    der_hex: string;
+    openssl_text_truth: {
+      subject: string;
+      issuer: string;
+      serial_hex: string;
+      not_before: string;
+      not_after: string;
+      san_dns?: string[];
+      basic_constraints_ca?: boolean;
+      key_usage?: string[];
+    };
+  }>;
   const leaf = parseCertificate(hexToBytes(certs[0].der_hex));
   const inter = parseCertificate(hexToBytes(certs[1].der_hex));
   const root = parseCertificate(hexToBytes(certs[2].der_hex));

@@ -1,0 +1,10 @@
+{"anti_for": "t9", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct jwt.header.alg region on the BROKEN token (region_labeled_correctly verify[0] passes) but mis-reads it as 'HS256' instead of the unprotected 'none' — field_value_is (verify[1]) catches the wrong decode. Prior action tasks t1-t8 are completed correctly so the cheat reaches t9 (sticky near-miss)."}
+{"input": {"panel": "pair-a-provenance-clean", "select": "fwd.el0.proto", "read": "https"}}
+{"input": {"panel": "pair-a-provenance-clean", "select": "fwd.el0.for", "read": "192.0.2.43"}}
+{"input": {"panel": "pair-b-session-clean", "select": "cookie.av.secure", "read": "flag attribute — present"}}
+{"input": {"panel": "pair-d-token-clean", "select": "jwt.header.alg", "read": "HS256"}}
+{"input": {"panel": "pair-d-token-clean", "select": "jwt.payload.iss", "read": "auth.acme.example", "decode": "auth.acme.example"}}
+{"input": {"panel": "pair-a-provenance-broken", "select": "fwd.el0.for", "read": "192.0.2.60"}}
+{"input": {"panel": "pair-b-session-broken", "select": "cookie.safety", "read": "present: (none) · absent: secure, httponly, samesite"}}
+{"input": {"panel": "pair-c-caching-broken", "select": "cache.age", "read": "142 seconds — a cache served this response (RFC 9111 §5.1)"}}
+{"input": {"panel": "pair-d-token-broken", "select": "jwt.header.alg", "read": "HS256"}}

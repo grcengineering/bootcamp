@@ -1,0 +1,12 @@
+{
+  "_comment": "Documentation of what the RFC 5424 parser (the oracle) decodes from the REAL committed characters of the §6.5 example lines + the downgraded twin. No spec check uses from:generated — the visual primitives read the parse tree directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the parser, never injected expectations. PRIVAL = Facility*8 + Severity is the parser's arithmetic; the line is the answer key.",
+  "_clean_hostname": "mymachine.example.com",
+  "_clean_procid_nilvalue": "- (NILVALUE — absent)",
+  "_clean_pri_facility": "4 = security/authorization messages (PRIVAL 34 >> 3)",
+  "_clean_pri_severity": "2 = Critical (PRIVAL 34 & 7)",
+  "_structured_sd_id": "exampleSDID@32473",
+  "_structured_sd_eventid": "eventID=\"1011\"",
+  "_application_pri_facility": "20 = local use 4 (local4) (PRIVAL 165 >> 3)",
+  "_broken_pri_facility": "4 = security/authorization messages (PRIVAL 39 >> 3)",
+  "_broken_pri_severity": "7 = Debug (PRIVAL 39 & 7)"
+}

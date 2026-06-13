@@ -1,0 +1,14 @@
+module: 20-cloud-shared-responsibility
+title: "Whose Control Is It? Reading the Responsibility Boundary"
+tier: 1
+loop_stages: [UNDERSTAND, LOCATE, OWN]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: C                      # third-party-coupled: provider responsibility matrices + service-model boundaries shift
+sections_tiering: "1-3=A, 4=A, 5-6=C, 7=A, 8=C"
+last_reviewed: 2026-06-13
+review_due: 2026-09-13              # Tier-C cadence: 3 months (vendor matrices drift faster)
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [provider-matrix-change, service-model-boundary-shift, control-family-mapping-update, supplemental-link-dead]

@@ -1,0 +1,19 @@
+{"anti_for": "t5", "fails_check": 0, "reason": "misattribution near miss: the full IaaS board is placed so t1-t4 latch (max 11 correct at IaaS — encryption-at-rest is held back per t2), then the slider moves to SaaS and guest-OS/app/network are re-placed to PROVIDER — but the held encryption-at-rest card is placed on YOU, the SaaS customer claiming they ENFORCE at-rest encryption the provider actually owns (the CUEC trap). At SaaS only 11 of 12 are correct, so mapping_correct (verify[0]) fails naming encryption-at-rest while every prior action task stays recorded (sticky)."}
+{"input": {"slider": "IaaS"}}
+{"input": {"place": "physical-facility", "zone": "provider"}}
+{"input": {"place": "customer-data", "zone": "you"}}
+{"input": {"place": "guest-os-patching", "zone": "you"}}
+{"input": {"place": "application-code", "zone": "you"}}
+{"input": {"place": "network-firewall-config", "zone": "you"}}
+{"input": {"place": "iam-policy-change", "zone": "control-plane"}}
+{"input": {"place": "security-group-edit", "zone": "control-plane"}}
+{"input": {"place": "kms-key-rotation", "zone": "control-plane"}}
+{"input": {"place": "object-read-write", "zone": "data-plane"}}
+{"input": {"place": "request-traffic", "zone": "data-plane"}}
+{"input": {"toggle": "audit-logging", "zone": "control-plane"}}
+{"input": {"toggle": "audit-logging", "zone": "data-plane"}}
+{"input": {"slider": "SaaS"}}
+{"input": {"place": "guest-os-patching", "zone": "provider"}}
+{"input": {"place": "application-code", "zone": "provider"}}
+{"input": {"place": "network-firewall-config", "zone": "provider"}}
+{"input": {"place": "encryption-at-rest", "zone": "you"}}

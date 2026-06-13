@@ -1,0 +1,79 @@
+# manifest.d/25.yaml — module 25 (logging-telemetry-observability) fidelity fragment.
+#
+# Module 25 is a pure-VISUAL module (engine: visual, oracle `syslog`, seed `m25` = kind: visual). It
+# teaches no replayable SHELL command; its taught "command surface" is the set of REAL RFC 5424 log
+# lines the `syslog` parser reads over RFC-literal characters (no home tree, no PATH tools). Each entry
+# names the real line/computation + its citation; the parser over the characters is the oracle.
+#
+# Honesty doctrine: a syslog line is RFC text, not capturable wire bytes, so the honest source is the
+# RFC's own normative §6.5 examples (match: authored-with-citation). The PRI bit-unpack
+# (PRIVAL = Facility*8 + Severity), NILVALUE handling, and SD-ELEMENT walk are the parser's computation
+# over those exact characters, never an authored answer key. The parser
+# (web/src/engines/visual/syslog.ts) decodes these lines; web/tests/syslog-fidelity.test.ts asserts its
+# output equals the RFC-true values, so the parser cannot drift from the spec without CI failing. Every
+# fixture path is a REAL committed line under .ci/fixtures/assets/logging/. See that directory's
+# README.md for full provenance.
+#
+# `meta` / `hole_defs` are global to manifest.yaml (the loader rejects either in a fragment).
+
+seeds:
+  m25:
+    kind: visual                    # Wave-4 visual engine (module 25, logging): REAL RFC 5424 lines
+                                    # committed under .ci/fixtures/assets/logging/*.json. No home tree,
+                                    # no PATH tools. The exercise spec's visual.artifact.from names the
+                                    # wiring fixture (syslog-5424-examples.json) the `syslog` parser
+                                    # tokenizes; the replay host (exercise-replay-25.test.ts) builds the
+                                    # PEEL panels + the pipeline TRACE + the field->control MAP.
+
+entries:
+  # --- The real auth-failure line the module PEELs + the PRI bit-unpack (O1/O2) -----------------------
+  - id: m25-syslog-auth-failure-line
+    module: "25"
+    source: authored
+    match: authored-with-citation
+    citation: >-
+      RFC 5424 §6.5 Example 1 (verbatim): "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su -
+      ID47 - BOM'su root' failed for lonvick on /dev/pts/8". Artifact:
+      .ci/fixtures/assets/logging/syslog-5424-examples.json (ex1_auth_failure). The HEADER fields,
+      PROCID/STRUCTURED-DATA NILVALUEs (read as genuine absence), and the BOM'd MSG are the parser's
+      tokenization of these exact characters; the parse tree IS the answer key.
+    cmd: "syslog parse '<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - ...'"
+
+  - id: m25-syslog-pri-bit-unpack
+    module: "25"
+    source: authored
+    match: computed
+    citation: >-
+      RFC 5424 §6.2.1 — PRIVAL = Facility*8 + Severity; §6.2.1 Table 1 (Facility) + Table 2 (Severity).
+      PRIVAL 34 -> Facility 4 (security/authorization, 34>>3) / Severity 2 (Critical, 34&7); PRIVAL 165
+      -> Facility 20 (local4) / Severity 5 (Notice). match: computed — decodePri() recomputes Facility =
+      PRIVAL/8 and Severity = PRIVAL%8 from the real PRI byte; web/tests/syslog-fidelity.test.ts asserts
+      these equal the RFC's own worked statements, so the arithmetic cannot drift from the spec.
+    cmd: "syslog pri 34   # = Facility 4 (security/authorization), Severity 2 (Critical)"
+
+  # --- The structured line the module PEELs for machine-readable evidence (O3) ------------------------
+  - id: m25-syslog-structured-data
+    module: "25"
+    source: authored
+    match: authored-with-citation
+    citation: >-
+      RFC 5424 §6.5 Example 3 (verbatim, with STRUCTURED-DATA): the SD-ELEMENT
+      [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]. Artifact:
+      .ci/fixtures/assets/logging/syslog-5424-examples.json (ex3_sd_one). §6.3 SD-ELEMENT = SD-ID
+      *(SP SD-PARAM); the SD-ID + name="value" SD-PARAMs are the parser's walk of the bracketed block —
+      the named, queryable fields where machine-readable control evidence lives.
+    cmd: "syslog parse '<165>1 ... evntslog - ID47 [exampleSDID@32473 iut=\"3\" eventSource=\"Application\" eventID=\"1011\"] ...'"
+
+  # --- The Diff-the-Trace downgraded twin: the single divergent field (O5/O6) -------------------------
+  - id: m25-syslog-severity-downgrade
+    module: "25"
+    source: authored
+    match: computed
+    citation: >-
+      RFC 5424 §6.2.1. The Diff-the-Trace broken leg is the real ex1 auth-failure line with ONLY the
+      PRIVAL changed <34> -> <39> (same Facility 4, Severity downgraded 2->7). PRIVAL 39 = 4*8+7 ->
+      Severity 7 (Debug), which a Critical-threshold alert (page on Severity <= 2) never fires on — a
+      logged-but-silent control failure. Artifact: syslog-5424-examples.json diff_pairs[0].broken.
+      match: computed — the parser computes the divergent Severity from the real PRI byte; the break is
+      the arithmetic, not an authored verdict (asserted in web/tests/syslog-fidelity.test.ts).
+    cmd: "syslog pri 39   # = Facility 4 (security/authorization), Severity 7 (Debug) — under the alert threshold"

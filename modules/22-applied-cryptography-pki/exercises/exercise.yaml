@@ -1,0 +1,322 @@
+id: lab-22
+module: 22-applied-cryptography-pki
+title: The padlock is a lie until you read the cert
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: encrypted-at-rest-and-in-transit
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m22
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact set: the four-cert Diff-the-Trace fixture is the spine (clean www.google.com
+# leaf + three real badssl misconfigurations). The surface prepends the "Sorting the Scramble"
+# transform cards (xform), the real JWT header decode (jwt), the PEELable real google leaf + chain
+# (x509), and the RFC 8446 TLS 1.3 handshake (tls13) as orderable cards. Every node is the ported
+# parser / state-machine / transform over the REAL committed bytes — fidelity-checked against
+# `openssl x509 -text`, `openssl verify`'s return codes, `shasum`, and RFC 8446. Oracle `x509`
+# keys the heaviest leg (the cert verdict); the seed dispatches each panel to its own oracle.
+visual:
+  artifact:
+    kind: pem-chain
+    from: assets/crypto/cert-diff-the-trace.json
+  oracle: x509
+  mode: diff-the-trace
+
+intro: |
+  An auditor asks one two-part question — "is the data encrypted at rest AND in transit?" — and a
+  green padlock is offered as the answer. It is not the answer. You are handed real cryptographic
+  artifacts and asked to read each half's truth directly off the bytes: sort hash from encrypt from
+  encode by running the real transform, peel the real www.google.com certificate to the one field
+  that anchors the in-transit claim, assemble the TLS 1.3 handshake until the sim refuses an illegal
+  move with the real RFC 8446 alert, and click the single field that breaks each broken cert.
+
+  Every value you reveal is the real parser / state-machine / transform over the real artifact — the
+  same fields `openssl x509 -text` prints, the same return codes `openssl verify` emits (0/10/18/62),
+  and SHA-256("") = e3b0c442… recomputed live. Nothing is invented; the transform is the answer key.
+  Start on the "Sort · SHA-256" card.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1]
+    instruction: |
+      On the "Sort · SHA-256('hello')" card, sort it into ONE-WAY HASH and label it HASH. Click
+      "prove it" — the engine recomputes SHA-256 and never recovers "hello", so this card is a
+      one-way hash, not an encoding. Read the digest the transform produced.
+    verify:
+      - check: region_labeled_correctly
+        node_id: sha256-hello
+        expect_layer: HASH
+      - check: field_value_is
+        node_id: sha256-hello
+        value: "2cf24dba"
+    hints:
+      - nudge: Which of the three can you NEVER turn back, with any key? That pile is the one-way hash.
+      - concept: "§4.1 — hashing is one-way (no key); if 'prove it' can't recover the input it is HASH"
+      - reveal: "Label the SHA-256 card HASH; the transform produced 2cf24dba… and never reverses"
+    explain: |
+      The class is DERIVED by running the real transform, not read off an answer key — SHA-256 is
+      one-way, so the engine can recompute the digest but never recover "hello". "It looks scrambled"
+      is not "it is protected": a hash protects integrity, not confidentiality.
+
+  - id: t2
+    type: action
+    objective: [1]
+    instruction: |
+      Take the "Sort · base64('hello')" card, sort it into ENCODE, and label it ENCODE. Click
+      "prove it" — base64-decoding it recovers "hello" with NO key. Read the encoded value the
+      transform produced (aGVsbG8=).
+    verify:
+      - check: region_labeled_correctly
+        node_id: base64-hello
+        expect_layer: ENCODE
+      - check: decoded_artifact_matches
+        node_id: base64-hello
+        value: "aGVsbG8="
+    hints:
+      - nudge: Which one turns back into the original with NO secret at all? That is the encode pile.
+      - concept: "§4.1 — encoding is reversible with NO key (RFC 4648); base64 hides nothing"
+      - reveal: "Label the base64 card ENCODE; it reads aGVsbG8= and reverses to 'hello' with no key"
+    explain: |
+      base64 reverses with no key, so it is transport encoding, never protection. The danger is real:
+      a credential that is merely base64'd is plaintext to anyone who decodes it — the most common
+      "it's encrypted" false claim an auditor meets.
+
+  - id: t3
+    type: action
+    objective: [1]
+    instruction: |
+      Select the real JWT header segment (`jwt.header`) and decode it live with the engine. It is
+      base64url — it decodes with NO key. State in your decode why a "scrambled-looking" JWT header
+      is plaintext to anyone.
+    verify:
+      - check: region_labeled_correctly
+        node_id: jwt.header
+      - check: decoded_artifact_matches
+        node_id: jwt.header
+        value: "HS256"
+    hints:
+      - nudge: You need no key to decode a JWT header — try it; the result is readable JSON.
+      - concept: "§4.1 — a JWT is a SIGNED claim, not an encrypted secret; the header is base64url"
+      - reveal: "Decode jwt.header — it is {\"alg\":\"HS256\",\"typ\":\"JWT\"}, readable with no key"
+    explain: |
+      The header decodes to {"alg":"HS256","typ":"JWT"} with no key — proof that a JWT is signed for
+      integrity, not encrypted for confidentiality. Anything you put in a JWT payload is readable by
+      anyone holding the token; the signature only stops tampering.
+
+  - id: t4
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Switch to the "Cert · www.google.com leaf" panel and select the field that holds the in-transit
+      control's expiry deadline (`cert.validity.notAfter`). Read its value — this is the date past
+      which the in-transit claim (SC-8 / CC6.7) is dead.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.validity.notAfter
+      - check: field_value_is
+        node_id: cert.validity.notAfter
+        value: "2026-08-17"
+    hints:
+      - nudge: A certificate is only trusted inside a time window — find the END of that window.
+      - concept: "§4.3 — RFC 5280 validity has notBefore and notAfter; notAfter is the deadline"
+      - reveal: "Select cert.validity.notAfter on the leaf; it reads 2026-08-17T08:39:10Z"
+    explain: |
+      The notAfter is where "encrypted in transit" goes from true to false on a calendar — an expired
+      cert breaks the chain even if the cipher is perfect. You just located the field an auditor
+      points to for the in-transit half of the claim, mapped to CC6.7 / SC-8.
+
+  - id: t5
+    type: action
+    objective: [3]
+    instruction: |
+      Still on the leaf, select the extension that proves this certificate is NOT allowed to sign
+      other certificates (`cert.basicConstraints`). Read its value.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.basicConstraints
+      - check: field_value_is
+        node_id: cert.basicConstraints
+        value: "CA:FALSE"
+    hints:
+      - nudge: A leaf serves a website; a CA signs certificates. One extension says which this is.
+      - concept: "§4.4 — RFC 5280 BasicConstraints cA distinguishes a CA cert from a leaf"
+      - reveal: "Select cert.basicConstraints; it reads CA:FALSE — this is a leaf, not a CA"
+    explain: |
+      CA:FALSE is the structural promise that this key can only authenticate a server, never mint
+      certificates. It is the field that, when wrong on a leaf, lets a stolen key impersonate a whole
+      CA — which is why the chain check (next) ends only at a cert that is genuinely a CA.
+
+  - id: t6
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Select the field that names which host(s) this certificate is valid for (`cert.san`). The host
+      you connected to must appear here, or the in-transit identity claim fails. Read its value.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.san
+      - check: field_value_is
+        node_id: cert.san
+        value: "DNS:www.google.com"
+    hints:
+      - nudge: A cert is only valid for the names listed in one extension — find the host list.
+      - concept: "§4.4 — RFC 5280 Subject Alternative Name dNSName carries the host(s) the cert covers"
+      - reveal: "Select cert.san; it reads DNS:www.google.com — the host the SNI must match"
+    explain: |
+      The SAN binds this certificate's key to a name. If the host you connected to is not covered by
+      the SAN, the padlock is closed but pointed at the wrong door — exactly the wrong.host break you
+      will diagnose later. Name-to-key binding is what a certificate IS (RFC 5280).
+
+  - id: t7
+    type: action
+    objective: [3]
+    instruction: |
+      Read the leaf's `cert.issuer` field — the name of the CA that signed it. To chain leaf →
+      intermediate → root, this issuer name must equal the next cert's subject. State the issuer.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.issuer
+      - check: field_value_is
+        node_id: cert.issuer
+        value: "WR2"
+    hints:
+      - nudge: Whose name signed the leaf? Find the cert whose SUBJECT is that name — that is the next link.
+      - concept: "§4.4 — each cert's issuer must equal the next cert's subject; the chain ends at a trusted root"
+      - reveal: "Select cert.issuer on the leaf; it reads CN=WR2 — the intermediate's subject, the next link"
+    explain: |
+      issuer-of-leaf == subject-of-intermediate is the predicate that draws the chain link
+      leaf → WR2 → GTS Root R1. A chain that does not connect (or never reaches a trusted root) is
+      `openssl verify` code 20 — the certificate cannot be trusted no matter how valid the leaf looks.
+
+  - id: t8
+    type: action
+    objective: [4]
+    instruction: |
+      Switch to the TLS 1.3 handshake builder and order the message cards into the RFC 8446
+      full-handshake, routing each onto Client or Server. The session opens application data only
+      when the order is legal; the sim runs the real §A.1 state machine.
+    verify:
+      - check: sequence_matches
+        canonical_ref: tls13-full-handshake
+        check_routing: true
+    hints:
+      - nudge: The client speaks first with its hello; the server answers before anything is encrypted; Finished closes it.
+      - concept: "§4.5 — ClientHello → ServerHello → {EncryptedExtensions, Certificate, CertificateVerify, Finished} → client Finished"
+      - reveal: "Order: ClientHello, ServerHello, EncryptedExtensions, Certificate, CertificateVerify, server Finished, client Finished"
+    explain: |
+      The order is not arbitrary — CertificateVerify (the server signing the transcript with its
+      private key) must follow Certificate (the public key) so the client can verify the server holds
+      the matching private key. The sim reaching the established state is the consequence, not a
+      stored "correct"; a wrong order would have raised a real alert.
+
+  - id: t9
+    type: action
+    objective: [4]
+    instruction: |
+      In the handshake builder, play application data BEFORE the server's Finished (the classic
+      break). Read the alert the sim raises and its numeric code — the protocol's real refusal, not
+      a "try again."
+    verify:
+      - check: sim_alert_is
+        alert: unexpected_message
+    hints:
+      - nudge: The data channel is not open until the handshake finishes — the sim tells you how it objects.
+      - concept: "§4.5 — RFC 8446 §6.2: an out-of-sequence message MUST terminate with unexpected_message(10)"
+      - reveal: "Inject application data before {Finished}; the sim raises unexpected_message(10)"
+    explain: |
+      unexpected_message(10) is the literal RFC 8446 §6.2 alert the state machine emits — the
+      handshake's integrity is structural, not advisory. The data channel does not exist until both
+      Finished messages are exchanged, and the protocol enforces it with a real code you can read.
+
+  - id: t10
+    type: action
+    objective: [5]
+    instruction: |
+      Switch to "Cert · expired.badssl.com (broken)". This real cert breaks the in-transit control
+      at exactly one field. Click the single field where it diverges from the clean leg and read its
+      value — `openssl verify` returns code 10 for this cert.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.validity.notAfter
+      - check: field_value_is
+        node_id: cert.validity.notAfter
+        value: "2015-04-12"
+    hints:
+      - nudge: Both certs are real and nearly identical — one field puts this one outside its trust window.
+      - concept: "§4.6 — an expired cert is openssl verify code 10; the divergent field is notAfter"
+      - reveal: "On the expired panel, select cert.validity.notAfter — it reads 2015-04-12, long in the past"
+    explain: |
+      The notAfter of 2015-04-12 is years in the past, so the in-transit control is broken at the
+      calendar even though the key and chain are otherwise fine — `openssl verify` code 10
+      (certificate has expired). The discriminating field is the parser's computed divergence over
+      the real bytes, not your opinion.
+
+  - id: t11
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Switch to "Cert · wrong.host.badssl.com (broken)". Click the single field where this cert
+      fails to cover the host you connected to (`cert.san`) and read it — `openssl verify
+      -verify_hostname` returns code 62 for this mismatch.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.san
+      - check: field_value_is
+        node_id: cert.san
+        value: "badssl.com"
+    hints:
+      - nudge: The padlock is valid — but for the wrong name. Read the SAN and compare it to wrong.host.badssl.com.
+      - concept: "§4.6 — a SAN that does not cover the connected host is hostname mismatch, openssl code 62"
+      - reveal: "On the wrong-host panel, select cert.san — it covers *.badssl.com/badssl.com, NOT wrong.host.badssl.com"
+    explain: |
+      The SAN reads DNS:*.badssl.com, DNS:badssl.com — a single-label wildcard that does NOT cover
+      the three-label wrong.host.badssl.com (RFC 6125), so the cert is valid but for the wrong door:
+      hostname mismatch, `openssl verify` code 62. A green padlock pointed at the wrong name is the
+      whole point of this module's title.
+
+  - id: t12
+    type: action
+    objective: [6]
+    instruction: |
+      Build the re-runnable evidence verdict. Select the "Sort · SHA-256('')" card and decode it
+      live — confirm the empty-string digest equals the cited curriculum constant. This is a verdict
+      anyone can reproduce with `shasum`, the opposite of "trust the padlock."
+    verify:
+      - check: region_labeled_correctly
+        node_id: sha256-empty
+        expect_layer: HASH
+      - check: decoded_artifact_matches
+        node_id: sha256-empty
+        value: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    hints:
+      - nudge: SHA-256 of the empty string is a fixed, citable constant — recompute it and compare.
+      - concept: "§4.7 — a re-runnable transform output == a cited constant is evidence; the padlock is not"
+      - reveal: "Decode the SHA-256('') card; it is e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    explain: |
+      SHA-256("") = e3b0c442… is the same on every machine, forever — a verdict that reproduces is
+      evidence. Pair it with the negotiated TLS 1.3 / AEAD cipher line (the in-transit PASS) and the
+      at-rest storage-encryption setting + KMS key (CC6.1 / SC-28), and the auditor's two-part claim
+      is answered with bytes, not a green icon (CC6.7 / SC-8 / SC-13).
+
+  - id: t13
+    type: reflection
+    objective: [1, 2]
+    instruction: |
+      In 5–7 sentences, for a non-technical colleague: explain the difference between hashing,
+      encryption, and encoding and why "it looks scrambled" is not "it is protected"; then explain
+      why a green padlock does not answer "is the data encrypted in transit?" and which ONE cert
+      field you would read to actually decide it. Use the §3 model, not jargon.
+    hints:
+      - nudge: "The §3 model: a one-way shredder (hash), a lockbox with a key (encrypt), a different alphabet (encode)."
+      - concept: "§3 — The Mental Model + §4.3 the cert field that anchors the in-transit claim"
+
+completion:
+  evidence_pack: true

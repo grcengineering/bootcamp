@@ -99,10 +99,80 @@ import { ExerciseSpecSchema, findBannedKeys } from "../src/lib/exercise-spec";
 import { buildM02Seed } from "../src/engines/linuxadmin";
 import { buildVisualOptions, type FixtureSet, type PacketFixture } from "../src/lib/visual-seed";
 import { buildApiVisualOptions, type ApiFixture } from "../src/lib/api-seed";
+import { buildOciVisualOptions, type OciFixture, type OciImageBlobs } from "../src/lib/oci-seed";
+import {
+  buildWebVisualOptions,
+  buildCryptoVisualOptions,
+  buildIdentityVisualOptions,
+  buildInternetVisualOptions,
+  buildLoggingVisualOptions,
+  buildCloudVisualOptions,
+  type WebFixture,
+  type CryptoDiffFixture,
+  type SyslogFixture,
+  type MatrixFixture,
+  type JwtFixture,
+  type CryptoChainFixture,
+  type DnsFixture,
+  type ContentExtras,
+} from "../src/lib/visual-content-seed";
+import type { OciManifest, OciImageConfig } from "../src/engines/visual/oci";
 import { loadManifest } from "../../.ci/fixtures/load-manifest";
 
 /** The Wave-4 contract/wire oracles served from .ci/fixtures/assets/api/ (vs the net `pkt` canary). */
 const API_ORACLES = new Set(["oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim"]);
+
+/** The Wave-4 header/crypto/identity/logging/cloud oracles → their committed asset subdir + builder. */
+const CONTENT_ORACLE_DIR: Record<string, string> = {
+  hdr: "web",       // module 18 — RFC 7239/6265/9111 headers + RFC 7519 JWT
+  x509: "crypto",   // module 22 — TLS leaf/chain certificates (also module 24's leaf)
+  jwt: "crypto",    // module 23 — JWT + SAML identity artifacts
+  syslog: "logging", // module 25 — RFC 5424 syslog lines
+  csa: "cloud",     // module 20 — the cited shared-responsibility matrix
+  dns: "net",       // module 24 — RFC 1035 DNS query/response + the leaf cert
+};
+
+/** Read a JSON asset from one of the committed asset subdirs. */
+function readAssetJson<T>(subdir: string, file: string): T {
+  return JSON.parse(readFileSync(join(FIXTURES, "assets", subdir, file), "utf8")) as T;
+}
+function readAssetText(subdir: string, file: string): string {
+  return readFileSync(join(FIXTURES, "assets", subdir, file), "utf8");
+}
+
+/** The real artifacts the crypto/identity/internet modules need beyond their primary fixture. */
+function loadContentExtras(oracle: string): ContentExtras {
+  const extras: ContentExtras = {};
+  if (oracle === "x509") {
+    // module 22: the leaf chain + the JWT (the "encoding != protection" PEEL).
+    extras.certChain = readAssetJson<CryptoChainFixture>("crypto", "google-cert-chain.json");
+    extras.jwt = readAssetJson<JwtFixture>("crypto", "jwt-tokens.json");
+  } else if (oracle === "jwt") {
+    // module 23: the JWT + the OASIS SAML clean/expired assertions.
+    extras.jwt = readAssetJson<JwtFixture>("crypto", "jwt-tokens.json");
+    extras.samlClean = readAssetText("identity", "saml-assertion.xml");
+    extras.samlExpired = readAssetText("identity", "saml-assertion-expired.xml");
+  } else if (oracle === "dns") {
+    // module 24: the DNS query + response + the leaf cert (the encryption-boundary surface).
+    extras.dnsQuery = readAssetJson<DnsFixture>("net", "dns-query-example-com.json");
+    extras.dnsResponse = readAssetJson<DnsFixture>("net", "dns-response-example-com.json");
+    extras.certChain = readAssetJson<CryptoChainFixture>("crypto", "google-cert-chain.json");
+  }
+  return extras;
+}
+
+/** Load one OCI image's committed real blobs (module 21 served from .ci/fixtures/assets/containers/). */
+function loadOciBlobs(ref: { manifest_blob: string; config_blob: string; secret_layer_blob?: string }): OciImageBlobs {
+  const dir = join(FIXTURES, "assets", "containers");
+  const manifest = JSON.parse(readFileSync(join(dir, ref.manifest_blob), "utf8")) as OciManifest;
+  const config = JSON.parse(readFileSync(join(dir, ref.config_blob), "utf8")) as OciImageConfig;
+  const blobs: OciImageBlobs = { manifest, config };
+  if (ref.secret_layer_blob) {
+    blobs.secretLayerGz = new Uint8Array(readFileSync(join(dir, ref.secret_layer_blob)));
+    blobs.secretLayerIndex = manifest.layers.length - 1;
+  }
+  return blobs;
+}
 /** The four real machine-readable contracts the api-paradigms PEEL/diff surface parses. */
 const API_CONTRACT_FILES = ["users.openapi.json", "users.wsdl", "users.graphql", "users.proto"];
 
@@ -295,7 +365,25 @@ for (const id of readdirSync(MODULES).sort()) {
       console.error(`sync-content: FAIL — ${id} (engine: visual) needs a visual: block`);
       process.exit(1);
     }
-    if (API_ORACLES.has(spec.visual.oracle)) {
+    if (spec.visual.oracle === "oci") {
+      // Wave-4 module 21 (containers): the OCI image reader over the two real images. The seed
+      // (lib/oci-seed) gunzips the secret layer at build time and serializes the panels as `oci`
+      // sources, so the browser and the replay test rebuild byte-identical parse trees.
+      const fromFile = spec.visual.artifact.from.replace(/^assets\/containers\//, "").replace(/^assets\//, "");
+      const fxPath = join(FIXTURES, "assets", "containers", fromFile);
+      if (!existsSync(fxPath)) {
+        console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/containers`);
+        process.exit(1);
+      }
+      const fx = JSON.parse(readFileSync(fxPath, "utf8")) as OciFixture;
+      visual = buildOciVisualOptions(
+        spec.visual.mode,
+        spec.visual.oracle,
+        loadOciBlobs(fx.images.clean),
+        loadOciBlobs(fx.images.misconfigured),
+        fx.map,
+      );
+    } else if (API_ORACLES.has(spec.visual.oracle)) {
       // Wave-4 contract/wire oracle: parse the committed api artifacts into the SAME parse-tree
       // panels the replay test builds (lib/api-seed), so browser and test see identical records.
       const { fixtures, contracts } = loadApiFixtures();
@@ -306,6 +394,37 @@ for (const id of readdirSync(MODULES).sort()) {
         process.exit(1);
       }
       visual = buildApiVisualOptions(spec.visual.mode, spec.visual.oracle, primary, contracts);
+    } else if (CONTENT_ORACLE_DIR[spec.visual.oracle]) {
+      // Wave-4 header/crypto/identity/logging/cloud oracles (modules 18, 20, 22, 23, 24, 25): each
+      // module's primary fixture lives in its own asset subdir; the builder serializes the REAL
+      // artifacts as ApiPanelSource descriptors so the browser re-runs the SAME parser. The parser
+      // over the real bytes IS the oracle — no authored answer key.
+      const subdir = CONTENT_ORACLE_DIR[spec.visual.oracle];
+      const fromFile = spec.visual.artifact.from.replace(new RegExp(`^assets/${subdir}/`), "").replace(/^assets\//, "");
+      const fxPath = join(FIXTURES, "assets", subdir, fromFile);
+      if (!existsSync(fxPath)) {
+        console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/${subdir}`);
+        process.exit(1);
+      }
+      const { mode, oracle } = spec.visual;
+      if (oracle === "hdr") {
+        visual = buildWebVisualOptions(mode, oracle, JSON.parse(readFileSync(fxPath, "utf8")) as WebFixture);
+      } else if (oracle === "csa") {
+        visual = buildCloudVisualOptions(mode, oracle, JSON.parse(readFileSync(fxPath, "utf8")) as MatrixFixture);
+      } else if (oracle === "syslog") {
+        visual = buildLoggingVisualOptions(mode, oracle, JSON.parse(readFileSync(fxPath, "utf8")) as SyslogFixture);
+      } else if (oracle === "x509") {
+        visual = buildCryptoVisualOptions(mode, oracle, JSON.parse(readFileSync(fxPath, "utf8")) as CryptoDiffFixture, loadContentExtras(oracle));
+      } else if (oracle === "jwt") {
+        // module 23's primary fixture (the JWT tokens) is read via the extras loader; the builder
+        // composes the JWT + SAML panels and the OAuth dance.
+        visual = buildIdentityVisualOptions(mode, oracle, loadContentExtras(oracle));
+      } else if (oracle === "dns") {
+        visual = buildInternetVisualOptions(mode, oracle, loadContentExtras(oracle));
+      } else {
+        console.error(`sync-content: FAIL — ${id} content oracle '${oracle}' has no builder`);
+        process.exit(1);
+      }
     } else {
       const set = loadVisualFixtureSet();
       const fromFile = spec.visual.artifact.from.replace(/^assets\/net\//, "").replace(/^assets\//, "");

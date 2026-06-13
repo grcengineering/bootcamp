@@ -1,0 +1,187 @@
+id: lab-17
+module: 17-databases-relational-and-nosql
+title: One claim, three stores, one real engine
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: sql
+claim_thread: every-user-has-mfa
+payload_budget_bytes: 700000
+desktop_recommended: true
+
+seed:
+  profile: m17
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact the oracle parses: three SQLite tables holding the SAME eight acme.example
+# users, seeded from exercises/assets/stores-seed.sql (the module-06 user set, reused verbatim).
+# The oracle is sql.js (real WASM SQLite); engine_result_equals compares the learner's run against
+# the engine's own result set — there is no authored answer key, the result set IS the answer key.
+console:
+  main_file: query.sql
+  assets: [stores-seed.sql]
+  run_label: Run SQL
+
+intro: |
+  The same eight acme.example users you pulled from the API in module 06 are loaded three ways into
+  one real SQLite engine: a relational `users` table, a `users_doc` table of JSON documents, and a
+  `users_kv` key-value table. You are asked to answer ONE control question — "which users lack
+  MFA?" — in each store, prove you evaluated all eight, then diagnose a SQL-injection break by
+  running a concatenated query against a parameterized one.
+
+  This console is real SQLite running in your browser — the same engine that ships in your phone.
+  You type SQL; the engine returns real result sets, checked against the engine's own output.
+  Nothing is invented; the result set is the answer key. The eight users are seeded for you; start
+  by reading the relational store.
+
+walkthrough_first_input: "SELECT email FROM users WHERE mfa_enabled = 0 ORDER BY email;"
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 2]
+    instruction: |
+      On the relational store, run a query that returns the `email` of every user who lacks MFA,
+      ordered by email. The claim "every user has MFA" is a predicate over the `mfa_enabled` column
+      (0 = off). Read the four users the engine returns.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "SELECT +email +FROM +users +WHERE +mfa_enabled"
+    hints:
+      - nudge: "A relational predicate filters rows on a column: which column is 0 when MFA is off?"
+      - concept: "§4.1 — the relational model: a control claim is a predicate over a typed column"
+      - reveal: "SELECT email FROM users WHERE mfa_enabled = 0 ORDER BY email;"
+    explain: |
+      Four of the eight users lack MFA. You just evaluated a control claim as a `WHERE` predicate
+      over a typed column — the relational store's whole strength. The engine returned the rows; no
+      one screenshotted a dashboard.
+
+  - id: t2
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Prove completeness: run a query returning the total number of user rows (alias the count `n`),
+      so you can show you evaluated EVERY account, not a sample. This is the completeness proof the
+      relational store gives you for free.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "COUNT\\( *\\* *\\) +AS +n +FROM +users"
+    hints:
+      - nudge: "Completeness means 'how many records did I look at in total?' — count them."
+      - concept: "§4.3 — completeness in a store: relational COUNT(*) proves the whole set was seen"
+      - reveal: "SELECT COUNT(*) AS n FROM users;"
+    explain: |
+      Eight accounts total, four without MFA — and now you can prove the four are out of eight, not
+      out of an unknown sample. Proving you saw the whole set is half of an audit finding.
+
+  - id: t3
+    type: action
+    objective: [1, 2]
+    instruction: |
+      Answer the SAME question against the document store `users_doc`, where each user is a JSON
+      document in the `doc` column. Use `json_extract(doc, '$.field')` to read the email of every
+      user whose `mfa_enabled` field is 0, ordered by email. Confirm the answer matches t1.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "json_extract\\( *doc"
+    hints:
+      - nudge: "A document is self-describing — reach a field by its path, not a column name."
+      - concept: "§4.2 — the document model: read control-truth by field path with json_extract"
+      - reveal: "SELECT json_extract(doc, '$.email') AS email FROM users_doc WHERE json_extract(doc, '$.mfa_enabled') = 0 ORDER BY email;"
+    explain: |
+      The same four users — bob, dave, frank, heidi — fall out of the document store too. The store
+      changed the REACH (a field path instead of a column), not the TRUTH. That identity is the
+      lesson: the data model is a choice about access patterns, not about what is true.
+
+  - id: t4
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Answer it once more against the key-value store `users_kv`, whose value is an opaque blob the
+      store cannot filter on (e.g. `bob@acme.example|mfa=0|active`). Return the keys `k` whose value
+      encodes `mfa=0`, ordered by key. Notice you had to know the value's internal format yourself.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "FROM +users_kv +WHERE +v +LIKE"
+    hints:
+      - nudge: "The store can't see inside the value — match the substring the value encodes for MFA-off."
+      - concept: "§4.3 — the key-value model: the value is opaque; you enumerate and parse it yourself"
+      - reveal: "SELECT k FROM users_kv WHERE v LIKE '%|mfa=0|%' ORDER BY k;"
+    explain: |
+      The same four users by their keys (user:u_002, user:u_004, user:u_006, user:u_008) — but you
+      matched on the value's internal format because the store is blind to it. Completeness here rests on having scanned
+      every key, since there is no schema or column to lean on.
+
+  - id: t5
+    type: action
+    objective: [4]
+    instruction: |
+      Diagnose injection. An email-lookup feature is meant to return ONE user but is built by gluing
+      input into the query string. Run the CONCATENATED query that results when the input is
+      `' OR '1'='1` — read how many rows the engine returns versus the one the feature intended.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "FROM +users +WHERE +email +="
+    hints:
+      - nudge: "The input closes the string early and adds an always-true clause — the store obeys."
+      - concept: "§4.5 — SQL injection: concatenating untrusted input makes the store answer a different question"
+      - reveal: "SELECT email FROM users WHERE email = '' OR '1'='1';"
+    explain: |
+      The lookup asked for one user and the engine honestly returned all eight — the injected
+      `OR '1'='1` is always true. The over-broad result set is the SI-10 finding, and it is the
+      engine's real answer, not your claim.
+
+  - id: t6
+    type: action
+    objective: [4]
+    instruction: |
+      Now run the PARAMETERIZED form of the same lookup with the same input. Binding the input as a
+      value means the whole string `' OR '1'='1` is treated as one literal email address — written
+      out, that is the escaped literal below. Read the empty result set: the control working.
+    verify:
+      - check: engine_result_equals
+        stream: stdout
+        from: generated
+      - check: history_contains
+        regex: "FROM +users +WHERE +email +="
+    hints:
+      - nudge: "Bound as a value, the entire input is ONE email string — and no user has that address."
+      - concept: "§4.5 — parameterization binds input as a value, so injection becomes a literal that matches nobody"
+      - reveal: "SELECT email FROM users WHERE email = ''' OR ''1''=''1';"
+    explain: |
+      Zero rows. Binding the input as a value turned the attack into a harmless literal email address
+      that matches no user — exactly correct. The same input, two assemblies: the over-broad set
+      proves the break, the empty set proves the fix. Injection lives in the assembly, not the store.
+
+  - id: t7
+    type: reflection
+    objective: [5, 6]
+    instruction: |
+      In 4–6 sentences, for a non-technical colleague: explain where the "encrypted at rest" claim's
+      truth lives (the storage encryption SETTING plus its KEY reference — SC-28/CC6.1 — not any user
+      row) and where the "access is enforced" claim lives (the access policy/grant — AC-3 — not the
+      data), and why a returned row proves the DATA claim but never the at-rest or access claim. Use
+      the §3 three-filing-systems model and the §4.6 settings-not-rows point, not jargon.
+    hints:
+      - nudge: "A row reads the same whether or not the disk is encrypted — so what would actually prove encryption-at-rest?"
+      - concept: "§4.6 — at-rest control-truth lives in settings + key references and access policy, not rows"
+
+completion:
+  evidence_pack: true

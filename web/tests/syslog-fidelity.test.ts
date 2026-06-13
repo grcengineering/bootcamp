@@ -47,7 +47,14 @@ describe("syslog-5424 fidelity — RFC 5424 §6.5 verbatim lines vs the parser",
     const l = byId("ex1_auth_failure");
     expect(l.raw.length).toBe(l.chars); // the committed fixture cannot silently drift in length
     const p = parseSyslog(l.raw);
-    const t = l.rfc_field_truth as Record<string, { code?: number } | string | boolean>;
+    const t = l.rfc_field_truth as {
+      version: string;
+      timestamp: string;
+      hostname: string;
+      app_name: string;
+      msgid: string;
+      msg: string;
+    };
     expect(p.region("version")!.value).toBe(t.version);
     expect(p.region("timestamp")!.value).toBe(t.timestamp);
     expect(p.region("hostname")!.value).toBe(t.hostname);

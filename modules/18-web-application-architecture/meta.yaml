@@ -1,0 +1,14 @@
+module: 18-web-application-architecture
+title: "Where the Claim Can Be True: Tracing a Request Through the Tiers"
+tier: 1
+loop_stages: [UNDERSTAND, LOCATE, EVALUATE, EVIDENCE, MONITOR]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B                      # §3-4 tier model stable; header/RFC conventions drift
+sections_tiering: "1-4=A, 5-6=B, 7=A, 8=C"
+last_reviewed: 2026-06-13
+review_due: 2026-12-13              # Tier-B cadence: 6 months
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [rfc-errata, header-convention-change, supplemental-link-dead]

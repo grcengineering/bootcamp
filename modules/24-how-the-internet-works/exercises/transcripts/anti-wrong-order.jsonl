@@ -1,0 +1,9 @@
+{"anti_for": "t8", "fails_check": 0, "reason": "out-of-order near miss: assembles the TLS 1.3 handshake with Certificate placed BEFORE EncryptedExtensions (order [0,1,3,2,4,5,6]) — the real RFC 8446 state machine never reaches its established state, so sequence_matches (verify[0]) fails and the sim raises the real unexpected_message alert. All prior action tasks t1-t7 (DNS peel + delegation TRACE) are completed correctly so the cheat reaches t8 (sticky near-miss)."}
+{"input": {"panel": "dns-query", "select": "dns.qdcount", "read": "1"}}
+{"input": {"panel": "dns-query", "select": "dns.qname", "read": "example.com"}}
+{"input": {"panel": "dns-query", "select": "dns.qtype", "read": "1 = A"}}
+{"input": {"panel": "dns-response", "select": "dns.ancount", "read": "2"}}
+{"input": {"panel": "dns-response", "select": "dns.answer.0.rdata", "read": "104.20.23.154"}}
+{"input": {"panel": "dns-response", "select": "dns.flags", "read": "AD 0"}}
+{"input": {"trace": "delegation", "order": [0, 1, 2, 3, 4, 5, 6, 7]}}
+{"input": {"trace": "tls13", "order": [0, 1, 3, 2, 4, 5, 6]}}

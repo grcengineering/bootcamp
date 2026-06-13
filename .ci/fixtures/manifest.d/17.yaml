@@ -1,0 +1,61 @@
+# manifest.d/17.yaml — module 17 (databases-relational-and-nosql) fidelity fragment.
+#
+# The lab is the wave-2 `sql` engine class: real sql.js / WASM SQLite over three stores holding the
+# SAME eight acme.example users (relational + JSON document + key-value). The engine owns replay
+# (web/tests/exercise-replay-17.test.ts seeds from exercises/assets/stores-seed.sql and byte-diffs
+# the real result sets) — source `wasm-engine`, match `engine-pinned`: the engine's result set IS
+# the oracle, no captured fixture and no authored answer key. The one authored artifact is the seed
+# DATA (the eight users), reused verbatim from the module-06 API seed and carried as an
+# authored-with-citation entry so its provenance is explicit.
+
+seeds:
+  m17:
+    kind: sql                         # wave-2 sql engine: real WASM SQLite; seed assets are committed
+                                      # .sql under modules/17-.../exercises/assets/ (no home tree, no PATH tools)
+
+entries:
+  # The authored seed data: the eight users, three stores, reused from module 06's API fixtures.
+  - id: m17-stores-seed
+    module: "17"
+    source: authored
+    match: authored-with-citation
+    citation: "modules/06-api-fundamentals/labs/fixtures/users-page-{1,2}.json (the eight acme.example users, reused verbatim); SQLite json1 (json_extract) per sqlite.org/json1.html"
+    cmd: "sqlite3 :memory: < exercises/assets/stores-seed.sql"
+
+  # The relational completeness query — predicate over a typed column + COUNT(*) over the whole set.
+  - id: m17-relational-mfa
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT email FROM users WHERE mfa_enabled = 0 ORDER BY email;"
+  - id: m17-relational-count
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT COUNT(*) AS n FROM users;"
+
+  # The document store — SAME answer reached by json_extract field path (sqlite json1).
+  - id: m17-document-mfa
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT json_extract(doc, '$.email') AS email FROM users_doc WHERE json_extract(doc, '$.mfa_enabled') = 0 ORDER BY email;"
+
+  # The key-value store — opaque value scanned by key (the model cannot filter on contents).
+  - id: m17-kv-mfa
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT k FROM users_kv WHERE v LIKE '%|mfa=0|%' ORDER BY k;"
+
+  # SQL injection: the concatenated form (over-broad result set) vs the parameterized form (empty).
+  - id: m17-injection-concatenated
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT email FROM users WHERE email = '' OR '1'='1';"
+  - id: m17-injection-parameterized
+    module: "17"
+    source: wasm-engine
+    match: engine-pinned
+    cmd: "SELECT email FROM users WHERE email = ''' OR ''1''=''1';"

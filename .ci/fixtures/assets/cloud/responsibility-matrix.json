@@ -1,0 +1,102 @@
+{
+  "id": "cloud-responsibility-matrix",
+  "kind": "responsibility-matrix",
+  "description": "The committed authoritative shared-responsibility key for module 20 (cloud-shared-responsibility), MAP mode. The cited matrix IS the oracle: there is no byte parser and no authored per-render answer — `mapping_correct` reads each card's placement against the cited keyByModel/keyZone derived from the AWS Shared Responsibility Model + CSA Consensus Assessments matrix + NIST 800-53 control families. The IaaS/PaaS/SaaS slider re-derives placement so a card visibly migrates across the you/provider boundary as the service model changes (the boundary is a movable line).",
+  "provenance": {
+    "authored_from": "AWS Shared Responsibility Model (aws.amazon.com/compliance/shared-responsibility-model) + Cloud Security Alliance Consensus Assessments Initiative Questionnaire (CAIQ) shared-responsibility columns + NIST SP 800-53 Rev.5 control families (SC-12/SC-28 cryptographic protection, CM-6/CM-7 configuration, SA-22/SI-2 flaw remediation, AC-2/AC-3/IA-2 access enforcement, PE-* physical, AU-2/AU-6/AU-12 audit) + AICPA SOC 2 TSC CUEC guidance (complementary user-entity controls). Vendor-neutral control-plane/data-plane split per the CSA / NIST SP 800-204 distinction between the management API surface and the workload traffic surface.",
+    "match": "authored-with-citation",
+    "honesty_note": "Every zone assignment carries a keyRef citation to its authoritative source. No value is read off a wire — this is a conceptual module: the cited matrix is the closed answer key the verifier compares placements against. The slider re-derivation (keyByModel) reproduces the published shift of responsibility from IaaS to SaaS, where the customer's surface shrinks as the provider's managed surface grows; the constant cards (customer data, IAM access) reproduce the model's invariant that managing your own data and who reaches it is yours under every model ('security IN the cloud')."
+  },
+  "map": {
+    "boards": ["service-model", "plane"],
+    "zones": ["you", "provider", "control-plane", "data-plane"],
+    "slider": { "options": ["IaaS", "PaaS", "SaaS"], "initial": "IaaS" },
+    "items": [
+      {
+        "id": "physical-facility",
+        "board": "service-model",
+        "label": "Physical facilities, hardware, and the host hypervisor",
+        "keyByModel": { "IaaS": "provider", "PaaS": "provider", "SaaS": "provider" },
+        "keyRef": "AWS SRM 'security OF the cloud' (PE-* physical/environmental); provider-owned at every model"
+      },
+      {
+        "id": "guest-os-patching",
+        "board": "service-model",
+        "label": "Guest-OS patching and flaw remediation",
+        "keyByModel": { "IaaS": "you", "PaaS": "provider", "SaaS": "provider" },
+        "keyRef": "AWS SRM guest-OS patching (SA-22/SI-2): customer under IaaS, managed by provider once the OS is abstracted (PaaS/SaaS)"
+      },
+      {
+        "id": "application-code",
+        "board": "service-model",
+        "label": "Application code and its runtime configuration",
+        "keyByModel": { "IaaS": "you", "PaaS": "you", "SaaS": "provider" },
+        "keyRef": "AWS SRM application layer (SA-* / CM-6): customer-owned on IaaS/PaaS, provider-owned application in SaaS"
+      },
+      {
+        "id": "network-firewall-config",
+        "board": "service-model",
+        "label": "Network and firewall (security-group) configuration",
+        "keyByModel": { "IaaS": "you", "PaaS": "you", "SaaS": "provider" },
+        "keyRef": "AWS SRM network traffic protection / configuration (CM-7/SC-7): customer-configured on IaaS/PaaS, provider-managed in SaaS"
+      },
+      {
+        "id": "encryption-at-rest",
+        "board": "service-model",
+        "label": "Encryption at rest (the storage setting + key custody)",
+        "keyByModel": { "IaaS": "you", "PaaS": "you", "SaaS": "provider" },
+        "keyRef": "AWS SRM client-/server-side encryption (SC-12/SC-28): customer enables it and may hold the key on IaaS/PaaS; in SaaS the provider attests it and the customer INHERITS the control via a CUEC (SOC 2 complementary user-entity control)"
+      },
+      {
+        "id": "customer-data",
+        "board": "service-model",
+        "label": "Customer data: what it is and who may read it",
+        "keyByModel": { "IaaS": "you", "PaaS": "you", "SaaS": "you" },
+        "keyRef": "AWS SRM 'security IN the cloud' — customer data + identity/access management (AC-2/AC-3): always the customer's, at every model"
+      },
+      {
+        "id": "iam-policy-change",
+        "board": "plane",
+        "label": "Creating an IAM role / changing a resource policy",
+        "keyZone": "control-plane",
+        "keyRef": "CSA / NIST SP 800-204 control plane: identity and policy administration is a management-API action (AC-2/AC-3 enforcement is configured here)"
+      },
+      {
+        "id": "security-group-edit",
+        "board": "plane",
+        "label": "Editing a security-group / firewall rule",
+        "keyZone": "control-plane",
+        "keyRef": "CSA control plane: a firewall rule change is a management-API configuration action (CM-7), not workload traffic"
+      },
+      {
+        "id": "kms-key-rotation",
+        "board": "plane",
+        "label": "Rotating a KMS encryption key",
+        "keyZone": "control-plane",
+        "keyRef": "CSA control plane: key lifecycle administration is a management-API action (SC-12); the key's USE on a payload is data-plane"
+      },
+      {
+        "id": "object-read-write",
+        "board": "plane",
+        "label": "An application reading/writing objects in a bucket",
+        "keyZone": "data-plane",
+        "keyRef": "NIST SP 800-204 data plane: serving the workload's request/response traffic and the bytes it moves"
+      },
+      {
+        "id": "request-traffic",
+        "board": "plane",
+        "label": "User request traffic hitting the running workload",
+        "keyZone": "data-plane",
+        "keyRef": "NIST SP 800-204 data plane: live request/response traffic to the workload"
+      },
+      {
+        "id": "audit-logging",
+        "board": "plane",
+        "label": "Audit logging that evidences both planes",
+        "keyZones": ["control-plane", "data-plane"],
+        "keyZone": "control-plane",
+        "keyRef": "AU-2/AU-12 audit: management-API actions (control-plane events) AND data-access events (data-plane events) both produce audit evidence — a THROUGHOUT control spanning both planes (e.g. CloudTrail management + data events)"
+      }
+    ]
+  }
+}

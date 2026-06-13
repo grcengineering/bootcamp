@@ -1,0 +1,14 @@
+module: 21-containers-and-virtualization
+title: "Peel the Image: Where a Workload's Control-Truth Is Baked In"
+tier: 1
+loop_stages: [LOCATE, QUERY, EVALUATE, EVIDENCE]
+tracks: [generalist, governance, risk, compliance, customer-trust-assurance]
+owner: Justin Pagano
+volatility: B                      # OCI/VM fundamentals stable; CIS Docker Benchmark + 800-190 errata drift
+sections_tiering: "1-5=A, 6=B, 7=A, 8=C"
+last_reviewed: 2026-06-13
+review_due: 2026-12-13              # Tier-B cadence: 6 months
+objectives: [O1, O2, O3, O4, O5, O6]
+assessment_passrate_threshold: 0.80   # below this on any objective -> revise (Loop 3)
+status: draft
+triggers: [cis-docker-benchmark-revision, nist-800-190-revision, oci-image-spec-change, supplemental-link-dead]

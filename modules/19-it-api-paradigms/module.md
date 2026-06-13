@@ -93,6 +93,8 @@ The four control surfaces in practice. A GRC engineer's job is not to memorize f
 
 ## 6. Guided Lab
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 19 → Interactive lab) as the Inspect-&-Assemble surface: four real machine-readable contracts and four real clean/broken wire payload pairs over the SAME eight-user `acme.example` model, rendered as nested, keyboard-selectable regions. Selecting a node reveals the contract/wire oracle's real decode — the same `oas`/`wsdl`/`sdl`/`proto`/`pbwire`/`gqlsim` parsers + the SHA-1/Base64 digest transform the replay tests drive — and the protobuf decode is byte-exact-verified against protobuf.dev's published examples (`a = 150 → 08 96 01`; `mfa_enabled = false → 10 00`). Every task is machine-verified against that parse tree. No install, no live endpoint, no answer key — the decoder is the oracle.
+
 The exercise (`exercises/exercise.yaml`) drives the **visual** Inspect-&-Assemble surface across four mechanics over the SAME eight-user `acme.example` seed:
 
 1. **PEEL the four contracts** — select the MFA truth-field node in each (OpenAPI `mfa_enabled`, WSDL `sp:SignedParts`, SDL `mfaEnabled`, .proto `mfa_enabled = 2`), read off four real ported parser oracles.

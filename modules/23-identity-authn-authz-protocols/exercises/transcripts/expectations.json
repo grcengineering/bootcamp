@@ -1,0 +1,12 @@
+{
+  "_comment": "Documentation of what the jwt / saml oracles + the oauth-oidc-sim decode from the REAL committed identity fixtures (the oracles). No spec check uses from:generated — the visual primitives read the parse tree / trace probe directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the oracles, never injected expectations.",
+  "_jwt_header_decoded": "{\"alg\":\"HS256\",\"typ\":\"JWT\"} (base64url, decodes with no key — a signed claim, not a secret)",
+  "_jwt_payload_exp": "1718203600",
+  "_jwt_payload_iss": "https://accounts.grcbootcamp.example",
+  "_jwt_algnone_alg": "none (RFC 8725 §2.1 unprotected-token attack — empty signature segment)",
+  "_saml_authncontextclassref": "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+  "_saml_clean_notonorafter": "2030-01-01T00:00:00Z",
+  "_saml_expired_notonorafter": "2024-01-02T00:00:00Z",
+  "_oauth_canonical": "authorization_request, authorization_response, token_request, token_response, resource_request, resource_response (RFC 6749 §4.1)",
+  "_oauth_break_alert": "invalid_request — RFC 6749 §4.1.2.1/§5.2, resource call before the token exchange (no valet key issued)"
+}

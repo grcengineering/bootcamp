@@ -1,0 +1,252 @@
+id: lab-25
+module: 25-logging-telemetry-observability
+title: Read the control on the log line
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: auth-failures-alerted
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m25
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact the oracle parses: the four RFC 5424 §6.5 verbatim example lines + the
+# Diff-the-Trace clean/broken pair (a real auth-failure line and a real instance with only the
+# PRIVAL changed <34>->>39>, downgrading Severity 2 Critical -> 7 Debug). Oracle `syslog` = the
+# RFC 5424 ABNF parser over the real characters; the PRI bit-unpack (PRIVAL = Facility*8 + Severity)
+# is its arithmetic, never an authored answer key. The host composes the PEEL panels (per real line),
+# the born-vs-queried pipeline TRACE, and the field->control MAP — exactly how module 22 composes
+# several oracles/modes in one host. Panels: ex1-clean, ex3-structured, ex2-application,
+# pair-auth-severity-clean, pair-auth-severity-broken.
+visual:
+  artifact:
+    kind: syslog-5424
+    from: assets/logging/syslog-5424-examples.json
+  oracle: syslog
+  mode: diff-the-trace
+
+intro: |
+  A control's continuous evidence is born once, at the source, in a single structured log line — at a
+  field you can point to. You are handed the real RFC 5424 example lines and asked to read three
+  control claims directly off the slots: "auth failures are recorded at an alertable Severity"
+  (the PRI byte), "audit records attribute the actor" (a NILVALUE where a value belongs), and "machine
+  evidence lives in named fields" (STRUCTURED-DATA) — then trace where evidence is born versus queried,
+  map each field to the control it evidences, and diagnose the single field where a real downgraded
+  line breaks its claim.
+
+  This surface is the log line itself, rendered as nested named regions (the OSI move applied to a
+  log). Selecting a region reveals the parser's real decode — including the PRI bit-unpack into its
+  Facility (PRIVAL / 8) and Severity (PRIVAL mod 8). Every value is the parser's computation over the
+  real characters; nothing is invented; the line is the answer key. Start on the clean auth-failure
+  line (ex1-clean).
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1]
+    instruction: |
+      On the clean auth-failure line (panel "ex1-clean"), select the `HOSTNAME` HEADER slot and read
+      the value. A log line is a structured record with named slots at fixed positions — this is the
+      machine that wrote the line.
+    verify:
+      - check: region_labeled_correctly
+        node_id: hostname
+      - check: field_value_is
+        node_id: hostname
+        value: "mymachine.example.com"
+    hints:
+      - nudge: The HEADER is space-delimited; HOSTNAME is the slot after TIMESTAMP.
+      - concept: "§4.1 — HEADER = PRI VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID"
+      - reveal: "Select the HOSTNAME slot; it reads mymachine.example.com"
+    explain: |
+      A log line is not prose — it is a record with named slots at fixed positions, exactly like the
+      dock form in §3. You located HOSTNAME by its position in the grammar, not by guessing where the
+      hostname "looks like" it is. That positional structure is what makes a log line queryable evidence.
+
+  - id: t2
+    type: action
+    objective: [1]
+    instruction: |
+      Still on ex1-clean, select the `PROCID` slot and read it. This is a NILVALUE `-` — state that it
+      means the field is genuinely ABSENT (no process id recorded), not the literal text "dash".
+    verify:
+      - check: region_labeled_correctly
+        node_id: procid
+      - check: field_value_is
+        node_id: procid
+        value: "NILVALUE"
+    hints:
+      - nudge: A lone hyphen in a slot is RFC 5424's way of writing "nothing here."
+      - concept: "§4.2 — NILVALUE `-` is a real absence; a `-` in an actor field breaks attributability"
+      - reveal: "Select PROCID; the parser reads it as '- (NILVALUE — absent)', not the text 'dash'"
+    explain: |
+      The parser reports `-` as a genuine absence, not a string. This matters for control evidence: an
+      audit record whose actor field is NILVALUE cannot attribute the action, so "privileged actions are
+      attributable to a user" would be broken by a `-` where a username belongs. Absence is sometimes the
+      finding.
+
+  - id: t3
+    type: action
+    objective: [2]
+    instruction: |
+      Select the PRI's `Facility` (panel ex1-clean). The PRI is bit-packed: PRIVAL = Facility×8 + Severity.
+      Recover the Facility from the high bits (PRIVAL ÷ 8) and read which subsystem spoke.
+    verify:
+      - check: region_labeled_correctly
+        node_id: pri.facility
+      - check: field_value_is
+        node_id: pri.facility
+        value: "4 = security/authorization"
+    hints:
+      - nudge: The PRIVAL is 34; integer-divide by 8 to get the Facility code, then read its keyword.
+      - concept: "§4.3 — Facility = PRIVAL ÷ 8 (the high bits); Facility 4 = security/authorization"
+      - reveal: "Select pri.facility; 34 ÷ 8 = 4 = security/authorization messages"
+    explain: |
+      One small number carried two facts. 34 ÷ 8 = 4 = the security/authorization subsystem — the right
+      Facility for an auth event. You did the arithmetic the writer did, in reverse. Nothing was looked up
+      from an answer key; the formula IS the oracle.
+
+  - id: t4
+    type: action
+    objective: [2]
+    instruction: |
+      Now select the PRI's `Severity` (panel ex1-clean). Recover it from the low three bits (PRIVAL mod 8)
+      and read the Severity word — this is the slot a "page on Critical-or-worse" alert rule reads.
+    verify:
+      - check: region_labeled_correctly
+        node_id: pri.severity
+      - check: field_value_is
+        node_id: pri.severity
+        value: "2 = Critical"
+    hints:
+      - nudge: 34 mod 8 leaves the remainder that names the Severity word.
+      - concept: "§4.4 — Severity = PRIVAL mod 8; it is the field the alert predicate reads"
+      - reveal: "Select pri.severity; 34 mod 8 = 2 = Critical — an alert on Critical-or-worse fires"
+    explain: |
+      Severity 2 (Critical) is what makes this auth failure page someone. Severity is not decoration — it
+      is the control parameter the alert rule evaluates. Hold this value; the broken twin will change only
+      this one number and silence the alert.
+
+  - id: t5
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Switch to the structured line (panel "ex3-structured"). Peel the STRUCTURED-DATA element and select
+      its `SD-ID`. This is the enterprise-namespaced id under which machine-readable control evidence lives.
+    verify:
+      - check: region_labeled_correctly
+        node_id: sd0.id
+      - check: field_value_is
+        node_id: sd0.id
+        value: "exampleSDID@32473"
+    hints:
+      - nudge: The bracketed [ ... ] block is STRUCTURED-DATA; the first token inside is the SD-ID.
+      - concept: "§4.5 — SD-ELEMENT = SD-ID + name=\"value\" SD-PARAMs; machine-readable, queryable evidence"
+      - reveal: "Select the SD-ID inside the brackets; it reads exampleSDID@32473"
+    explain: |
+      The SD-ID namespaces the element so vendors do not collide. Everything under it is key-value, which is
+      why a control mapped to a named SD-PARAM is provable by query — unlike the same fact buried in free-text
+      MSG, which you would have to read by eye.
+
+  - id: t6
+    type: action
+    objective: [3]
+    instruction: |
+      Still on ex3-structured, select the named `eventID` SD-PARAM and read its value. A query can ask for
+      events by this name with no English parsing — this is what makes a structured field provable evidence.
+    verify:
+      - check: region_labeled_correctly
+        node_id: sd0.param2
+      - check: field_value_is
+        node_id: sd0.param2
+        value: "eventID=\"1011\""
+    hints:
+      - nudge: Inside the SD-ELEMENT, the parameters are name="value" pairs; find the one named eventID.
+      - concept: "§4.5 — a control mapped to a named SD-PARAM is continuously, automatically verifiable"
+      - reveal: "Select the eventID SD-PARAM; it reads eventID=\"1011\""
+    explain: |
+      `eventID="1011"` is addressable by name. A SIEM rule can ask "every line where eventID is the lockout
+      code" without parsing prose. That queryability is the whole reason control evidence belongs in
+      STRUCTURED-DATA rather than in the human MSG slot.
+
+  - id: t7
+    type: action
+    objective: [4]
+    instruction: |
+      Trace the log pipeline: assemble the five stages in order — source, collector, store, query, alert.
+      State where evidence is BORN (once, at the event) and where it is QUERIED (repeatedly, afterward).
+    verify:
+      - check: sequence_matches
+        canonical_ref: log-pipeline
+    hints:
+      - nudge: "Follow one line's life: emitted at the event, shipped, indexed, asked about, then alerted on."
+      - concept: "§4.6 — evidence is born at the source (once) and queried at the store (repeatedly)"
+      - reveal: "Order: source → collector → store → query → alert; born at the source, queried at the store"
+    explain: |
+      Evidence is born at the source, exactly once, the instant the event happens — everything downstream is
+      a copy or a question about it. If the source never emitted the line, no query of the store will ever
+      find it: the gap is upstream of every dashboard. Retention (AU-11) is a property of the store, not the
+      source.
+
+  - id: t8
+    type: action
+    objective: [3, 5]
+    instruction: |
+      Map each deciding field onto the control it evidences: the PRI Severity (auth alerting) → AC-7/IA-5,
+      the audit-record content (actor/time/outcome) → AU-3, the store retention horizon → AU-11. Then
+      classify the two example lines: the auth-failure line is AUDIT evidence; the do-nuts line is APPLICATION
+      noise.
+    verify:
+      - check: mapping_correct
+    hints:
+      - nudge: Each control names a field — match the field to the family whose claim that field decides.
+      - concept: "§4.7–§4.8 — Severity/outcome → AC-7/IA-5; audit content → AU-3; retention → AU-11"
+      - reveal: "pri-severity→AC-7/IA-5, audit-content→AU-3, retention→AU-11; auth line=audit, do-nuts=application"
+    explain: |
+      A control is a predicate over a field. AC-7/IA-5 read the auth outcome and Severity; AU-3 reads whether
+      the audit content is present and non-NILVALUE; AU-11 reads the store's retention. And not every line is
+      control evidence — the do-nuts application line lacks the audit content, so offering it as audit proof is
+      itself a finding, no matter the logging volume.
+
+  - id: t9
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Switch to the broken twin (panel "pair-auth-severity-broken"). It is the SAME auth failure with only
+      the PRIVAL changed. Select the PRI `Severity` and read the single field where the real downgraded line
+      contradicts the "auth failures are alerted" claim.
+    verify:
+      - check: region_labeled_correctly
+        node_id: pri.severity
+      - check: field_value_is
+        node_id: pri.severity
+        value: "7 = Debug"
+    hints:
+      - nudge: Both lines are real and identical but for the PRI — compute the broken line's Severity.
+      - concept: "§4.4 — Severity is where a logged-but-silent control failure hides; 39 mod 8 = 7 (Debug)"
+      - reveal: "On the broken panel, select pri.severity; 39 mod 8 = 7 = Debug — under the Critical alert threshold"
+    explain: |
+      The discriminating field is the parser's arithmetic over the real PRI byte, not your opinion: 39 = 4×8+7,
+      so same Facility 4 but Severity 7 (Debug). The event is still logged — a naive "we log auth failures"
+      check passes — but a Critical-threshold alert never fires on Debug. The break is one number (AC-7/AU-3;
+      SOC 2 CC7.2/CC7.3), and your Log Evidence Finding names the field, both values, the control, and the ref.
+
+  - id: t10
+    type: reflection
+    objective: [1, 4]
+    instruction: |
+      In 4–6 sentences, for a non-technical colleague: explain why a log line is a pre-printed form with
+      slots and not a paragraph; why the PRI's Severity slot — not the message text — decides whether anyone
+      is alerted; and why evidence is born once at the source and only queried at the store (so a dashboard
+      is a question, not the proof). Use the §3 dock-form model, not jargon.
+    hints:
+      - nudge: "The §3 model: a clerk's pre-printed form with fixed slots — the priority stamp decides who gets paged."
+      - concept: "§3 — The Mental Model + §4.6 born-at-the-source vs queried-at-the-store"
+
+completion:
+  evidence_pack: true

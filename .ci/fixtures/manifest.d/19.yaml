@@ -1,0 +1,99 @@
+# manifest.d/19.yaml — module 19 (it-api-paradigms) fidelity fragment.
+#
+# Module 19 is a pure-VISUAL module (engine: visual, seed `mapi` = kind: visual, owned by the base
+# manifest — NOT redefined here). It teaches no replayable SHELL command, so it adds no byte-exact
+# terminal entries. What it DOES add to the fidelity surface is the four machine-readable CONTRACTS
+# the module frames as "the first place a control's truth lives" — collectible static evidence an
+# auditor pulls before touching a live endpoint — plus the gRPC-over-HTTP/2 wire exchange whose
+# protobuf body is byte-exact-decoded.
+#
+# Honesty doctrine: the parser/decoder/transform over each REAL artifact IS the oracle; there is no
+# authored answer key. Each contract is authored to its published spec (match: authored-with-citation,
+# citation required + present); the gRPC wire body is the real protobuf encoding of the shared seed,
+# byte-exact-verified against protobuf.dev's published examples (match: computed) in
+# web/tests/pbwire-fidelity.test.ts. Every fixture path is a REAL committed artifact under
+# .ci/fixtures/assets/api/. See .ci/fixtures/assets/api/README.md for full provenance.
+#
+# No `seeds:` block: `mapi` (kind: visual) is base-owned; redefining it would collide (loader throws).
+# No `meta` / `hole_defs`: global to manifest.yaml (loader rejects either in a fragment).
+
+entries:
+  # --- The four collectible contract artifacts (LOCATE the MFA truth-field — objective O1) ---------
+  - id: m19-contract-openapi
+    module: "19"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "curl -s https://api.acme.example/openapi.json   # REST contract: components.schemas.User.properties.mfa_enabled: boolean"
+    citation: >-
+      OpenAPI Specification 3.1.0 (spec.openapis.org/oas/v3.1.0). Artifact:
+      .ci/fixtures/assets/api/users.openapi.json — authored to OAS 3.1.0; the MFA control truth-field is
+      components.schemas.User.properties.mfa_enabled, declared type: boolean. Parsed by the `oas` oracle
+      (web/src/engines/visual/) — the parse tree over the real file is the answer key, not a stored value.
+    notes: >-
+      The OpenAPI doc is static, machine-readable evidence the auditor collects before any live call;
+      module 19 §4.1/§5. A live server's doc is host-specific — the committed contract is the declared
+      canon the `oas` parser reads.
+
+  - id: m19-contract-wsdl
+    module: "19"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "curl -s http://acme.example/users?wsdl   # SOAP contract: sp:SignedParts requires the Body be signed"
+    citation: >-
+      WSDL 1.1 (w3.org/TR/wsdl) + WS-SecurityPolicy 1.2 (docs.oasis-open.org/ws-sx/ws-securitypolicy/200702)
+      + WSS UsernameTokenProfile 1.0 (OASIS). Artifact: .ci/fixtures/assets/api/users.wsdl — the
+      message-integrity control truth-field is sp:SignedParts/sp:Body (the SOAP Body MUST be signed).
+      Parsed by the `wsdl` oracle; the parse tree over the real file is the answer key.
+    notes: >-
+      Unlike the header-bearer paradigms, SOAP's control lives inside the message: WS-SecurityPolicy
+      sp:SignedParts makes Body integrity a contractual requirement; module 19 §4.1/§4.3.
+
+  - id: m19-contract-graphql-sdl
+    module: "19"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "curl -s https://api.acme.example/graphql -d '{\"query\":\"query{__type(name:\\\"User\\\"){fields{name type{name}}}}\"}'   # SDL truth-field: User.mfaEnabled: Boolean!"
+    citation: >-
+      GraphQL Specification (spec.graphql.org) — Schema Definition Language. Artifact:
+      .ci/fixtures/assets/api/users.graphql — the MFA control truth-field is type User { mfaEnabled: Boolean! }.
+      Parsed by the `sdl` oracle; the parse tree over the real file is the answer key. (The cmd shows
+      introspection-as-collection; module 19 teaches introspection-on-in-prod is itself an API9 finding.)
+    notes: >-
+      One control-truth, a third contract name (camelCase Boolean!), a third shape; LOCATE it by
+      reading the SDL, not from memory — module 19 §4.1.
+
+  - id: m19-contract-proto
+    module: "19"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "buf export buf.build/acme/users --output .   # gRPC contract: bool mfa_enabled = 2 (the = 2 field tag bridges to the wire)"
+    citation: >-
+      Protocol Buffers proto3 language guide (protobuf.dev). Artifact: .ci/fixtures/assets/api/users.proto —
+      the MFA control truth-field is `bool mfa_enabled = 2;`; the `= 2` is the field tag the wire encoder
+      turns into tag byte 0x10 ((2 << 3) | 0, VARINT). Parsed by the `proto` oracle; the parse tree over
+      the real file is the answer key.
+    notes: >-
+      The .proto field tag is the bridge to the wire byte the learner decodes two tasks later; module 19
+      §4.1/§4.5.
+
+  # --- The gRPC-over-HTTP/2 wire exchange (decode mfa_enabled=false to 0x10 0x00 — O2/O4) ----------
+  - id: m19-grpc-listusers-wire
+    module: "19"
+    source: authored
+    match: computed
+    cwd: /tmp
+    cmd: "grpcurl -plaintext acme.example:443 userservice.UserService/ListUsers   # length-prefixed protobuf frame [flag:1B][len:4B BE][msg]"
+    citation: >-
+      protobuf.dev "Encoding" + grpc PROTOCOL-HTTP2.md (RFC 7540 pseudo-headers). Artifact:
+      .ci/fixtures/assets/api/grpc-listusers.json — the protobuf message body is the REAL wire encoding of
+      the shared eight-user seed, byte-exact-verified against protobuf.dev's published examples
+      (a=150 -> 08 96 01; b="testing" -> 12 07 74 65 73 74 69 6e 67; mfa_enabled=false -> 10 00) in
+      web/tests/pbwire-fidelity.test.ts. Decoded by the `pbwire` oracle — the decoder over the real bytes
+      IS the oracle (match: computed, never authored).
+    notes: >-
+      The opaque length-prefixed binary frame is decoded down to the literal bytes; the second seeded
+      user's mfa_enabled=false reads as 0x10 0x00. Module 19 §4.5; PEEL-the-gRPC-frame activity.

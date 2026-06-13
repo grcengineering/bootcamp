@@ -1,0 +1,12 @@
+{
+  "_comment": "Documentation of what the hdr/jwt oracles decode from the REAL committed header/token bytes (the oracle). No spec check uses from:generated — the visual primitives read the parse tree directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the oracles, never injected expectations.",
+  "_clean_forwarded_proto": "https",
+  "_clean_forwarded_for": "192.0.2.43",
+  "_clean_cookie_secure": "(flag attribute — present)",
+  "_clean_jwt_alg": "HS256",
+  "_clean_jwt_iss": "https://auth.acme.example",
+  "_broken_forwarded_for": "192.0.2.60",
+  "_broken_cookie_safety": "present: (none) · absent: secure, httponly, samesite",
+  "_broken_cache_age": "142 seconds — a cache served this response (RFC 9111 §5.1)",
+  "_broken_jwt_alg": "none"
+}

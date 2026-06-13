@@ -1,0 +1,297 @@
+id: lab-24
+module: 24-how-the-internet-works
+title: Read the request lifecycle on the wire
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: encrypted-in-transit
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m24
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact set composing one request lifecycle for example.com. The cert Diff-the-Trace
+# fixture keys the spine (the in-transit identity verdict); the surface prepends the PEELable real
+# DNS query + response (dns oracle / RFC 1035 parser), the DNS delegation chain and the RFC 8446
+# TLS 1.3 handshake as orderable TRACE sequences (dnsres + tls13 real state machines), and the real
+# www.google.com leaf + a broken twin (x509 parser). Every node is the ported parser / state-machine
+# over the REAL committed bytes — fidelity-checked vs dig, openssl, and the RFC state machines. Oracle
+# `dns` names the lifecycle's first stage; the seed dispatches each panel to its own oracle (the same
+# multi-oracle composition the api-paradigms and applied-crypto modules use).
+visual:
+  artifact:
+    kind: dns-msg
+    from: assets/net/dns-query-example-com.json
+  oracle: dns
+  mode: diff-the-trace
+
+intro: |
+  You are handed the real artifacts of one request lifecycle — the moment "example.com" becomes
+  pixels — and asked to read each control claim's truth directly off them. A name resolved (DNS), a
+  channel opened and secured (TCP/TLS), an identity proven (the certificate): every stage is a place
+  a claim can be made or broken, and you will point to the exact message, byte, or field that holds
+  each one.
+
+  This surface composes the real lifecycle. The DNS query and response are PEELable byte-range trees
+  — select a region and the RFC 1035 parser shows the real decode. The DNS delegation and the TLS 1.3
+  handshake are orderable sequences run by their real state machines — route the leaf query to the
+  root and it returns the real referral; play data before the handshake finishes and TLS returns the
+  real unexpected_message alert. The certificate is the real www.google.com leaf (and a broken twin).
+  Nothing is invented; the message, the state machine, and the certificate are the answer key. Start
+  on the DNS query panel.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [3]
+    instruction: |
+      On the DNS query panel, select QDCOUNT (`dns.qdcount`) and confirm it reads as one question
+      pending. This is one of the four 16-bit counts in the fixed 12-byte header.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.qdcount
+      - check: field_value_is
+        node_id: dns.qdcount
+        value: "1"
+    hints:
+      - nudge: The header is a fixed 12 bytes; one of its four counts says how many questions are pending.
+      - concept: "§4.3 — the header packs an ID, a flags word, then four counts: QDCOUNT/ANCOUNT/NSCOUNT/ARCOUNT"
+      - reveal: "Select dns.qdcount — it reads 1 (one question pending)"
+    explain: |
+      QDCOUNT=1 says one question is pending. The header is read entirely off fixed offsets — the ID,
+      the flags word, and the four counts — every value at the place RFC 1035 §4.1.1 fixed it.
+
+  - id: t2
+    type: action
+    objective: [3]
+    instruction: |
+      Select the QNAME (`dns.qname`) and decode the length-prefixed labels to the name they spell. A
+      name is not stored with dots — each chunk is preceded by a length byte and ends at a zero
+      terminator.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.qname
+      - check: field_value_is
+        node_id: dns.qname
+        value: "example.com"
+    hints:
+      - nudge: There are no dots in the wire format; each label is preceded by a one-byte length.
+      - concept: "§4.3 — 07 'example' 03 'com' 00 decodes to example.com (RFC 1035 §3.1 labels)"
+      - reveal: "Select dns.qname — the labels 07 'example' 03 'com' 00 decode to example.com"
+    explain: |
+      The QNAME `07 'example' 03 'com' 00` decodes to example.com — the name you typed, encoded as the
+      RFC 1035 §3.1 label sequence. The parser produces the same decode you can do by hand from the
+      bytes; there is no answer key, only the wire.
+
+  - id: t3
+    type: action
+    objective: [3]
+    instruction: |
+      Select QTYPE (`dns.qtype`) and report which record type this query asks for. It sits right after
+      the QNAME's zero terminator.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.qtype
+      - check: field_value_is
+        node_id: dns.qtype
+        value: "A"
+    hints:
+      - nudge: The query's last fields follow the QNAME terminator; the type names the record wanted.
+      - concept: "§4.3 — QTYPE names the record: A=1, CNAME=5, CAA=257; CLASS IN=1"
+      - reveal: "Select dns.qtype — it reads 1 = A (the IPv4 address record)"
+    explain: |
+      QTYPE A means "give me the IPv4 address for this name." The query is fully read — a name and a
+      record type — each value at its RFC-fixed offset.
+
+  - id: t4
+    type: action
+    objective: [3, 6]
+    instruction: |
+      Switch to the DNS response panel and select ANCOUNT (`dns.ancount`) — read how many answer
+      records returned for this name.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.ancount
+      - check: field_value_is
+        node_id: dns.ancount
+        value: "2"
+    hints:
+      - nudge: The same four header counts appear in the response; one says how many answers came back.
+      - concept: "§4.3 — ANCOUNT is the answer count in the header (RFC 1035 §4.1.1)"
+      - reveal: "Select dns.ancount on the response — it reads 2 (two answers returned)"
+    explain: |
+      ANCOUNT=2 says two answer records came back. The response is the same structure as the query —
+      header, question echo, then resource records — and the count tells you how many RRs to peel.
+
+  - id: t5
+    type: action
+    objective: [3, 6]
+    instruction: |
+      Select the first Answer record's RDATA (`dns.answer.0.rdata`) and read the resolved address — an
+      A record's RDATA is four bytes decoded to a dotted IPv4 quad.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.answer.0.rdata
+      - check: field_value_is
+        node_id: dns.answer.0.rdata
+        value: "104.20.23.154"
+    hints:
+      - nudge: Each Answer RR ends in its RDATA; for an A record that is the four-byte address.
+      - concept: "§4.3 — an A record's RDATA is four octets decoded to a dotted quad (RFC 1035 §4.1.3)"
+      - reveal: "Select dns.answer.0.rdata — the first A record reads 104.20.23.154"
+    explain: |
+      The first RDATA decodes to 104.20.23.154 — the real address the live resolver returned. The
+      address you now have is exactly what the next stage (TCP) needs; the lifecycle's first handoff is
+      complete, read entirely off the bytes.
+
+  - id: t6
+    type: action
+    objective: [2, 6]
+    instruction: |
+      Select the response's flags word (`dns.flags`) and read the AD bit. State whether this answer was
+      DNSSEC-validated — and name the one thing AD does NOT tell you about the lookup.
+    verify:
+      - check: region_labeled_correctly
+        node_id: dns.flags
+      - check: field_value_is
+        node_id: dns.flags
+        value: "AD 0"
+    hints:
+      - nudge: The AD (Authenticated Data) bit lives in the flags word; a validating resolver sets it.
+      - concept: "§4.3 — AD=1 means the resolver verified DNSSEC signatures on the DATA (RFC 4035)"
+      - reveal: "Select dns.flags — AD reads 0: this answer was NOT DNSSEC-validated"
+    explain: |
+      AD=0 is a real control reading: this answer came back without DNSSEC validation, so the
+      name-to-address mapping's integrity rests on the resolver and the path, not a signature you can
+      check (SC-12/SC-17). And note the trap — AD speaks only about the DATA's authenticity; it says
+      nothing about whether the query travelled encrypted. Those are two different controls at one stage.
+
+  - id: t7
+    type: action
+    objective: [2]
+    instruction: |
+      Switch to the DNS delegation TRACE. Order the messages so the stub asks ONE recursive query and
+      the recursive resolver walks root → TLD → authoritative iteratively, routing each message between
+      the right participants. The sim accepts the chain only when it reaches the answer.
+    verify:
+      - check: sequence_matches
+        canonical_ref: example.com
+        check_routing: true
+    hints:
+      - nudge: Only ONE participant does all the legwork; the servers above only point one step further.
+      - concept: "§4.2 — the stub asks recursively (RD=1); the resolver queries the hierarchy iteratively, and a referral is not an answer"
+      - reveal: "Order: stub→recursive query, recursive→root, root→recursive referral, recursive→tld, tld→recursive referral, recursive→authoritative, authoritative→recursive answer, recursive→stub answer"
+    explain: |
+      The recursive resolver does the legwork while root and TLD only refer one step further — a
+      referral is not an answer. The sim reaching the authoritative answer is the protocol's real
+      consequence, not a stored "correct"; route the leaf query straight to the root and it returns the
+      real referral to the .com servers, because a root server refers, it never answers a leaf.
+
+  - id: t8
+    type: action
+    objective: [5]
+    instruction: |
+      Switch to the TLS 1.3 handshake TRACE. Order the message cards into the RFC 8446 full handshake,
+      routing each onto Client or Server, until the sim reaches its established state — the channel
+      opens application data only when the order is legal.
+    verify:
+      - check: sequence_matches
+        canonical_ref: tls13-full-handshake
+        check_routing: true
+    hints:
+      - nudge: The client speaks first; the server answers and proves itself before anything is encrypted; both sides Finish.
+      - concept: "§4.5 — ClientHello → ServerHello → EncryptedExtensions → Certificate → CertificateVerify → server Finished → client Finished"
+      - reveal: "Order: ClientHello, ServerHello, EncryptedExtensions, Certificate, CertificateVerify, server Finished, client Finished"
+    explain: |
+      The order is causal: CertificateVerify (the server signing the transcript) must follow
+      Certificate (the public key), so the client has something to check the signature against. The sim
+      reaching the established state is the consequence — the real RFC 8446 §A.1 state machine, not an
+      authored "correct."
+
+  - id: t9
+    type: action
+    objective: [5]
+    instruction: |
+      In the same TLS handshake, play application data BEFORE the Finished messages are exchanged (the
+      classic break). Read the alert the sim raises and its numeric code — the protocol's real refusal,
+      not a "try again."
+    verify:
+      - check: sim_alert_is
+        alert: unexpected_message
+    hints:
+      - nudge: The data channel does not exist until both Finished messages are sent — the sim tells you how it objects.
+      - concept: "§4.5 — RFC 8446 §6.2: a message out of the permitted order MUST terminate with unexpected_message(10)"
+      - reveal: "Inject ApplicationData before the Finished messages; the sim raises unexpected_message(10)"
+    explain: |
+      unexpected_message(10) is the literal RFC 8446 §6.2 alert the state machine emits — the
+      handshake's order is structural, not advisory. Confidentiality begins only after both Finished are
+      exchanged, and the protocol enforces it with a real code you can read, exactly like TCP's RST.
+
+  - id: t10
+    type: action
+    objective: [1, 4]
+    instruction: |
+      Switch to the "Cert · www.google.com leaf" panel and select the Subject Alternative Name
+      (`cert.san`). Read the host it covers — this is the field that ties the certificate back to the
+      name that rode, in plaintext, in the TLS ClientHello's SNI.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.san
+      - check: field_value_is
+        node_id: cert.san
+        value: "DNS:www.google.com"
+    hints:
+      - nudge: A certificate is valid only for the names in one extension — find the host list.
+      - concept: "§4.6 — RFC 5280 Subject Alternative Name carries the host(s) the cert covers; it must match the SNI host"
+      - reveal: "Select cert.san on the leaf; it reads DNS:www.google.com — the host the plaintext SNI named"
+    explain: |
+      The SAN binds this certificate's key to a name, and that name is the same one that travelled in
+      the clear in the ClientHello SNI (the metadata the encryption boundary leaves exposed, §4.4). If
+      the host you connected to is not in the SAN, the channel is encrypted but pointed at the wrong
+      door — name-to-key binding is what a certificate IS (RFC 5280), and it anchors the identity half
+      of "encrypted in transit" (SC-23).
+
+  - id: t11
+    type: action
+    objective: [6]
+    instruction: |
+      Switch to "Cert · wrong.host.badssl.com (broken)". This real certificate breaks the "we are
+      talking to the real site" claim at exactly one field. Select the single field where it fails to
+      cover the host you connected to (`cert.san`) and read its value.
+    verify:
+      - check: region_labeled_correctly
+        node_id: cert.san
+      - check: field_value_is
+        node_id: cert.san
+        value: "badssl.com"
+    hints:
+      - nudge: The padlock is valid — but for the wrong name. Read the SAN and compare it to wrong.host.badssl.com.
+      - concept: "§4.6 — a SAN that does not cover the connected host is a hostname mismatch (RFC 6125), openssl verify code 62"
+      - reveal: "On the wrong-host panel, select cert.san — it covers *.badssl.com / badssl.com, NOT wrong.host.badssl.com"
+    explain: |
+      The SAN reads DNS:*.badssl.com, DNS:badssl.com — a single-label wildcard that does NOT cover the
+      three-label wrong.host.badssl.com (RFC 6125), so the cert is valid but for the wrong door:
+      hostname mismatch, openssl verify code 62 (SC-23). The discriminating field is the parser's
+      computed divergence over the real bytes, not your opinion — your Lifecycle Evidence Finding names
+      the stage, the field, both values, the broken control, and the framework reference.
+
+  - id: t12
+    type: reflection
+    objective: [1, 2]
+    instruction: |
+      In 5–7 sentences, for a non-technical colleague: explain how typing example.com becomes pixels as
+      a chain of handoffs (name → connection → secure channel → identity → conversation) and why each
+      handoff is a place a control claim lives; why a DNS referral is not an answer; and why "encrypted
+      in transit" begins only after the handshake — so the name you looked up and the host in the SNI
+      travelled in the clear. Use the §3 sealed-letter model, not jargon.
+    hints:
+      - nudge: "The §3 model: asking around for an address, a knock-and-answer, a sealed channel, a vouched-for credential."
+      - concept: "§3 — The Mental Model + §4.4 the encryption boundary"
+
+completion:
+  evidence_pack: true

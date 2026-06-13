@@ -1,0 +1,14 @@
+{"anti_for": "t9", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct PRI Severity region on the BROKEN twin (region_labeled_correctly verify[0] passes) but mis-reads the downgraded Severity as '2 = Critical' instead of the computed '7 = Debug' — field_value_is (verify[1]) catches the wrong decode. Prior action tasks t1-t8 are completed correctly so the cheat reaches t9 (sticky near-miss)."}
+{"input": {"panel": "ex1-clean", "select": "hostname", "read": "mymachine.example.com"}}
+{"input": {"panel": "ex1-clean", "select": "procid", "read": "- (NILVALUE — absent)"}}
+{"input": {"panel": "ex1-clean", "select": "pri.facility", "read": "4 = security/authorization messages (PRIVAL 34 >> 3)"}}
+{"input": {"panel": "ex1-clean", "select": "pri.severity", "read": "2 = Critical (PRIVAL 34 & 7)"}}
+{"input": {"panel": "ex3-structured", "select": "sd0.id", "read": "exampleSDID@32473"}}
+{"input": {"panel": "ex3-structured", "select": "sd0.param2", "read": "eventID=\"1011\""}}
+{"input": {"order": [0, 1, 2, 3, 4]}}
+{"input": {"place": "pri-severity", "zone": "ac7-ia5"}}
+{"input": {"place": "audit-content", "zone": "au3"}}
+{"input": {"place": "retention-horizon", "zone": "au11"}}
+{"input": {"place": "auth-failure-line", "zone": "audit"}}
+{"input": {"place": "do-nuts-line", "zone": "application"}}
+{"input": {"panel": "pair-auth-severity-broken", "select": "pri.severity", "read": "2 = Critical (PRIVAL 34 & 7)"}}

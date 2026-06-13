@@ -1,0 +1,61 @@
+# manifest.d/22.yaml — applied-cryptography-pki (module 22) fidelity-manifest fragment.
+#
+# Visual module: the taught "command surface" is the set of real cryptographic artifacts the
+# `xform` (transform), `jwt` (token decode), `x509` (certificate parser + chain/validity/hostname
+# predicates), and `tls13` (RFC 8446 handshake state machine) oracles parse over real bytes
+# (no shell, no PATH tools). Each entry names the real artifact + its citation/capture; the
+# parser / transform / state-machine over the bytes is the oracle (honesty doctrine). The cert
+# chain and the badssl misconfigurations are REAL captures (openssl s_client); the transforms are
+# computed; the TLS handshake order + alert codes are authored from RFC 8446 with citation.
+seeds:
+  m22:
+    kind: visual                       # real crypto bytes under .ci/fixtures/assets/crypto/*.json
+
+entries:
+  # The hash/encrypt/encode trichotomy — the class is COMPUTED by running the real transform.
+  - id: m22-transform-sort
+    module: "22"
+    source: authored
+    match: computed
+    citation: "FIPS 180-4 (SHA-256/SHA-1), RFC 1321 (MD5), RFC 4648 (base64/hex). The crypto-transform engine recomputes from the learner's bytes; the sort class (HASH/ENCODE/ENCRYPT) is derived by reversibility, not authored. Anchor: SHA-256('')=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855."
+    cmd: "xform sha256 '' && xform base64 hello"
+
+  # The real JWT header — base64url decodes with NO key (a signed claim, not an encrypted secret).
+  - id: m22-jwt-header-decode
+    module: "22"
+    source: authored
+    match: computed
+    citation: "RFC 7519 (JWT) / RFC 7515 §4 (JWS header) / RFC 4648 §5 (base64url). A real three-segment HS256 token; the header decodes to {\"alg\":\"HS256\",\"typ\":\"JWT\"} with no key — proof that encoding is not protection."
+    cmd: "jwt decode eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdyY2Jvb3RjYW1wLmV4YW1wbGUiLCJzdWIiOiJ1c2VyLTdmM2EiLCJhdWQiOiJncmMtYm9vdGNhbXAtbGFiIiwiaWF0IjoxNzE4MjAwMDAwLCJleHAiOjE3MTgyMDM2MDAsIm5hbWUiOiJBdmVyeSBMaW4iLCJyb2xlIjoiYXVkaXRvciJ9.J9SkdtAQCO-2M2--8pdgsuRJMx12RzL_ZbcZKxBcJZU"
+
+  # Peeling the Padlock — the REAL www.google.com leaf certificate (captured via openssl s_client).
+  - id: m22-cert-leaf-peel
+    module: "22"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 5280 §4.1.2 (validity notBefore/notAfter), §4.2.1.6 (SAN dNSName), §4.2.1.9 (BasicConstraints cA). Real leaf captured 2026-06-13 via `echo | openssl s_client -connect www.google.com:443 -servername www.google.com -showcerts | openssl x509 -outform DER`; fields fidelity-checked vs `openssl x509 -text`. notAfter=2026-08-17T08:39:10Z, SAN=DNS:www.google.com, BasicConstraints=CA:FALSE, issuer=CN=WR2."
+    cmd: "openssl x509 -text -noout -in www.google.com.leaf.pem"
+
+  # The issuer<->subject chain predicate: leaf -> WR2 -> GTS Root R1 (openssl verify code 0).
+  - id: m22-cert-chain-verify
+    module: "22"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 5280 §6.1 (path validation: issuer-of-N == subject-of-N+1 up to a trusted root). Real chain captured 2026-06-13; `openssl verify -CAfile <GTS Root R1> -untrusted <WR2> <leaf>` => 'OK' (return code 0)."
+    cmd: "openssl verify -CAfile gts-root-r1.pem -untrusted wr2.pem www.google.com.leaf.pem"
+
+  # Diff-the-Trace — REAL badssl misconfigurations vs openssl's real X509_V_ERR_* return codes.
+  - id: m22-cert-diff-the-trace
+    module: "22"
+    source: authored
+    match: authored-with-citation
+    citation: "badssl.com publishes deliberately-broken endpoints for teaching. Captured 2026-06-13 via openssl s_client: expired.badssl.com notAfter=2015-04-12 => code 10 (X509_V_ERR_CERT_HAS_EXPIRED); self-signed.badssl.com issuer==subject => code 18 (X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT); wrong.host.badssl.com SAN=*.badssl.com (does not cover wrong.host.badssl.com per RFC 6125) => code 62 (X509_V_ERR_HOSTNAME_MISMATCH). The clean leaf => code 0."
+    cmd: "openssl verify -verify_hostname wrong.host.badssl.com wrong.host.badssl.com.pem"
+
+  # Building the Handshake — the RFC 8446 §4.1.1 TLS 1.3 full-handshake order + the real alert.
+  - id: m22-tls13-handshake
+    module: "22"
+    source: authored
+    match: authored-with-citation
+    citation: "RFC 8446 §4.1.1 (message flow: ClientHello, ServerHello, {EncryptedExtensions, Certificate, CertificateVerify, Finished}, {Finished}), §A.1 (state machine), §6.2 (AlertDescription). The tls13-sim is the consequence engine: the canonical order reaches the established state; application data before {Finished} raises the real unexpected_message(10). Reproducible against `openssl s_client -tls1_3`."
+    cmd: "tls13 handshake --order ClientHello,ServerHello,EncryptedExtensions,Certificate,CertificateVerify,Finished,Finished"

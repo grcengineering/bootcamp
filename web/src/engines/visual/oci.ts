@@ -20,6 +20,7 @@
 
 import type { ByteRange, ParseRegion, ParseTreeProbe } from "./pkt";
 export type { ByteRange, ParseRegion, ParseTreeProbe } from "./pkt";
+// (ParseRegion is used by buildOciPanelTree's secret-region injection below.)
 
 // ----------------------------------------------------------------------------
 // OCI JSON shapes (the subset the module reads — OCI Image Spec v1.x)
@@ -316,6 +317,88 @@ export async function verifyDigest(blob: Uint8Array, digest: string): Promise<bo
 function shortDigest(d: string): string {
   const hex = d.split(":")[1] ?? d;
   return `sha256:${hex.slice(0, 12)}…`;
+}
+
+// ----------------------------------------------------------------------------
+// serializable panel source (the build↔browser seam, parallel to api-oracle)
+// ----------------------------------------------------------------------------
+
+/**
+ * A serializable description of one OCI panel's REAL artifact — the manifest + config JSON plus the
+ * UNCOMPRESSED layer tar bytes (as hex) for the secret-bearing layer. Functions don't survive JSON,
+ * so (exactly like the api panels serialize a contract string and the `pkt` canary serializes hex)
+ * the build step decompresses the `.tar.gz` ONCE and serializes the raw tar hex; the browser and the
+ * replay test both rebuild the live parse tree from this via `buildOciPanelTree`. The gunzip is the
+ * only Node-only step, so it is hoisted to build time — the secret-finding itself (walkLayerTar +
+ * findBakedSecret over the real raw tar bytes) is pure and runs identically in both places. The
+ * reader over the real bytes is the oracle; the source carries only real bytes, never a parse tree.
+ */
+export interface OciPanelSource {
+  oracle: "oci";
+  manifest: OciManifest;
+  config: OciImageConfig;
+  /** Hex of the UNCOMPRESSED layer tar carrying the secret (pre-gunzipped at build time), if any. */
+  layerTarHex?: string;
+  /** manifest.layers[] index the secret tar corresponds to (the secret region nests under that layer). */
+  secretLayerIndex?: number;
+}
+
+/** Decode a lowercase-hex string to bytes (pure, browser-safe — no Buffer/zlib). */
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.replace(/\s+/g, "");
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+/**
+ * Rebuild the live OCI parse tree from a serializable source. Parses the manifest+config via
+ * `parseOci`, and (when the raw layer-tar hex is supplied) walks it with `walkLayerTar` +
+ * `findBakedSecret` and nests a real `layerN.secret` region under the layer that carries it — cited
+ * by that layer's real digest as provenance. Pure + browser-safe.
+ */
+export function buildOciPanelTree(source: OciPanelSource): ParseTreeProbe {
+  const tree = parseOci({ manifest: source.manifest, config: source.config });
+  if (!source.layerTarHex) return tree;
+  const entries = walkLayerTar(hexToBytes(source.layerTarHex));
+  const hit = findBakedSecret(entries);
+  if (!hit) return tree;
+  const idx = source.secretLayerIndex ?? source.manifest.layers.length - 1;
+  const layerRegion = tree.region(`layer${idx}`);
+  if (!layerRegion) return tree;
+  const layerDigest = source.manifest.layers[idx]?.digest ?? "";
+  layerRegion.children.push({
+    id: `layer${idx}.secret`,
+    start: layerRegion.start,
+    end: layerRegion.end,
+    label: `baked secret in layer ${idx}`,
+    layer: "manifest",
+    value: `/${hit.entry.name} (${hit.pattern}) — provenance ${layerDigest}`,
+    rfc: "OCI layer tar · IA-5 / SC-28 · CIS Docker 4.10 (no secrets in images)",
+    children: [],
+  });
+  return reindexOci(tree.root, tree.byteLength);
+}
+
+/** Re-flatten + re-index a mutated region tree into a fresh ParseTreeProbe (same contract as buildProbe). */
+function reindexOci(root: ParseRegion, byteLength: number): ParseTreeProbe {
+  const regions: ParseRegion[] = [];
+  flatten(root, regions);
+  const byId = new Map(regions.map((r) => [r.id, r]));
+  const byRange = new Map<string, ParseRegion>();
+  for (const r of regions) {
+    if (r.start === 0 && r.end === 0) continue;
+    const k = `${r.start}:${r.end}`;
+    if (!byRange.has(k)) byRange.set(k, r);
+  }
+  return {
+    regions,
+    root,
+    byteLength,
+    region: (id) => byId.get(id) ?? null,
+    regionAt: (range) => byRange.get(`${range.start}:${range.end}`) ?? null,
+    decode: (range: ByteRange) => byRange.get(`${range.start}:${range.end}`)?.value ?? null,
+  };
 }
 
 // ----------------------------------------------------------------------------

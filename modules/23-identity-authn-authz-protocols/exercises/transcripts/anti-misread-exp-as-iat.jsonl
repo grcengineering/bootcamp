@@ -1,0 +1,3 @@
+{"anti_for": "t2", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct jwt.payload.exp region (region_labeled_correctly verify[0] passes) but mis-reads the value as the iat 1718200000 instead of the exp 1718203600 — field_value_is (verify[1]) catches the wrong decode against the jwt parser. Reading iat where the control needs exp is the classic confusion. Task t1 completes correctly so the cheat reaches t2 (sticky near-miss)."}
+{"input": {"panel": "jwt-valid", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "jwt-valid", "select": "jwt.payload.exp", "read": "1718200000"}}

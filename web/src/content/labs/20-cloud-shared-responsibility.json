@@ -1,0 +1,318 @@
+{
+  "spec": {
+    "id": "lab-20",
+    "module": "20-cloud-shared-responsibility",
+    "title": "Whose control is it?",
+    "owner": "Justin Pagano",
+    "volatility": "C",
+    "review_due": "2026-12-13",
+    "engine": "visual",
+    "claim_thread": "encrypted-at-rest",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "mcloud",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "For any control claim in the cloud, exactly one party is structurally capable of producing its\ntruth — you or the provider — and that boundary shifts as you move from IaaS to PaaS to SaaS. You\ncannot evidence a control you do not own; you can only inherit it. This board makes the boundary a\nmovable line: place each control card on the YOU or PROVIDER side, then move the service-model\nslider and watch the cards that are model-dependent migrate while the invariant cards stay put.\n\nThe key is the cited matrix (AWS Shared Responsibility Model, CSA CAIQ, NIST 800-53) — not an\nauthored answer. A wrong placement names itself; it never reveals the answer. A second board sorts\ncloud actions onto the control plane (the management API — IAM, security groups, KMS) versus the\ndata plane (the workload's request traffic and the bytes it moves). Start with the slider on IaaS.\n",
+    "visual": {
+      "artifact": {
+        "kind": "responsibility-matrix",
+        "from": "assets/cloud/responsibility-matrix.json"
+      },
+      "oracle": "csa",
+      "mode": "map"
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "With the slider on IaaS, place the three provider-owned-OF-the-cloud and your-IN-the-cloud\nanchors: drag \"Physical facilities, hardware, and the host hypervisor\" to PROVIDER, and\n\"Customer data: what it is and who may read it\" to YOU. These two anchor the boundary before\nthe model-dependent cards move.\n",
+        "verify": [
+          {
+            "check": "mapping_correct",
+            "min_correct": 2
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One card is \"security OF the cloud\" — only the provider can touch the datacenter. One is \"security IN the cloud\" — only you decide who reads your data."
+          },
+          {
+            "concept": "§4.1 — security OF the cloud (provider) vs security IN the cloud (you)"
+          },
+          {
+            "reveal": "Physical/hardware/hypervisor → PROVIDER; Customer data + who reads it → YOU (both true at every model)"
+          }
+        ],
+        "explain": "These two never move. The provider owns the physical substrate at every model (\"OF the cloud\");\nyou own your data and who may read it at every model (\"IN the cloud\"). Everything else lives on\nthe boundary you are about to watch shift.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "Still on IaaS, place the three model-dependent operating cards where IaaS puts them: \"Guest-OS\npatching and flaw remediation,\" \"Application code and its runtime configuration,\" and \"Network\nand firewall (security-group) configuration.\" Under IaaS the provider hands you the bare compute,\nso all three are yours. (Hold the \"Encryption at rest\" card — it is the one you will watch migrate\nacross the boundary in the final task.)\n",
+        "verify": [
+          {
+            "check": "mapping_correct",
+            "min_correct": 5
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "IaaS gives you a raw instance. Who patches its OS, ships its code, and sets its firewall?"
+          },
+          {
+            "concept": "§4.2 — under IaaS the customer surface is widest: you operate everything above the hypervisor"
+          },
+          {
+            "reveal": "Under IaaS guest-OS patching, application code, and network/firewall config → YOU"
+          }
+        ],
+        "explain": "Under IaaS your surface is the widest it ever gets: the provider abstracts only the physical and\nthe hypervisor, and you own every layer above it. The encryption-at-rest card stays in the tray —\nyou will place it last and watch which side the service model puts it on.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Switch to the second board (the plane board). Sort the management-API actions onto the CONTROL\nPLANE and the workload-traffic actions onto the DATA PLANE: \"Creating an IAM role / changing a\nresource policy,\" \"Editing a security-group / firewall rule,\" and \"Rotating a KMS encryption\nkey\" are control-plane; \"An application reading/writing objects in a bucket\" and \"User request\ntraffic hitting the running workload\" are data-plane.\n",
+        "verify": [
+          {
+            "check": "mapping_correct",
+            "min_correct": 10
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The control plane is where you CHANGE configuration through the management API; the data plane is where the workload's actual traffic and bytes flow."
+          },
+          {
+            "concept": "§4.3 — control plane (management API: IAM/SG/KMS admin) vs data plane (workload request/response + the bytes it moves)"
+          },
+          {
+            "reveal": "IAM-role/policy, security-group edit, KMS-key rotation → CONTROL-PLANE; object read/write, user request traffic → DATA-PLANE"
+          }
+        ],
+        "explain": "The two planes are different objects with different control owners and different evidence. A\nfirewall-rule change is a control-plane API action (CM-7); the traffic that rule then filters is\ndata-plane. Conflating them is how an auditor asks the wrong system for the proof.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Place the THROUGHOUT card \"Audit logging that evidences both planes\" — it is not on one plane.\nAudit evidence is born from BOTH management-API actions (control-plane events) AND data-access\nevents (data-plane events), so it belongs in BOTH the control-plane and the data-plane zones.\n",
+        "verify": [
+          {
+            "check": "mapping_correct",
+            "min_correct": 11
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "This card has two homes, not one — what produces audit evidence on the management side AND on the data side?"
+          },
+          {
+            "concept": "§4.3 — audit logging spans both planes: management events (control-plane) and data-access events (data-plane)"
+          },
+          {
+            "reveal": "Audit logging is a THROUGHOUT control — place it in BOTH the control-plane AND the data-plane zone"
+          }
+        ],
+        "explain": "Logging is the THROUGHOUT control: management-API actions and data-access events both produce\naudit evidence (e.g. CloudTrail management events plus data events). A logging claim scoped to\none plane silently misses half of what it must prove.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "Now move the slider from IaaS to SaaS. Watch the three operating cards you placed on YOU light up\nas misplaced — under SaaS the provider operates the whole stack except your data and access.\nRe-place \"Guest-OS patching,\" \"Application code,\" and \"Network/firewall configuration\" onto\nPROVIDER, then place the held \"Encryption at rest\" card onto PROVIDER too. Leave \"Customer data\"\non YOU and the physical card on PROVIDER. The \"encrypted at rest\" claim is the one to watch: under\nSaaS the provider attests it and you inherit it via a CUEC — you no longer produce that evidence.\n",
+        "verify": [
+          {
+            "check": "mapping_correct",
+            "min_correct": 12
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "SaaS hands you a finished application. The only things still yours are your data and who you let reach it."
+          },
+          {
+            "concept": "§4.4 — across IaaS→PaaS→SaaS the customer surface shrinks; 'encrypted at rest' migrates from you-own (IaaS) to you-inherit-via-CUEC (SaaS)"
+          },
+          {
+            "reveal": "On SaaS: guest-OS, application code, network/firewall, and encryption at rest → PROVIDER; customer data stays YOU; physical stays PROVIDER"
+          }
+        ],
+        "explain": "That migration IS the lesson. The same control claim — \"encrypted at rest\" — is your evidence to\nproduce under IaaS and the provider's attestation you inherit through a complementary user-entity\ncontrol (CUEC) under SaaS. Reading the boundary tells you which auditor question is even\nanswerable by you.\n"
+      },
+      {
+        "id": "t6",
+        "type": "reflection",
+        "objective": [
+          6
+        ],
+        "instruction": "In 4–6 sentences, write the ownership note for a SaaS HR platform's claim \"customer data is\nencrypted at rest.\" Name who is responsible, what evidence that party produces, and how YOU\nevidence your half. Then name the misattribution trap: a SaaS customer who says they ENFORCE\nat-rest encryption when the provider owns it — and how the CUEC corrects the wording. Map the\ntwo halves to their NIST families (SC-28 at rest; AC-3/IA-2 for the access you still own).\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Split the claim: which half does the provider attest, and which half (who may read the data) stays yours under every model?"
+          },
+          {
+            "concept": "§4.5 — the misattribution trap and the CUEC; SC-28 (at rest) vs AC-2/AC-3 (your access governance)"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z",
+  "visual": {
+    "mode": "map",
+    "oracle": "csa",
+    "panels": [],
+    "map": {
+      "zones": [
+        "you",
+        "provider",
+        "control-plane",
+        "data-plane"
+      ],
+      "slider": {
+        "options": [
+          "IaaS",
+          "PaaS",
+          "SaaS"
+        ],
+        "initial": "IaaS"
+      },
+      "items": [
+        {
+          "id": "physical-facility",
+          "label": "Physical facilities, hardware, and the host hypervisor",
+          "keyZone": "",
+          "keyRef": "AWS SRM 'security OF the cloud' (PE-* physical/environmental); provider-owned at every model",
+          "keyByModel": {
+            "IaaS": "provider",
+            "PaaS": "provider",
+            "SaaS": "provider"
+          }
+        },
+        {
+          "id": "guest-os-patching",
+          "label": "Guest-OS patching and flaw remediation",
+          "keyZone": "",
+          "keyRef": "AWS SRM guest-OS patching (SA-22/SI-2): customer under IaaS, managed by provider once the OS is abstracted (PaaS/SaaS)",
+          "keyByModel": {
+            "IaaS": "you",
+            "PaaS": "provider",
+            "SaaS": "provider"
+          }
+        },
+        {
+          "id": "application-code",
+          "label": "Application code and its runtime configuration",
+          "keyZone": "",
+          "keyRef": "AWS SRM application layer (SA-* / CM-6): customer-owned on IaaS/PaaS, provider-owned application in SaaS",
+          "keyByModel": {
+            "IaaS": "you",
+            "PaaS": "you",
+            "SaaS": "provider"
+          }
+        },
+        {
+          "id": "network-firewall-config",
+          "label": "Network and firewall (security-group) configuration",
+          "keyZone": "",
+          "keyRef": "AWS SRM network traffic protection / configuration (CM-7/SC-7): customer-configured on IaaS/PaaS, provider-managed in SaaS",
+          "keyByModel": {
+            "IaaS": "you",
+            "PaaS": "you",
+            "SaaS": "provider"
+          }
+        },
+        {
+          "id": "encryption-at-rest",
+          "label": "Encryption at rest (the storage setting + key custody)",
+          "keyZone": "",
+          "keyRef": "AWS SRM client-/server-side encryption (SC-12/SC-28): customer enables it and may hold the key on IaaS/PaaS; in SaaS the provider attests it and the customer INHERITS the control via a CUEC (SOC 2 complementary user-entity control)",
+          "keyByModel": {
+            "IaaS": "you",
+            "PaaS": "you",
+            "SaaS": "provider"
+          }
+        },
+        {
+          "id": "customer-data",
+          "label": "Customer data: what it is and who may read it",
+          "keyZone": "",
+          "keyRef": "AWS SRM 'security IN the cloud' — customer data + identity/access management (AC-2/AC-3): always the customer's, at every model",
+          "keyByModel": {
+            "IaaS": "you",
+            "PaaS": "you",
+            "SaaS": "you"
+          }
+        },
+        {
+          "id": "iam-policy-change",
+          "label": "Creating an IAM role / changing a resource policy",
+          "keyZone": "control-plane",
+          "keyRef": "CSA / NIST SP 800-204 control plane: identity and policy administration is a management-API action (AC-2/AC-3 enforcement is configured here)"
+        },
+        {
+          "id": "security-group-edit",
+          "label": "Editing a security-group / firewall rule",
+          "keyZone": "control-plane",
+          "keyRef": "CSA control plane: a firewall rule change is a management-API configuration action (CM-7), not workload traffic"
+        },
+        {
+          "id": "kms-key-rotation",
+          "label": "Rotating a KMS encryption key",
+          "keyZone": "control-plane",
+          "keyRef": "CSA control plane: key lifecycle administration is a management-API action (SC-12); the key's USE on a payload is data-plane"
+        },
+        {
+          "id": "object-read-write",
+          "label": "An application reading/writing objects in a bucket",
+          "keyZone": "data-plane",
+          "keyRef": "NIST SP 800-204 data plane: serving the workload's request/response traffic and the bytes it moves"
+        },
+        {
+          "id": "request-traffic",
+          "label": "User request traffic hitting the running workload",
+          "keyZone": "data-plane",
+          "keyRef": "NIST SP 800-204 data plane: live request/response traffic to the workload"
+        },
+        {
+          "id": "audit-logging",
+          "label": "Audit logging that evidences both planes",
+          "keyZone": "control-plane",
+          "keyRef": "AU-2/AU-12 audit: management-API actions (control-plane events) AND data-access events (data-plane events) both produce audit evidence — a THROUGHOUT control spanning both planes (e.g. CloudTrail management + data events)",
+          "keyZones": [
+            "control-plane",
+            "data-plane"
+          ]
+        }
+      ]
+    }
+  }
+}

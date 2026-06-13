@@ -190,6 +190,31 @@ Anchor concepts: HTTP methods + status codes · JSON (back to `jq`) · auth ladd
 
 ---
 
+## Part II.5 — The IT-foundations band (modules 16–25)
+
+*Loop stages: LOCATE · QUERY · EVALUATE · EVIDENCE. Goal: know **where a control claim's truth physically lives, travels, and how to read it** — the IT/internet substrate every control sits on top of.*
+
+A control is a claim about a system. Before you can engineer evidence for that claim, you have to know where its truth physically lives — which byte on the wire, which field in the cert, which row at rest, which log line. This band is ten Tier-1 modules that teach exactly that, each framed by its **loop question**, never "learn this stack." They are placement-gated like the rest of Tier 1: demonstrated competence skips the module.
+
+Every module runs on a **visual surface** that makes the abstraction a manipulable real artifact (PEEL a real frame to the byte; TRACE real protocol messages into a stateful sim that answers wrong moves with real alert codes; MAP control cards against a cited authoritative key; build-and-break a real validator; diff-the-trace a clean/broken pair to the one divergent field). **Honesty doctrine:** every shown value is a real oracle's parse of a committed real artifact (real packet bytes, a real PEM cert, a real JWT, the RFC's own example log line), never an authored answer key.
+
+| # | Module | Loop question (abbrev.) |
+|---|--------|--------------------------|
+| 16 | IT networking fundamentals | which layer/header/byte holds "encrypted in transit"? |
+| 17 | Databases — relational & NoSQL | where does the same control-truth live at rest across three stores? |
+| 18 | Web application architecture | which tier owns each control claim, and where does defense-in-depth fail? |
+| 19 | IT API paradigms (REST/SOAP/GraphQL/gRPC) | where does each contract let me LOCATE the truth-field, and which surface does each invite? |
+| 20 | Cloud shared responsibility | who is structurally able to produce a control's evidence — you or the provider? |
+| 21 | Containers & virtualization | where in the image manifest/layers/config is the claim's truth baked in? |
+| 22 | Applied cryptography & PKI | which single cert field, read against the claim, breaks it? |
+| 23 | Identity, AuthN/AuthZ protocols | where does "authenticated and authorized" live — in the JWT, the OAuth dance, the SAML assertion? |
+| 24 | How the internet works | as a URL becomes pixels, which hop is plaintext and where does encryption begin? |
+| 25 | Logging, telemetry & observability | how do I read one structured log line as the proof (or break) of a control? |
+
+The Customer Trust & Assurance track goes Deep on the wire/web/API/crypto/identity modules (the auditor-facing evidence surface); all other tracks take the band at Working depth. See `tracks/coverage-matrix.md` for the per-track depth map and `research/it-foundations/INTEGRATION-MATRIX.md` for the visual-class → module → oracle → suite → status map.
+
+---
+
 ## Part III — Tier 2: Engineering
 
 *Loop stages: QUERY at scale, EVALUATE as code. Goal: pull control-truth from cloud/SQL at scale and enforce policy as code in CI.*

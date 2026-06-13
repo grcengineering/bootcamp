@@ -1,0 +1,58 @@
+# manifest.d/20.yaml — module 20 (cloud-shared-responsibility) fidelity fragment.
+#
+# Module 20 is the lightest module in the wave: a CONCEPTUAL MAP module (engine: visual, mode: map).
+# It teaches no replayable shell command and parses no wire bytes — so it adds no byte-exact terminal
+# entries and ships no new parser/oracle. What it DOES add to the fidelity surface is the single
+# cited authoritative artifact the module frames as the oracle: the shared-responsibility KEY. In a
+# conceptual MAP module the cited matrix IS the answer key the `mapping_correct` verifier reads; there
+# is no parse tree and no per-render authored value.
+#
+# Honesty doctrine: every zone assignment in the committed matrix carries a keyRef citation to its
+# authoritative source (AWS Shared Responsibility Model, CSA CAIQ, NIST SP 800-53, NIST SP 800-204,
+# AICPA SOC 2 TSC). Because the responsibility model is a published vendor contract — not a wire
+# capture — the matrix is authored to those specs (match: authored-with-citation) and the citation is
+# present in the entry. See .ci/fixtures/assets/cloud/responsibility-matrix.json for the full
+# provenance block. The `csa` oracle id is a label for that cited matrix, not a byte parser.
+
+seeds:
+  mcloud:
+    kind: visual                    # Wave-4 visual engine (module 20, cloud shared-responsibility):
+                                    # no home tree, no PATH tools — a MAP board over a cited matrix.
+
+entries:
+  - id: m20-shared-responsibility-matrix
+    module: "20"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "aws-shared-responsibility-model   # cited matrix: control ownership re-derived per IaaS/PaaS/SaaS (the boundary is a movable line)"
+    citation: >-
+      AWS Shared Responsibility Model (aws.amazon.com/compliance/shared-responsibility-model) +
+      Cloud Security Alliance Consensus Assessments Initiative Questionnaire (CAIQ) shared-responsibility
+      columns + NIST SP 800-53 Rev.5 control families (PE-* physical, SA-22/SI-2 flaw remediation,
+      CM-6/CM-7 configuration, SC-12/SC-28 cryptographic protection, AC-2/AC-3/IA-2 access enforcement,
+      AU-2/AU-12 audit) + AICPA SOC 2 TSC complementary-user-entity-control (CUEC) guidance. Artifact:
+      .ci/fixtures/assets/cloud/responsibility-matrix.json — the control-to-party assignments are the
+      published model's, re-derived per service model by the keyByModel column; the cited matrix is the
+      MAP oracle the `mapping_correct` verifier compares placements against, never an authored answer key.
+    notes: >-
+      Conceptual module: no wire bytes, no new parser. The matrix encodes the invariant ("security OF
+      the cloud" is the provider's, "security IN the cloud" is yours) and the migration ("encrypted at
+      rest" moves from you-own under IaaS to you-inherit-via-CUEC under SaaS); module 20 §4.
+
+  - id: m20-control-vs-data-plane
+    module: "20"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "csa-control-plane-data-plane-split   # IAM/SG/KMS admin = control plane; workload traffic + bytes = data plane"
+    citation: >-
+      Cloud Security Alliance guidance + NIST SP 800-204 (Security Strategies for Microservices) on the
+      management/control plane vs the workload/data plane distinction. Artifact: the `plane` board in
+      .ci/fixtures/assets/cloud/responsibility-matrix.json — management-API actions (creating an IAM
+      role, editing a security group, rotating a KMS key) are control-plane; object read/write and live
+      request traffic are data-plane; audit logging is the THROUGHOUT control spanning both planes. The
+      cited split is the key; placements are scored against it by `mapping_correct`.
+    notes: >-
+      The two planes are structurally different objects with different control owners and different
+      audit evidence; conflating them asks the wrong system for the proof. Module 20 §4.3.

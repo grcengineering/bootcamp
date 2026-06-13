@@ -1,0 +1,4 @@
+{"anti_for": "t3", "fails_check": 0, "reason": "adjacent-region near miss: selects the wrong layer descriptor (layer0, the stock rootfs at range [1,2)) instead of the topmost layer1 ([2,3)) and reports layer1's digest anyway — region_labeled_correctly (verify[0]) catches the wrong byte/ordinal boundary; field_value_is (verify[1]) still passes because it reads the oracle's layer1 node, proving the cheat reached the task. Tasks t1-t2 complete correctly so the cheat reaches t3 (sticky near-miss)."}
+{"input": {"panel": "misconfigured", "select": "config.user", "read": "root → ROOT (uid 0)"}}
+{"input": {"panel": "misconfigured", "select": "config.exposed_ports", "read": "22/tcp, 8080/tcp"}}
+{"input": {"panel": "misconfigured", "select": "layer0", "read": "sha256:48092d7235b3b06aed7b90442ae0aaf2488dfcb2f461f5574e75019873c6bd74"}}

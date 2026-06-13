@@ -50,6 +50,23 @@ append to a tamper-evident evidence chain — the learner's own audit-ready evid
 Simulation fidelity is the repo's newest control: when reality drifts from the simulation, the
 build goes red and someone owns it.
 
+**Waves 3–4 — the IT-foundations band (2026-06-13).** Ten Tier-1 modules (16–25) add the
+IT/internet-foundations substrate the GRC canon sits on: networking, databases, web-app
+architecture, API paradigms, cloud shared responsibility, containers/virtualization, applied
+crypto/PKI, identity protocols, how-the-internet-works, and logging/observability. Each is framed
+by its **loop question** — *where does a control claim's truth physically live, travel, and how do
+I read it* — and runs on a generalized **visual surface** (PEEL a real frame to the byte, TRACE
+real protocol messages into a stateful sim, MAP control cards against a cited key, build-and-break
+a real validator, and diff-the-trace a clean/broken pair to the single divergent field). Eighteen
+real-bytes oracles back it (`web/src/engines/visual/`): a packet dissector, DNS/DNS-resolution,
+TLS 1.3 + OAuth/OIDC + SAML, x.509, JWT, crypto transforms, the four API contracts
+(OpenAPI/WSDL/SDL/.proto) + gRPC wire + GraphQL limiter, HTTP headers, syslog, and the OCI image
+reader. **Honesty doctrine holds end-to-end:** every value a learner reads is the oracle's parse of
+the committed real artifact, never an authored answer key — the build computes it and the browser
+recomputes it byte-identically. All 26 modules are green across every gate (1243 tests, 26
+`dist/labs/`, lints 26/26, rot dashboard 🟢26). See
+[`research/it-foundations/INTEGRATION-MATRIX.md`](./research/it-foundations/INTEGRATION-MATRIX.md).
+
 ## Target repo layout (instantiated as authoring is approved)
 
 ```

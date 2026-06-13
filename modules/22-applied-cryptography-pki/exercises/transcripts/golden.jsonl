@@ -1,0 +1,12 @@
+{"input": {"panel": "scramble", "select": "sha256-hello", "layer": "HASH", "read": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"}}
+{"input": {"panel": "scramble", "select": "base64-hello", "layer": "ENCODE", "decode": "aGVsbG8="}}
+{"input": {"panel": "jwt", "select": "jwt.header", "decode": "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"}}
+{"input": {"panel": "cert-leaf", "select": "cert.validity.notAfter", "read": "2026-08-17T08:39:10Z"}}
+{"input": {"panel": "cert-leaf", "select": "cert.basicConstraints", "read": "CA:FALSE"}}
+{"input": {"panel": "cert-leaf", "select": "cert.san", "read": "DNS:www.google.com"}}
+{"input": {"panel": "cert-leaf", "select": "cert.issuer", "read": "C=US, O=Google Trust Services, CN=WR2"}}
+{"input": {"order": [0, 1, 2, 3, 4, 5, 6]}}
+{"input": {"order": [0, 1, 7]}}
+{"input": {"panel": "cert-expired-broken", "select": "cert.validity.notAfter", "read": "2015-04-12T23:59:59Z"}}
+{"input": {"panel": "cert-wrong-host-broken", "select": "cert.san", "read": "DNS:*.badssl.com, DNS:badssl.com"}}
+{"input": {"panel": "scramble", "select": "sha256-empty", "layer": "HASH", "decode": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}}

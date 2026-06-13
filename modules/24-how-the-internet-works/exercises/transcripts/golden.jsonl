@@ -1,0 +1,11 @@
+{"input": {"panel": "dns-query", "select": "dns.qdcount", "read": "1"}}
+{"input": {"panel": "dns-query", "select": "dns.qname", "read": "example.com"}}
+{"input": {"panel": "dns-query", "select": "dns.qtype", "read": "1 = A"}}
+{"input": {"panel": "dns-response", "select": "dns.ancount", "read": "2"}}
+{"input": {"panel": "dns-response", "select": "dns.answer.0.rdata", "read": "104.20.23.154"}}
+{"input": {"panel": "dns-response", "select": "dns.flags", "read": "AD 0"}}
+{"input": {"trace": "delegation", "order": [0, 1, 2, 3, 4, 5, 6, 7]}}
+{"input": {"trace": "tls13", "order": [0, 1, 2, 3, 4, 5, 6]}}
+{"input": {"trace": "tls13", "order": [0, 1, 7]}}
+{"input": {"panel": "cert-leaf", "select": "cert.san", "read": "DNS:www.google.com"}}
+{"input": {"panel": "cert-wrong-host-broken", "select": "cert.san", "read": "badssl.com"}}
