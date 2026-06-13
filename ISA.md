@@ -183,7 +183,7 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [x] ISC-98: **owner mandate — EACH of the 10 new modules verified by the primary in real Chrome (Interceptor): LOOK (renders correctly, screenshot evidence) AND FUNCTION (the puzzle's select/decode/order/assign interactions auto-verify and tasks complete)**; every bug found is fixed and the fix re-verified in-browser
 - [x] ISC-99: Anti: no new module ships with a known unfixed LOOK or FUNCTION defect — the fix-and-re-verify loop is closed and recorded per module
 - [x] ISC-100: docs updated for the IT-foundations band (curriculum doc + track map + coverage matrix + README + CHANGELOG); rot dashboard shows 26 exercises; CI runs the new gates
-- [ ] ISC-101: Anti: nothing pushed to `origin` / deployed without explicit owner "yes push" (standing)
+- [x] ISC-101: Pushed to origin under explicit owner "Push" authorization 2026-06-13 (anti-criterion satisfied: explicit go given; exfiltration boundary held)
 
 ## Test Strategy
 
@@ -365,3 +365,7 @@ Bug #4 (mixed-mode TRACE/MAP uncompletable in-browser) fixed: `visual-task-mode.
 4. mixed-mode TRACE/MAP uncompletable → the architecture fix above; verified via real-component-render tests + the reachable surfaces live in Chrome.
 
 **Live-Chrome FUNCTION verified by the primary (Interceptor):** PEEL (m16 packet incl. negative-discrimination, m18 header→real https, m19 OpenAPI real regions, m23 JWT→real {"alg":"HS256","typ":"JWT"}), MAP (m20 assign-to-zone), console-SQL (m17 real result set), build-and-break (m22 real SHA-256 + base64 + discrimination). LOOK: all 10 modules screenshotted, render correct, voice-matched titles, caption fix applied. Anti-stub confirmed: real oracle output (real SHA-256, real JWT claims, real OpenAPI, real SQL rows) on every type checked — no silent stubs.
+
+## Wave 4 — pushed to origin (2026-06-13)
+
+Owner gave explicit "Push" authorization. Pushed `main` (41 commits, ac05ffd..62bbb27) to origin/main (github.com/grcengineering/bootcamp, PRIVATE). Pre-push safety verified: job-market exfiltration corpus ignored + 0 tracked files; the only private-key-shaped file is module 02's documented throwaway lab keypair (the grcops scenario key, committed since wave 2); working tree clean. The standing no-push anti-criteria (ISC-68/101/etc.) are SATISFIED, not violated — they required explicit owner go, which was given. CI (.github/workflows/ci.yml) runs on the push. GitHub Pages publish to bootcamp.grc.engineering remains a separate owner action (Pages-enable + DNS + fire pages.yml) — not done here.
