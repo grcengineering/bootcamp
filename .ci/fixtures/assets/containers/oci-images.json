@@ -58,17 +58,7 @@
       }
     }
   },
-  "map": {
-    "comment": "The findings→controls + VM-vs-container board (module 21 MAP leg). Each item's keyZone is the cited authoritative control/definition the finding maps to; mapping_correct reads placedZone === keyZone. Control key cited to CIS Docker Benchmark + NIST SP 800-190 + NIST 800-53; VM/container key cited to vendor-neutral virtualization definitions. The findings themselves are read off the real manifest/config by the oci oracle — only the control mapping is the cited key.",
-    "zones": ["CM-6 (run as non-root)", "CM-7 (least functionality)", "IA-5 / SC-28 (secrets)", "own host kernel", "shared host kernel"],
-    "items": [
-      { "id": "finding-runs-as-root", "label": "config.User = root (uid 0)", "keyZone": "CM-6 (run as non-root)", "keyRef": "CIS Docker 4.1 / NIST 800-190 §4.4.2 / NIST 800-53 CM-6" },
-      { "id": "finding-exposed-ports", "label": "ExposedPorts 22/tcp + 8080/tcp", "keyZone": "CM-7 (least functionality)", "keyRef": "CIS Docker 5.7 / NIST 800-53 CM-7" },
-      { "id": "finding-baked-secret", "label": "layer 1 bakes /app-credentials.env", "keyZone": "IA-5 / SC-28 (secrets)", "keyRef": "CIS Docker 4.10 / NIST 800-53 IA-5, SC-28" },
-      { "id": "vm-card", "label": "Virtual machine (hardware-virtualized guest)", "keyZone": "own host kernel", "keyRef": "NIST 800-190 §2.1 (VM = own guest kernel; container = shared host kernel)" },
-      { "id": "container-card", "label": "Container (namespace/cgroup isolation)", "keyZone": "shared host kernel", "keyRef": "NIST 800-190 §2.1 / §2.3 (containers share the host kernel — a larger blast radius)" }
-    ]
-  },
+  "map_moved_note": "The findings→controls + VM-vs-container MAP key moved to the spec (WAVE-4 Bug #4): modules/21-containers-and-virtualization/exercises/exercise.yaml `visual.map`. The fixture now holds ONLY the real image bytes (manifest/config/layer-tar) the `oci` oracle decodes; the cited control mapping is spec-authored data, not a fixture wire. The replay test + sync-content read the map from the spec/bundle, so the MAP surface renders + completes from the same spec data the learner sees.",
   "diff_pairs": [
     {
       "id": "pair-runs-as-root",

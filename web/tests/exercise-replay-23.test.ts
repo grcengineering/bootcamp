@@ -3,92 +3,75 @@
  * (root ISA ISC-73) — the identity-protocols `visual` (PEEL / TRACE / Diff) counterpart of
  * exercise-replay-16.test.ts and exercise-replay-22.test.ts.
  *
- * Transcript grammar (one JSON object per line; `input` is the learner's surface ACTION):
- *   { "panel": <panelId>, "select": <regionNodeId>, "layer"?: <label>, "read"?: <value>,
- *     "decode"?: <liveDecode>, "order"?: [<cardIndex>...] }
- * which maps 1:1 onto what the visual surface lets a learner do: switch panel, select a node
- * (revealing the oracle's real decode), read off a field value, produce a LIVE decode
- * (base64url) that may independently disagree with the oracle, and (OAuth dance) assemble the
- * card order the RFC 6749 / OIDC state machine runs.
+ * Wave-4 Bug #4: the OAuth 2.0 / OIDC authorization-code dance TRACE deck is no longer hand-built
+ * here. It is authored as DATA in modules/23-identity-authn-authz-protocols/exercises/exercise.yaml
+ * (`visual.traces[]`); the same sync-content build the browser uses serializes it into the lab
+ * bundle. This test therefore builds the host EXACTLY as the Lab Player builds it —
+ * `new VisualHost(bundle.visual)` from the synced
+ * `src/content/labs/23-identity-authn-authz-protocols.json` — and drives the OAuth deck through the
+ * SAME mode-inference + active-deck path the Lab Player runs (visualTaskTarget / inheritedTraceDeck →
+ * host.setActiveDeck → host.traceProbeFor(deck)). The deck is NOT hand-run through a state machine
+ * fed into the verify context; the engines (canonicalDance / runDance) appear ONLY as an oracle
+ * CROSS-CHECK (the authored deck must equal the committed sim's order), never as the verify path.
  *
- * Verification mirrors the Lab Player (sticky, ordered, first-failure stops). The probe surfaces
- * are the SAME the player builds: ctx.parseTree (active panel's parse tree, from the jwt / saml
- * oracle), ctx.visual (the just-performed select/label/read/decode), and ctx.trace (the
- * oauth-oidc dance order's verdict — sequence_matches reads it).
+ * Transcript grammar (one JSON object per line; `input` is the learner's surface ACTION):
+ *   PEEL  : { "panel": <panelId>, "select": <regionNodeId>, "layer"?: <label>, "read"?: <value>, "decode"?: <liveDecode> }
+ *   TRACE : { "order": [<seedCardIndex>...] }   (the assembled OAuth dance card order; the active
+ *           deck is the current TRACE task's deck — t4 assembles oauth-authz-code)
+ * which maps 1:1 onto the visual surface: switch panel, select a node (revealing the oracle's real
+ * decode), read a field value, produce a LIVE decode (base64url) that may independently disagree with
+ * the oracle, and (OAuth dance) assemble the card order the RFC 6749 §4.1 / OIDC state machine runs.
+ *
+ * Verification mirrors the Lab Player (sticky, ordered, first-failure stops). The probe surfaces are
+ * the SAME the player builds: ctx.parseTree (active panel's parse tree, from the jwt / saml oracle),
+ * ctx.visual (the just-performed select/read/decode), and ctx.trace (the ACTIVE TRACE deck's real
+ * state-machine verdict, via host.traceProbeFor — sequence_matches reads it).
  *
  *   - golden.jsonl must leave EVERY action task recorded (pass)
  *   - each anti-*.jsonl must leave its targeted task unrecorded, failing at its named fails_check
  *
  * Honesty cross-check: every panel is built from the committed REAL identity fixtures
  * (.ci/fixtures/assets/crypto/jwt-tokens.json + .ci/fixtures/assets/identity/saml-assertion*.xml)
- * via the SAME oracle code the browser runs, fidelity-checked in identity-protocol.test.ts +
- * crypto-fidelity.test.ts. The parser / state-machine over the real bytes IS the oracle; there is
- * no authored answer key.
+ * and the dance from the committed oauth-oidc-sim, via the SAME oracle code the browser runs,
+ * fidelity-checked in identity-protocol.test.ts + crypto-fidelity.test.ts. The parser / state-machine
+ * over the real bytes IS the oracle; there is no authored answer key.
  */
 import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { parse } from "yaml";
 import { VisualHost, type VisualHostOptions } from "../src/components/lab/sessions/visual-host";
+import { visualTaskTarget, inheritedTraceDeck } from "../src/components/lab/sessions/visual-task-mode";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome, type TraceProbe } from "../src/verifiers/registry";
-import { buildJwtProbe } from "../src/engines/visual/jwt";
-import { parseSamlAssertion } from "../src/engines/visual/saml";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
 import { canonicalDance, runDance, type OAuthMessage } from "../src/engines/visual/oauth-oidc-sim";
 import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
+const WEB = join(ROOT, "web");
 const MODULE_DIR = join(ROOT, "modules/23-identity-authn-authz-protocols");
 const TRANSCRIPTS = join(MODULE_DIR, "exercises/transcripts");
-const CRYPTO = join(ROOT, ".ci/fixtures/assets/crypto");
-const IDENTITY = join(ROOT, ".ci/fixtures/assets/identity");
 
 const spec: ExerciseSpec = ExerciseSpecSchema.parse(
   parse(readFileSync(join(MODULE_DIR, "exercises/exercise.yaml"), "utf8")),
 );
 
-const jwtFx = JSON.parse(readFileSync(join(CRYPTO, "jwt-tokens.json"), "utf8"));
-const samlClean = readFileSync(join(IDENTITY, "saml-assertion.xml"), "utf8");
-const samlExpired = readFileSync(join(IDENTITY, "saml-assertion-expired.xml"), "utf8");
-
 /**
- * Build the module-23 VisualHost: one panel per real identity artifact parsed by its own oracle
- * (the real JWT + its alg:none tamper twin via `jwt`; the OASIS SAML assertion + its expired twin
- * via `saml`), plus the RFC 6749 §4.1 authorization-code + OIDC dance as the host's orderable trace
- * cards. The declared spec oracle/mode (jwt/diff-the-trace) keys the signed-claim PEEL spine; the
- * multi-oracle panel set is exactly how module 22 composes several oracles in one host.
+ * The synced lab bundle — exactly what the browser hands LabPlayer (spec + the resolved visual
+ * options). The OAuth dance deck the module authors in `visual.traces[]` is merged onto these options
+ * by sync-content; we build the host from them so the test sees byte-identical panels + deck.
  */
+interface LabBundle {
+  spec: ExerciseSpec;
+  visual: VisualHostOptions;
+}
+const bundle: LabBundle = JSON.parse(
+  readFileSync(join(WEB, "src/content/labs/23-identity-authn-authz-protocols.json"), "utf8"),
+) as LabBundle;
+
+/** Build the module-23 VisualHost the SAME way LabPlayer does: `new VisualHost(bundle.visual)`. */
 function newHost(): VisualHost {
-  const panels: VisualHostOptions["panels"] = [
-    // The real three-segment HS256 JWT (jwt): the header/payload decode with no key.
-    { id: "jwt-valid", label: "JWT · header.payload.signature", tree: buildJwtProbe(jwtFx.tokens.valid_hs256.jwt) },
-    // The real alg:none / past-exp tamper twin (jwt): the broken-auth leg.
-    { id: "jwt-algnone", label: "JWT · alg:none twin (broken)", tree: buildJwtProbe(jwtFx.tokens.algnone_twin.jwt) },
-    // The OASIS SAML 2.0 example assertion (saml): AuthnContext + the open validity window.
-    { id: "saml-clean", label: "SAML · assertion (clean)", tree: parseSamlAssertion(samlClean) },
-    // The expired-Conditions tamper twin (saml): the staleness break.
-    { id: "saml-expired", label: "SAML · assertion (expired twin, broken)", tree: parseSamlAssertion(samlExpired) },
-  ];
-
-  // The OAuth2 / OIDC valet-key dance: the 6 canonical RFC 6749 §4.1 cards as orderable trace
-  // cards. The canonical accepted sequence is the dance in declared order; routing is assessed
-  // (check_routing). A wrong order makes the sim raise the real invalid_request (RFC 6749 §4.1.2.1).
-  const canon = canonicalDance();
-  const cards = canon.map((m) => ({ from: m.from, to: m.to, type: m.type, fields: m.fields }));
-  const canonical: TraceProbe["canonical"] = { "oauth-authz-code": canon.map((m) => ({ from: m.from, to: m.to, type: m.type })) };
-
-  return new VisualHost({
-    mode: "diff-the-trace",
-    oracle: "jwt",
-    panels,
-    trace: {
-      canonical,
-      cards,
-      participants: ["user-agent", "client", "authz-server", "resource-server"],
-      alert: { name: "invalid_request" },
-      assign_routing: true,
-    },
-  });
+  return new VisualHost(bundle.visual);
 }
 
 interface VisualAction {
@@ -97,11 +80,18 @@ interface VisualAction {
   layer?: string;
   read?: string;
   decode?: string;
-  /** OAuth dance: the assembled card order, as card indices into the seed deck. */
+  /** OAuth dance: the assembled card order, as seed-card indices into the active deck. */
   order?: number[];
 }
 
-/** One learner surface action (the grammar in the file header). */
+/**
+ * One learner surface action. A PEEL action drives the host's panel/select/label/read/decode (the
+ * PeelSurface affordances). A TRACE action assembles the ACTIVE deck — the deck the current TRACE
+ * task selects — via host.appendTraceCard + host.setTraceRouting, the exact host methods the
+ * rendered TraceSurface's pool-click + routing-select handlers call. The active deck is set by the
+ * verify sweep (LabPlayer points the host at each TRACE task's deck before reading its probe), so an
+ * `order` action lands on whatever deck the surface is currently rendering.
+ */
 function replayInput(host: VisualHost, input: VisualAction): void {
   if (input.panel) host.setActivePanel(input.panel);
   if (input.select) host.select(input.panel ?? host.snapshot().activePanel ?? "", input.select);
@@ -109,24 +99,49 @@ function replayInput(host: VisualHost, input: VisualAction): void {
   if (input.read !== undefined) host.setValue(input.read);
   if (input.decode !== undefined) host.setDecode(input.decode);
   if (input.order !== undefined) {
+    // A TRACE action assembles the deck the current TRACE task renders. Module 23 has one deck
+    // (oauth-authz-code), so point the host at it before assembling — exactly what the surface does
+    // when it renders the TRACE task (host.setActiveDeck) and what the verify sweep re-asserts.
+    const deck = inheritedTraceDeck(spec.tasks, firstTraceTaskId());
+    if (deck) host.setActiveDeck(deck);
     host.resetTrace();
     for (const idx of input.order) {
       host.appendTraceCard(idx);
-      // assign_routing leg: route each card from/to the canonical participant the seed declares.
+      // assign_routing leg: route each card from/to its seeded canonical participants (the surface's
+      // routing selects); the sim checks routing on every move when the deck declares assign_routing.
       const card = host.traceCards()[idx];
       if (card) host.setTraceRouting(idx, card.from, card.to);
     }
   }
 }
 
-/** The VerifyContext the player builds for the identity visual surface. */
+/** The id of the first TRACE task (t4) — the deck an `order` action assembles. */
+function firstTraceTaskId(): string {
+  return spec.tasks.find((t) => visualTaskTarget(t).mode === "trace")?.id ?? "";
+}
+
+/**
+ * The VerifyContext the player builds for the identity visual surface. For a TRACE task we point the
+ * host at the task's deck (its own, or — for a deckless break-round — the nearest preceding deck) and
+ * read THAT deck's real state-machine verdict, exactly as LabPlayer.verifyTasks does.
+ */
 function ctxFor(host: VisualHost, taskId: string, i: number): VerifyContext {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  const tgt = visualTaskTarget(task);
+  let trace = host.traceProbe();
+  if (tgt.mode === "trace") {
+    const deck = tgt.deck ?? inheritedTraceDeck(spec.tasks, taskId);
+    if (deck) {
+      host.setActiveDeck(deck);
+      trace = host.traceProbeFor(deck);
+    }
+  }
   return {
     expectations: loadExpectations(),
     expectationKey: `${taskId}:${i}`,
     parseTree: host.parseTree(),
     visual: host.visualAction(),
-    trace: host.traceProbe(),
+    trace,
     map: host.mapProbe(),
   };
 }
@@ -200,6 +215,49 @@ describe("module 23 exercise replay (identity authn/authz visual engine)", () =>
     expect(spec.visual?.mode).toBe("diff-the-trace");
   });
 
+  test("the OAuth/OIDC dance deck is AUTHORED in exercise.yaml and synced into the lab bundle (Bug #4)", () => {
+    // the spec carries the deck as DATA — not a per-oracle builder, not the hand-built test host.
+    const specDeck = spec.visual?.traces?.find((d) => d.name === "oauth-authz-code");
+    expect(specDeck).toBeDefined();
+    expect(specDeck!.engine).toBe("oauth");
+    expect(specDeck!.participants).toEqual(["user-agent", "client", "authz-server", "resource-server"]);
+    expect(specDeck!.assign_routing).toBe(true);
+    expect(specDeck!.alert?.name).toBe("invalid_request");
+    // and the SAME deck reaches the browser via the synced bundle the host is built from.
+    const bundleDeck = bundle.visual.traces?.find((d) => d.name === "oauth-authz-code");
+    expect(bundleDeck).toBeDefined();
+    expect(bundleDeck!.cards.length).toBe(6); // the 6 canonical authorization-code + OIDC dance cards
+    // t4 names this deck via its canonical_ref, and the host holds NO legacy single-trace shorthand.
+    expect(visualTaskTarget(spec.tasks.find((t) => t.id === "t4")!).deck).toBe("oauth-authz-code");
+    expect((bundle.visual as { trace?: unknown }).trace).toBeUndefined();
+  });
+
+  test("the authored deck equals the committed sim — the oauth-oidc-sim is the oracle, not the YAML", () => {
+    // The deck's `canonical` is the state machine's accepted order serialized as data; assert it
+    // EQUALS canonicalDance() so the engine, not the authored YAML, remains ground truth. In the
+    // synced bundle (the host-seed shape) `canonical` is keyed by deck name; in the raw spec it is a
+    // flat array — cross-check both forms against the committed sim.
+    const deck = bundle.visual.traces!.find((d) => d.name === "oauth-authz-code")!;
+    const canon = canonicalDance();
+    const want = canon.map((m) => ({ from: m.from, to: m.to, type: m.type }));
+    expect(deck.canonical["oauth-authz-code"]).toEqual(want);
+    const specDeck = spec.visual!.traces!.find((d) => d.name === "oauth-authz-code")!;
+    expect(specDeck.canonical.map((c) => ({ from: c.from, to: c.to, type: c.type }))).toEqual(want);
+    // the seeded cards are the canonical dance cards, in canonical order.
+    expect(deck.cards.map((c) => ({ from: c.from, to: c.to, type: c.type }))).toEqual(want);
+    // and the engine reaches resource access for the canonical dance, then refuses the early resource
+    // call with the real invalid_request — RFC 6749 §4.1.2 (cross-check only, NOT the verify path).
+    expect(runDance(canon).probe.reachedEndState).toBe(true);
+    const broken: OAuthMessage[] = [
+      canon[0], // authorization_request
+      canon[1], // authorization_response (have the code)
+      canon[4], // resource_request BEFORE the token exchange
+    ];
+    const run = runDance(broken);
+    expect(run.probe.reachedEndState).toBe(false);
+    expect(run.error?.error).toBe("invalid_request");
+  });
+
   test("golden transcript satisfies every action task", () => {
     const { state } = replay(join(TRANSCRIPTS, "golden.jsonl"));
     for (const task of spec.tasks) {
@@ -207,6 +265,18 @@ describe("module 23 exercise replay (identity authn/authz visual engine)", () =>
       const verdict = state.recorded.has(task.id) ? "pass" : (state.gaps[task.id] ?? "never evaluated");
       expect(`${task.id}: ${verdict}`).toBe(`${task.id}: pass`);
     }
+  });
+
+  test("the golden replay completed t4 by driving the AUTHORED deck through the active-deck path", () => {
+    // t4 assembles oauth-authz-code to the resource-access end-state through the SAME inference the
+    // Lab Player uses (visualTaskTarget → setActiveDeck → traceProbeFor), not a hand-run state machine.
+    const { state, host } = replay(join(TRANSCRIPTS, "golden.jsonl"));
+    expect(state.recorded.has("t4")).toBe(true);
+    expect(visualTaskTarget(spec.tasks.find((t) => t.id === "t4")!).deck).toBe("oauth-authz-code");
+    // the active deck's real verdict is the one the verifier read (post-replay it holds the full dance).
+    const probe = host.traceProbeFor("oauth-authz-code")!;
+    expect(probe.reachedEndState).toBe(true);
+    expect(probe.lastAlert).toBeNull();
   });
 
   test("the golden replay read the real claims off the JWT and the SAML assertion", () => {
@@ -220,21 +290,6 @@ describe("module 23 exercise replay (identity authn/authz visual engine)", () =>
     expect(clean.region("saml.authn.contextclassref")!.value).toContain("PasswordProtectedTransport");
     expect(clean.region("saml.conditions.notonorafter")!.value).toBe("2030-01-01T00:00:00Z");
     expect(host.panel("saml-expired")!.tree.region("saml.conditions.notonorafter")!.value).toBe("2024-01-02T00:00:00Z");
-  });
-
-  test("the oauth-oidc sim reaches resource access for the canonical dance, then refuses the early resource call", () => {
-    // The canonical 6-card order reaches the DONE end-state; calling the resource before the token
-    // exchange raises the real invalid_request (the valet key was never obtained) — RFC 6749 §4.1.2.
-    const canon = canonicalDance();
-    expect(runDance(canon).probe.reachedEndState).toBe(true);
-    const broken: OAuthMessage[] = [
-      canon[0], // authorization_request
-      canon[1], // authorization_response (have the code)
-      canon[4], // resource_request BEFORE the token exchange
-    ];
-    const run = runDance(broken);
-    expect(run.probe.reachedEndState).toBe(false);
-    expect(run.error?.error).toBe("invalid_request");
   });
 
   test("expectations.json documentation keys equal what the oracles decode (ISC-60 spirit)", () => {

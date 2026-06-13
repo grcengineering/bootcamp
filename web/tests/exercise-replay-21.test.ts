@@ -1,7 +1,16 @@
 /**
  * Golden/anti-transcript replay gate for the module-21 containers-and-virtualization exercise
  * (root ISA ISC-73) — the OCI-image `visual` (PEEL/MAP/Diff) counterpart of exercise-replay-16.test.ts
- * and exercise-replay-19.test.ts.
+ * and exercise-replay-24.test.ts.
+ *
+ * Wave-4 Bug #4: this exercise is MIXED — its PEEL/Diff tasks (t1-t4, t6) read the two real OCI
+ * images, and t5 is a MAP task (`mapping_correct`). The cited findings→controls + VM/container MAP key
+ * USED to be hand-built in the fixture and threaded through `buildOciVisualOptions`; it now lives in
+ * the exercise.yaml `visual.map` block (spec-authored data). So this test builds the host EXACTLY as
+ * the browser does — `new VisualHost(bundle.visual)` from the SYNCED lab bundle (which carries the
+ * spec-authored map) — and drives the surface through the SAME per-task mode-inference path the Lab
+ * Player runs (`currentVisualTarget` / `visualTaskTarget` select PEEL for t1-t4,t6 and MAP for t5).
+ * The MAP is no longer hand-built here; the test reads it from the bundle the surface renders.
  *
  * Transcript grammar (one JSON object per line; `input` is the learner's surface ACTION):
  *   { "panel": <panelId>, "select": <regionNodeId>, "read"?: <value> }   // PEEL / Diff
@@ -12,67 +21,63 @@
  *
  * Verification mirrors the Lab Player (sticky, ordered, first-failure stops). The probe surfaces are
  * the SAME the player builds: ctx.parseTree (active panel's parse tree, from the `oci` oracle),
- * ctx.visual (the just-performed select/read), and ctx.map (the placement board).
+ * ctx.visual (the just-performed select/read), and ctx.map (the placement board over the spec map).
  *
  *   - golden.jsonl must leave EVERY action task recorded (pass)
  *   - each anti-*.jsonl must leave its targeted task unrecorded, failing at its named fails_check
  *
  * Honesty cross-check: panels are built from the committed REAL OCI blobs via the SAME lib/oci-seed
- * normalizer the build step uses, and the content-addressable digest chain is recomputed in
- * oci-fidelity.test.ts. The OCI reader's parse tree over the real image IS the oracle.
+ * normalizer the build step uses (so the synced bundle is byte-identical), and the content-addressable
+ * digest chain is recomputed in oci-fidelity.test.ts. The OCI reader's parse tree over the real image
+ * IS the oracle; the MAP zone key is the cited authoritative matrix (now spec-authored, not invented).
  */
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeAll } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+
+// A real DOM (happy-dom) so the end-to-end MAP test drives the rendered surface like a browser.
+beforeAll(() => {
+  if (typeof document === "undefined") GlobalRegistrator.register();
+  (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+});
+
 import { parse } from "yaml";
-import { VisualHost } from "../src/components/lab/sessions/visual-host";
-import {
-  buildOciVisualOptions,
-  type OciFixture,
-  type OciImageBlobs,
-  type OciMapSeed,
-} from "../src/lib/oci-seed";
-import type { OciManifest, OciImageConfig } from "../src/engines/visual/oci";
+import { createElement } from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import VisualSurface from "../src/components/lab/VisualSurface";
+import { VisualHost, type VisualHostOptions } from "../src/components/lab/sessions/visual-host";
+import { currentVisualTarget, visualTaskTarget, inheritedTraceDeck } from "../src/components/lab/sessions/visual-task-mode";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
 import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
 import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
+const WEB = join(ROOT, "web");
 const MODULE_DIR = join(ROOT, "modules/21-containers-and-virtualization");
 const TRANSCRIPTS = join(MODULE_DIR, "exercises/transcripts");
-const CONTAINERS = join(ROOT, ".ci/fixtures/assets/containers");
 
 const spec: ExerciseSpec = ExerciseSpecSchema.parse(
   parse(readFileSync(join(MODULE_DIR, "exercises/exercise.yaml"), "utf8")),
 );
 
-function loadFixture(): OciFixture {
-  const fromFile = spec.visual!.artifact.from.replace(/^assets\/containers\//, "").replace(/^assets\//, "");
-  return JSON.parse(readFileSync(join(CONTAINERS, fromFile), "utf8")) as OciFixture;
+/** The synced lab bundle — what the browser hands LabPlayer (spec + the resolved visual options). */
+interface LabBundle {
+  spec: ExerciseSpec;
+  visual: VisualHostOptions;
 }
+const bundle: LabBundle = JSON.parse(
+  readFileSync(join(WEB, "src/content/labs/21-containers-and-virtualization.json"), "utf8"),
+) as LabBundle;
 
-function loadBlobs(ref: { manifest_blob: string; config_blob: string; secret_layer_blob?: string }): OciImageBlobs {
-  const manifest = JSON.parse(readFileSync(join(CONTAINERS, ref.manifest_blob), "utf8")) as OciManifest;
-  const config = JSON.parse(readFileSync(join(CONTAINERS, ref.config_blob), "utf8")) as OciImageConfig;
-  const blobs: OciImageBlobs = { manifest, config };
-  if (ref.secret_layer_blob) {
-    blobs.secretLayerGz = new Uint8Array(readFileSync(join(CONTAINERS, ref.secret_layer_blob)));
-    blobs.secretLayerIndex = manifest.layers.length - 1; // the build's added layer is the topmost
-  }
-  return blobs;
-}
-
-/** The cited findings→controls + VM-vs-container MAP key (lives in the fixture, read by mapping_correct). */
-function loadMapSeed(fx: OciFixture & { map?: OciMapSeed }): OciMapSeed | undefined {
-  return fx.map;
-}
-
+/**
+ * Build the host EXACTLY as LabPlayer does: `new VisualHost(bundle.visual)`. The bundle carries the
+ * two real OCI image panels (oci-seed normalized at build time) AND the spec-authored MAP key — so the
+ * test and the browser see byte-identical panels and the SAME cited map (no fixture hand-building).
+ */
 function newHost(): VisualHost {
-  if (!spec.visual) throw new Error("lab-21 must declare a visual: block");
-  const fx = loadFixture() as OciFixture & { map?: OciMapSeed };
-  const clean = loadBlobs(fx.images.clean);
-  const misconfigured = loadBlobs(fx.images.misconfigured);
-  return new VisualHost(buildOciVisualOptions(spec.visual.mode, spec.visual.oracle, clean, misconfigured, loadMapSeed(fx)));
+  return new VisualHost(bundle.visual);
 }
 
 interface VisualAction {
@@ -91,23 +96,33 @@ function replayInput(host: VisualHost, input: VisualAction): void {
   if (input.place !== undefined && input.zone !== undefined) host.place(input.place, input.zone);
 }
 
-/** The VerifyContext the player builds for the OCI visual surface. */
-function ctxFor(host: VisualHost, taskId: string, i: number): VerifyContext {
-  return {
-    expectations: loadExpectations(),
-    expectationKey: `${taskId}:${i}`,
-    parseTree: host.parseTree(),
-    visual: host.visualAction(),
-    trace: host.traceProbe(),
-    map: host.mapProbe(),
-  };
-}
-
 function loadExpectations(): Record<string, string> {
   const raw = JSON.parse(readFileSync(join(TRANSCRIPTS, "expectations.json"), "utf8")) as Record<string, string>;
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(raw)) if (!k.startsWith("_")) out[k] = v;
   return out;
+}
+
+/**
+ * The VerifyContext the player builds for the OCI visual surface, per task. The TRACE branch mirrors
+ * LabPlayer's mixed-mode sweep (point the host at the task's deck) for symmetry with module 24 —
+ * module 21 carries no TRACE deck, so it resolves to the (null) active deck and the MAP probe drives t5.
+ */
+function ctxFor(host: VisualHost, taskId: string, i: number): VerifyContext {
+  const tgt = visualTaskTarget(spec.tasks.find((t) => t.id === taskId)!);
+  let trace = host.traceProbe();
+  if (tgt.mode === "trace") {
+    const deck = tgt.deck ?? inheritedTraceDeck(spec.tasks, taskId);
+    if (deck) { host.setActiveDeck(deck); trace = host.traceProbeFor(deck); }
+  }
+  return {
+    expectations: loadExpectations(),
+    expectationKey: `${taskId}:${i}`,
+    parseTree: host.parseTree(),
+    visual: host.visualAction(),
+    trace,
+    map: host.mapProbe(),
+  };
 }
 
 interface ReplayState {
@@ -172,6 +187,37 @@ describe("module 21 exercise replay (containers OCI-image visual engine)", () =>
     expect(spec.visual?.mode).toBe("diff-the-trace");
   });
 
+  test("the MAP key is spec-authored (Wave-4 Bug #4) and the synced bundle carries it (not the fixture)", () => {
+    // The cited findings→controls + VM/container key now lives in the exercise.yaml visual.map block.
+    expect(spec.visual?.map).toBeDefined();
+    expect(spec.visual?.map?.zones).toEqual([
+      "CM-6 (run as non-root)",
+      "CM-7 (least functionality)",
+      "IA-5 / SC-28 (secrets)",
+      "own host kernel",
+      "shared host kernel",
+    ]);
+    expect(spec.visual?.map?.items.map((it) => it.id)).toEqual([
+      "finding-runs-as-root",
+      "finding-exposed-ports",
+      "finding-baked-secret",
+      "vm-card",
+      "container-card",
+    ]);
+    // the synced bundle carries the SAME spec-authored map (this is what the browser host is built from)
+    expect(bundle.visual.map?.zones).toEqual(spec.visual?.map?.zones);
+    expect(bundle.visual.map?.items.map((it) => it.id)).toEqual(spec.visual?.map?.items.map((it) => it.id));
+  });
+
+  test("t5 infers the MAP surface from its verify primitives (mapping_correct → MAP)", () => {
+    const t5 = spec.tasks.find((t) => t.id === "t5")!;
+    expect(visualTaskTarget(t5).mode).toBe("map");
+    // the PEEL tasks infer PEEL (the proven canary path) — the surface follows the current task.
+    for (const id of ["t1", "t2", "t3", "t4", "t6"]) {
+      expect(visualTaskTarget(spec.tasks.find((t) => t.id === id)!).mode).toBe("peel");
+    }
+  });
+
   test("golden transcript satisfies every action task", () => {
     const { state } = replay(join(TRANSCRIPTS, "golden.jsonl"));
     for (const task of spec.tasks) {
@@ -232,4 +278,114 @@ describe("module 21 exercise replay (containers OCI-image visual engine)", () =>
       });
     });
   }
+});
+
+// ---------------------------------------------------------------------------------------------
+// END-TO-END (Wave-4 Bug #4): t5 completes through the RENDERED MapSurface, driven by real DOM
+// zone-clicks — NOT by calling the host directly. This proves the spec-authored map renders the MAP
+// surface and the SAME verifier the Lab Player runs reads its verdict (mirrors module 24's layer 2).
+// ---------------------------------------------------------------------------------------------
+
+describe("module 21 mixed exercise: t5 (MAP) completes through the rendered surface", () => {
+  /** Mount VisualSurface for the current task (its inferred target) into a real DOM root. */
+  function mountSurface(
+    host: VisualHost,
+    completed: (id: string) => boolean,
+  ): { container: HTMLElement; root: Root } {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        createElement(VisualSurface, {
+          host,
+          spec,
+          onChanged: () => {},
+          activeTarget: currentVisualTarget(spec.tasks, completed, "peel"),
+        }),
+      );
+    });
+    return { container, root };
+  }
+
+  /** Run t5's verify list against the bundle-built host's MAP probe (LabPlayer's per-task sweep). */
+  function t5Passes(host: VisualHost): boolean {
+    const t5 = spec.tasks.find((t) => t.id === "t5")!;
+    return t5.verify.every((chk, i) =>
+      runCheck(host.probeSession(), chk as AnyCheckParams, ctxFor(host, "t5", i)).pass,
+    );
+  }
+
+  test("the synced bundle carries the spec-authored MAP key alongside the two real OCI panels", () => {
+    expect(bundle.visual.map?.items.length).toBe(5);
+    expect(bundle.visual.panels.map((p) => p.id).sort()).toEqual(["clean", "misconfigured"]);
+    expect(bundle.visual.traces ?? []).toEqual([]); // module 21 has no TRACE deck
+  });
+
+  test("with t1-t4 done, t5 (MAP) renders the MapSurface (its zones + items) — not PEEL", () => {
+    const host = newHost();
+    const done = new Set(["t1", "t2", "t3", "t4"]);
+    const { container, root } = mountSurface(host, (id) => done.has(id));
+    const html = container.innerHTML;
+    expect(html).toContain('data-testid="visual-map"'); // MAP surface, not the PEEL tree
+    expect(html).not.toContain('data-testid="visual-tree"');
+    // every spec-authored zone + item is rendered as a real drop-target / card
+    for (const it of bundle.visual.map!.items) {
+      expect(container.querySelector(`[data-item-id="${it.id}"]`)).not.toBeNull();
+    }
+    for (const zone of bundle.visual.map!.zones) {
+      expect(container.querySelector(`[data-zone="${zone}"]`)).not.toBeNull();
+    }
+    act(() => root.unmount());
+  });
+
+  test("driving each card onto its cited zone through the rendered surface completes t5", () => {
+    const host = newHost();
+    const done = new Set(["t1", "t2", "t3", "t4"]);
+    const { container, root } = mountSurface(host, (id) => done.has(id));
+
+    // BEFORE placing: t5 does not pass (nothing on the board yet).
+    expect(t5Passes(host)).toBe(false);
+
+    // DRIVE the surface like a learner: click each item card to select it, then click its cited zone.
+    // The map key is the oracle — we read each item's keyZone off the SPEC-AUTHORED bundle, never an
+    // answer literal in the test. (The surface's onClick calls host.place; we never call it directly.)
+    for (const it of bundle.visual.map!.items) {
+      const card = container.querySelector(`[data-item-id="${it.id}"]`) as HTMLElement | null;
+      expect(card).not.toBeNull();
+      act(() => card!.click()); // select the card
+      const zone = container.querySelector(`[data-zone="${it.keyZone}"]`) as HTMLElement | null;
+      expect(zone).not.toBeNull();
+      act(() => zone!.click()); // assign it to its cited zone
+    }
+
+    // the surface drove the host; the MAP probe over the spec map now scores every item correct, so
+    // t5's mapping_correct passes through the SAME verifier the Lab Player runs.
+    const probe = host.mapProbe()!;
+    expect(probe.items.every((row) => row.placedZone === row.keyZone)).toBe(true);
+    expect(t5Passes(host)).toBe(true);
+    act(() => root.unmount());
+  });
+
+  test("a single misplaced card keeps t5 failing (the cited key is the oracle, gap names the item)", () => {
+    const host = newHost();
+    const done = new Set(["t1", "t2", "t3", "t4"]);
+    const { container, root } = mountSurface(host, (id) => done.has(id));
+
+    // place every card correctly EXCEPT finding-baked-secret, which we drop in the wrong zone.
+    for (const it of bundle.visual.map!.items) {
+      const card = container.querySelector(`[data-item-id="${it.id}"]`) as HTMLElement;
+      act(() => card.click());
+      const wrongZone = it.id === "finding-baked-secret" ? "CM-6 (run as non-root)" : it.keyZone;
+      const zone = container.querySelector(`[data-zone="${wrongZone}"]`) as HTMLElement;
+      act(() => zone.click());
+    }
+    expect(t5Passes(host)).toBe(false);
+    // the verifier's gap names the misplaced item, never the answer (honest partial-credit)
+    const t5 = spec.tasks.find((t) => t.id === "t5")!;
+    const out = runCheck(host.probeSession(), t5.verify[0] as AnyCheckParams, ctxFor(host, "t5", 0));
+    expect(out.pass).toBe(false);
+    expect(out.gap).toContain("finding-baked-secret");
+    act(() => root.unmount());
+  });
 });

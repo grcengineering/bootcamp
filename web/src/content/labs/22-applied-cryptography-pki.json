@@ -23,7 +23,106 @@
         "from": "assets/crypto/cert-diff-the-trace.json"
       },
       "oracle": "x509",
-      "mode": "diff-the-trace"
+      "mode": "diff-the-trace",
+      "traces": [
+        {
+          "name": "tls13-full-handshake",
+          "engine": "tls13",
+          "participants": [
+            "client",
+            "server"
+          ],
+          "cards": [
+            {
+              "from": "client",
+              "to": "server",
+              "type": "ClientHello",
+              "fields": {
+                "versions": "TLS 1.3"
+              }
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "ServerHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "EncryptedExtensions"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Certificate"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "CertificateVerify",
+              "fields": {
+                "proves": "server holds the private key for the cert's public key"
+              }
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Finished"
+            },
+            {
+              "from": "client",
+              "to": "server",
+              "type": "Finished"
+            },
+            {
+              "from": "client",
+              "to": "server",
+              "type": "ApplicationData"
+            }
+          ],
+          "canonical": [
+            {
+              "from": "client",
+              "to": "server",
+              "type": "ClientHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "ServerHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "EncryptedExtensions"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Certificate"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "CertificateVerify"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Finished"
+            },
+            {
+              "from": "client",
+              "to": "server",
+              "type": "Finished"
+            }
+          ],
+          "alert": {
+            "name": "unexpected_message"
+          },
+          "assign_routing": true
+        }
+      ]
     },
     "tasks": [
       {
@@ -485,13 +584,56 @@
         }
       }
     ],
-    "trace": {
-      "canonical": {
-        "tls13-full-handshake": [
+    "traces": [
+      {
+        "name": "tls13-full-handshake",
+        "canonical": {
+          "tls13-full-handshake": [
+            {
+              "from": "client",
+              "to": "server",
+              "type": "ClientHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "ServerHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "EncryptedExtensions"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Certificate"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "CertificateVerify"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Finished"
+            },
+            {
+              "from": "client",
+              "to": "server",
+              "type": "Finished"
+            }
+          ]
+        },
+        "cards": [
           {
             "from": "client",
             "to": "server",
-            "type": "ClientHello"
+            "type": "ClientHello",
+            "fields": {
+              "versions": "TLS 1.3"
+            }
           },
           {
             "from": "server",
@@ -511,7 +653,10 @@
           {
             "from": "server",
             "to": "client",
-            "type": "CertificateVerify"
+            "type": "CertificateVerify",
+            "fields": {
+              "proves": "server holds the private key for the cert's public key"
+            }
           },
           {
             "from": "server",
@@ -522,66 +667,22 @@
             "from": "client",
             "to": "server",
             "type": "Finished"
+          },
+          {
+            "from": "client",
+            "to": "server",
+            "type": "ApplicationData"
           }
-        ]
-      },
-      "cards": [
-        {
-          "from": "client",
-          "to": "server",
-          "type": "ClientHello",
-          "fields": {
-            "versions": "TLS 1.3"
-          }
+        ],
+        "participants": [
+          "client",
+          "server"
+        ],
+        "alert": {
+          "name": "unexpected_message"
         },
-        {
-          "from": "server",
-          "to": "client",
-          "type": "ServerHello"
-        },
-        {
-          "from": "server",
-          "to": "client",
-          "type": "EncryptedExtensions"
-        },
-        {
-          "from": "server",
-          "to": "client",
-          "type": "Certificate"
-        },
-        {
-          "from": "server",
-          "to": "client",
-          "type": "CertificateVerify",
-          "fields": {
-            "proves": "server holds the private key for the cert's public key"
-          }
-        },
-        {
-          "from": "server",
-          "to": "client",
-          "type": "Finished"
-        },
-        {
-          "from": "client",
-          "to": "server",
-          "type": "Finished"
-        },
-        {
-          "from": "client",
-          "to": "server",
-          "type": "ApplicationData"
-        }
-      ],
-      "participants": [
-        "client",
-        "server"
-      ],
-      "alert": {
-        "name": "unexpected_message",
-        "code": 10
-      },
-      "assign_routing": true
-    }
+        "assign_routing": true
+      }
+    ]
   }
 }

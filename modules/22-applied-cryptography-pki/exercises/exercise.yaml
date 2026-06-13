@@ -28,6 +28,39 @@ visual:
     from: assets/crypto/cert-diff-the-trace.json
   oracle: x509
   mode: diff-the-trace
+  # The RFC 8446 TLS 1.3 handshake deck (Wave-4 Bug #4): authored HERE as data — the mixed exercise
+  # carries this orderable TRACE deck ALONGSIDE the peel/diff cert spine, so the surface renders the
+  # TRACE surface for t8/t9 (mode inferred from their verify primitives) and the verifier reads THIS
+  # deck's real state-machine verdict. `canonical` is the tls13-sim's accepted order serialized as
+  # data (it equals canonicalHandshake() — the replay test cross-checks that the ENGINE, not this
+  # YAML, is the oracle); `cards` are the 7 canonical cards (in canonical order) plus one illegal
+  # early ApplicationData break card the t9 round injects to read the real unexpected_message(10).
+  # The numeric alert code (10) is NOT authored here — the `code` literal key is reserved by the
+  # code-in-data ban (exercise-spec BANNED_KEYS); the tls13-sim is the oracle for the code, t9
+  # asserts only the alert NAME, and the replay test cross-checks runHandshake(break).alert.code===10.
+  traces:
+    - name: tls13-full-handshake
+      engine: tls13
+      participants: [client, server]
+      assign_routing: true
+      alert: { name: unexpected_message }
+      cards:
+        - { from: client, to: server, type: ClientHello, fields: { versions: "TLS 1.3" } }
+        - { from: server, to: client, type: ServerHello }
+        - { from: server, to: client, type: EncryptedExtensions }
+        - { from: server, to: client, type: Certificate }
+        - { from: server, to: client, type: CertificateVerify, fields: { proves: "server holds the private key for the cert's public key" } }
+        - { from: server, to: client, type: Finished }
+        - { from: client, to: server, type: Finished }
+        - { from: client, to: server, type: ApplicationData }
+      canonical:
+        - { from: client, to: server, type: ClientHello }
+        - { from: server, to: client, type: ServerHello }
+        - { from: server, to: client, type: EncryptedExtensions }
+        - { from: server, to: client, type: Certificate }
+        - { from: server, to: client, type: CertificateVerify }
+        - { from: server, to: client, type: Finished }
+        - { from: client, to: server, type: Finished }
 
 intro: |
   An auditor asks one two-part question — "is the data encrypted at rest AND in transit?" — and a

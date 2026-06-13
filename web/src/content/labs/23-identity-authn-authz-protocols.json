@@ -23,7 +23,111 @@
         "from": "assets/crypto/jwt-tokens.json"
       },
       "oracle": "jwt",
-      "mode": "diff-the-trace"
+      "mode": "diff-the-trace",
+      "traces": [
+        {
+          "name": "oauth-authz-code",
+          "engine": "oauth",
+          "participants": [
+            "user-agent",
+            "client",
+            "authz-server",
+            "resource-server"
+          ],
+          "cards": [
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "authorization_request",
+              "fields": {
+                "response_type": "code",
+                "scope": "openid profile",
+                "redirect_uri": "app.example/cb"
+              }
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "authorization_response",
+              "fields": {
+                "auth_code": "SplxlOBeZQQYbYS6WxSbIA"
+              }
+            },
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "token_request",
+              "fields": {
+                "grant_type": "authorization_code",
+                "auth_code": "SplxlOBeZQQYbYS6WxSbIA"
+              }
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "token_response",
+              "fields": {
+                "token_type": "Bearer",
+                "access_token": "2YotnFZFEjr1zCsicMWpAA",
+                "id_token": "<jwt>",
+                "expires_in": "3600"
+              }
+            },
+            {
+              "from": "client",
+              "to": "resource-server",
+              "type": "resource_request",
+              "fields": {
+                "authorization": "Bearer 2YotnFZFEjr1zCsicMWpAA"
+              }
+            },
+            {
+              "from": "resource-server",
+              "to": "client",
+              "type": "resource_response",
+              "fields": {
+                "status": "200"
+              }
+            }
+          ],
+          "canonical": [
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "authorization_request"
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "authorization_response"
+            },
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "token_request"
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "token_response"
+            },
+            {
+              "from": "client",
+              "to": "resource-server",
+              "type": "resource_request"
+            },
+            {
+              "from": "resource-server",
+              "to": "client",
+              "type": "resource_response"
+            }
+          ],
+          "alert": {
+            "name": "invalid_request"
+          },
+          "assign_routing": true
+        }
+      ]
     },
     "tasks": [
       {
@@ -338,107 +442,110 @@
         }
       }
     ],
-    "trace": {
-      "canonical": {
-        "oauth-authz-code": [
+    "traces": [
+      {
+        "name": "oauth-authz-code",
+        "canonical": {
+          "oauth-authz-code": [
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "authorization_request"
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "authorization_response"
+            },
+            {
+              "from": "client",
+              "to": "authz-server",
+              "type": "token_request"
+            },
+            {
+              "from": "authz-server",
+              "to": "client",
+              "type": "token_response"
+            },
+            {
+              "from": "client",
+              "to": "resource-server",
+              "type": "resource_request"
+            },
+            {
+              "from": "resource-server",
+              "to": "client",
+              "type": "resource_response"
+            }
+          ]
+        },
+        "cards": [
           {
             "from": "client",
             "to": "authz-server",
-            "type": "authorization_request"
+            "type": "authorization_request",
+            "fields": {
+              "response_type": "code",
+              "scope": "openid profile",
+              "redirect_uri": "app.example/cb"
+            }
           },
           {
             "from": "authz-server",
             "to": "client",
-            "type": "authorization_response"
+            "type": "authorization_response",
+            "fields": {
+              "auth_code": "SplxlOBeZQQYbYS6WxSbIA"
+            }
           },
           {
             "from": "client",
             "to": "authz-server",
-            "type": "token_request"
+            "type": "token_request",
+            "fields": {
+              "grant_type": "authorization_code",
+              "auth_code": "SplxlOBeZQQYbYS6WxSbIA"
+            }
           },
           {
             "from": "authz-server",
             "to": "client",
-            "type": "token_response"
+            "type": "token_response",
+            "fields": {
+              "token_type": "Bearer",
+              "access_token": "2YotnFZFEjr1zCsicMWpAA",
+              "id_token": "<jwt>",
+              "expires_in": "3600"
+            }
           },
           {
             "from": "client",
             "to": "resource-server",
-            "type": "resource_request"
+            "type": "resource_request",
+            "fields": {
+              "authorization": "Bearer 2YotnFZFEjr1zCsicMWpAA"
+            }
           },
           {
             "from": "resource-server",
             "to": "client",
-            "type": "resource_response"
+            "type": "resource_response",
+            "fields": {
+              "status": "200"
+            }
           }
-        ]
-      },
-      "cards": [
-        {
-          "from": "client",
-          "to": "authz-server",
-          "type": "authorization_request",
-          "fields": {
-            "response_type": "code",
-            "scope": "openid profile",
-            "redirect_uri": "https://app.example.com/cb"
-          }
+        ],
+        "participants": [
+          "user-agent",
+          "client",
+          "authz-server",
+          "resource-server"
+        ],
+        "alert": {
+          "name": "invalid_request"
         },
-        {
-          "from": "authz-server",
-          "to": "client",
-          "type": "authorization_response",
-          "fields": {
-            "code": "SplxlOBeZQQYbYS6WxSbIA"
-          }
-        },
-        {
-          "from": "client",
-          "to": "authz-server",
-          "type": "token_request",
-          "fields": {
-            "grant_type": "authorization_code",
-            "code": "SplxlOBeZQQYbYS6WxSbIA"
-          }
-        },
-        {
-          "from": "authz-server",
-          "to": "client",
-          "type": "token_response",
-          "fields": {
-            "token_type": "Bearer",
-            "access_token": "2YotnFZFEjr1zCsicMWpAA",
-            "id_token": "<jwt>",
-            "expires_in": "3600"
-          }
-        },
-        {
-          "from": "client",
-          "to": "resource-server",
-          "type": "resource_request",
-          "fields": {
-            "authorization": "Bearer 2YotnFZFEjr1zCsicMWpAA"
-          }
-        },
-        {
-          "from": "resource-server",
-          "to": "client",
-          "type": "resource_response",
-          "fields": {
-            "status": "200"
-          }
-        }
-      ],
-      "participants": [
-        "user-agent",
-        "client",
-        "authz-server",
-        "resource-server"
-      ],
-      "alert": {
-        "name": "invalid_request"
-      },
-      "assign_routing": true
-    }
+        "assign_routing": true
+      }
+    ]
   }
 }

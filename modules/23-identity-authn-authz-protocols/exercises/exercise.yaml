@@ -29,6 +29,38 @@ visual:
     from: assets/crypto/jwt-tokens.json
   oracle: jwt
   mode: diff-the-trace
+  # The RFC 6749 §4.1 authorization-code + OIDC dance deck (Wave-4 Bug #4): authored HERE as data —
+  # the mixed exercise carries this orderable TRACE deck ALONGSIDE the peel/diff identity spine, so
+  # the surface renders the TRACE surface for t4 (mode inferred from its verify primitives) and the
+  # verifier reads THIS deck's real state-machine verdict. `canonical` is the oauth-oidc-sim's
+  # accepted order serialized as data (it equals canonicalDance() — the replay test cross-checks that
+  # the ENGINE, not this YAML, is the oracle); `cards` are the 6 canonical dance cards in canonical
+  # order. The deck name `oauth-authz-code` is t4's `canonical_ref`. assign_routing is on (t4 asserts
+  # routing too): a wrong order / mis-route makes the sim raise the real invalid_request (RFC 6749
+  # §4.1.2.1 / §5.2 — a resource call before the token exchange means no valet key was ever issued).
+  traces:
+    - name: oauth-authz-code
+      engine: oauth
+      participants: [user-agent, client, authz-server, resource-server]
+      assign_routing: true
+      alert: { name: invalid_request }
+      # NOTE: the authorization `code` is shown under the `auth_code` field key — the literal `code`
+      # key is reserved by the code-in-data ban (exercise-spec BANNED_KEYS), so it cannot be a field
+      # key here. The card `fields` are display-only; the oauth-oidc-sim is the oracle for the dance.
+      cards:
+        - { from: client, to: authz-server, type: authorization_request, fields: { response_type: "code", scope: "openid profile", redirect_uri: "app.example/cb" } }
+        - { from: authz-server, to: client, type: authorization_response, fields: { auth_code: "SplxlOBeZQQYbYS6WxSbIA" } }
+        - { from: client, to: authz-server, type: token_request, fields: { grant_type: "authorization_code", auth_code: "SplxlOBeZQQYbYS6WxSbIA" } }
+        - { from: authz-server, to: client, type: token_response, fields: { token_type: "Bearer", access_token: "2YotnFZFEjr1zCsicMWpAA", id_token: "<jwt>", expires_in: "3600" } }
+        - { from: client, to: resource-server, type: resource_request, fields: { authorization: "Bearer 2YotnFZFEjr1zCsicMWpAA" } }
+        - { from: resource-server, to: client, type: resource_response, fields: { status: "200" } }
+      canonical:
+        - { from: client, to: authz-server, type: authorization_request }
+        - { from: authz-server, to: client, type: authorization_response }
+        - { from: client, to: authz-server, type: token_request }
+        - { from: authz-server, to: client, type: token_response }
+        - { from: client, to: resource-server, type: resource_request }
+        - { from: resource-server, to: client, type: resource_response }
 
 intro: |
   A control claims "access is authenticated and authorized." That truth does not live in a slide

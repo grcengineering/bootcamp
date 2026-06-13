@@ -49,6 +49,7 @@ import { GitTerminalSession, type GitSessionSnapshot } from "./sessions/git-sess
 import { ConsoleHost, type ConsoleSnapshot } from "./sessions/console-host";
 import { BuilderHost, type BuilderSnapshot } from "./sessions/builder-host";
 import { VisualHost, type VisualSnapshot, type VisualHostOptions } from "./sessions/visual-host";
+import { visualTaskTarget, currentVisualTarget, blockFallbackMode, inheritedTraceDeck } from "./sessions/visual-task-mode";
 
 // Engines resolve lazily (none of them ship on reading pages — ISC-100); a glob that
 // resolves to {} keeps the page building while an engine package lands in parallel.
@@ -433,16 +434,17 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
             ? (builderRef.current?.probeSession() ?? null)
             : (visualRef.current?.probeSession() ?? null);
     if (!session) return;
+    const visualHost = visualRef.current;
     const extras: Omit<VerifyContext, "expectations" | "expectationKey"> = {
       engineResult: consoleRef.current?.lastResult() ?? null,
       validatorRun: builderRef.current?.lastValidatorRun() ?? null,
       mappingScore: builderRef.current?.lastMappingScore() ?? null,
       apiExchanges: apiRef.current?.probes() ?? [],
       repoState: gitRef.current?.repoState() ?? null,
-      parseTree: visualRef.current?.parseTree() ?? null,
-      visual: visualRef.current?.visualAction() ?? null,
-      trace: visualRef.current?.traceProbe() ?? null,
-      map: visualRef.current?.mapProbe() ?? null,
+      parseTree: visualHost?.parseTree() ?? null,
+      visual: visualHost?.visualAction() ?? null,
+      trace: visualHost?.traceProbe() ?? null,
+      map: visualHost?.mapProbe() ?? null,
     };
     setTaskRecords((prev) => {
       const next = { ...prev };
@@ -450,6 +452,21 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
       for (const task of spec.tasks) {
         if (next[task.id]) continue;
         if (task.type === "reflection") break; // reflections gate by saving, not by command
+        // Mixed visual exercise (Bug #4): each task's own primitives select its surface mode + deck.
+        // Point the host at the task's TRACE deck and read THAT deck's real state-machine verdict so
+        // a TRACE task verifies against the right protocol (the active block mode no longer decides).
+        // A deckless break-round (sim_alert_is) inherits the nearest preceding deck.
+        let taskTrace = extras.trace;
+        if (visualHost) {
+          const tgt = visualTaskTarget(task);
+          if (tgt.mode === "trace") {
+            const deck = tgt.deck ?? inheritedTraceDeck(spec.tasks, task.id);
+            if (deck) {
+              visualHost.setActiveDeck(deck);
+              taskTrace = visualHost.traceProbeFor(deck);
+            }
+          }
+        }
         let evidence: string[] = [];
         let failed: string | null = null;
         for (let i = 0; i < task.verify.length; i++) {
@@ -458,6 +475,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
               expectations,
               expectationKey: `${task.id}:${i}`,
               ...extras,
+              trace: taskTrace,
             });
             if (!out.pass) {
               failed = out.gap;
@@ -1035,7 +1053,17 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
 
           {kind === "visual" && visualRef.current && (
             <Suspense fallback={<p className="text-sm text-ink-dim">Loading the packet inspector…</p>}>
-              <VisualSurface key={termEpoch} host={visualRef.current} spec={spec} onChanged={onCommandComplete} />
+              <VisualSurface
+                key={termEpoch}
+                host={visualRef.current}
+                spec={spec}
+                onChanged={onCommandComplete}
+                activeTarget={currentVisualTarget(
+                  spec.tasks,
+                  (id) => !!taskRecords[id],
+                  blockFallbackMode(spec.visual?.mode),
+                )}
+              />
             </Suspense>
           )}
 

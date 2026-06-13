@@ -12,11 +12,11 @@
  * byte-identical panels/decks. The trace/map decks are protocol-true: the canonical accepted
  * sequence is each sim's `canonical*` deck, the map key is the cited authoritative matrix.
  */
-import type { VisualHostOptions, VisualMode } from "../components/lab/sessions/visual-host";
+import type { VisualHostOptions, VisualMode, VisualTraceSeed } from "../components/lab/sessions/visual-host";
 import type { ApiPanelSource } from "../engines/visual/api-oracle";
 import type { TransformName } from "../engines/visual/xform";
 import { canonicalHandshake } from "../engines/visual/tls13-sim";
-import { canonicalDance } from "../engines/visual/oauth-oidc-sim";
+import { canonicalDelegation, type DnsDelegationData } from "../engines/visual/dnsres-sim";
 
 // ---------------------------------------------------------------------------
 // Fixture shapes (the committed JSON the builders read; the bytes are the truth).
@@ -107,6 +107,10 @@ export interface ContentExtras {
   /** net DNS query + response hex fixtures (module 24). */
   dnsQuery?: DnsFixture;
   dnsResponse?: DnsFixture;
+  /** net DNS delegation chain (module 24's dnsres-sim treasure-hunt deck). */
+  dnsDelegation?: DnsDelegationData;
+  /** crypto cert-diff-the-trace pairs (module 24's broken wrong-host twin for the t11 Diff). */
+  cryptoDiff?: CryptoDiffFixture;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,18 +171,12 @@ export function buildCryptoVisualOptions(
     { id: "cert-wrong-host-broken", label: "Cert · wrong.host.badssl.com (broken)", source: { oracle: "x509", derHex: wrongHost.broken.der_hex } },
   ];
 
-  // TLS 1.3 full handshake: the canonical RFC 8446 cards + one illegal ApplicationData break card.
-  const canon = canonicalHandshake();
-  const breakCard = { from: "client", to: "server", type: "ApplicationData" };
-  const cards = [...canon.map((m) => ({ from: m.from, to: m.to, type: m.type, fields: m.fields })), breakCard];
-  const canonical = { "tls13-full-handshake": canon.map((m) => ({ from: m.from, to: m.to, type: m.type })) };
-
-  return {
-    mode,
-    oracle,
-    panels,
-    trace: { canonical, cards, participants: ["client", "server"], alert: { name: "unexpected_message", code: 10 }, assign_routing: true },
-  };
+  // The RFC 8446 TLS 1.3 handshake deck is authored as DATA in module 22's exercise.yaml
+  // (`visual.traces[]`, Wave-4 Bug #4) — sync-content merges it onto these host options — so this
+  // builder no longer hand-wires the `trace:` shorthand. The state machine (tls13-sim) is still the
+  // oracle: the replay test cross-checks the YAML deck's `canonical`/`cards` against
+  // `canonicalHandshake()`. Single source = the YAML, not this per-oracle builder.
+  return { mode, oracle, panels };
 }
 
 // ---------------------------------------------------------------------------
@@ -196,16 +194,12 @@ export function buildIdentityVisualOptions(mode: VisualMode, oracle: string, ext
     { id: "saml-expired", label: "SAML · assertion (expired twin, broken)", source: { oracle: "saml", xml: extras.samlExpired } },
   ];
 
-  const canon = canonicalDance();
-  const cards = canon.map((m) => ({ from: m.from, to: m.to, type: m.type, fields: m.fields }));
-  const canonical = { "oauth-authz-code": canon.map((m) => ({ from: m.from, to: m.to, type: m.type })) };
-
-  return {
-    mode,
-    oracle,
-    panels,
-    trace: { canonical, cards, participants: ["user-agent", "client", "authz-server", "resource-server"], alert: { name: "invalid_request" }, assign_routing: true },
-  };
+  // The RFC 6749 §4.1 authorization-code + OIDC dance deck is authored as DATA in module 23's
+  // exercise.yaml (`visual.traces[]`, Wave-4 Bug #4) — sync-content merges it onto these host options
+  // — so this builder no longer hand-wires the `trace:` shorthand. The state machine (oauth-oidc-sim)
+  // is still the oracle: the replay test cross-checks the YAML deck's `canonical`/`cards` against
+  // `canonicalDance()`. Single source = the YAML, not this per-oracle builder.
+  return { mode, oracle, panels };
 }
 
 // ---------------------------------------------------------------------------
@@ -215,14 +209,50 @@ export function buildIdentityVisualOptions(mode: VisualMode, oracle: string, ext
 export function buildInternetVisualOptions(mode: VisualMode, oracle: string, extras: ContentExtras): VisualHostOptions {
   if (!extras.dnsQuery || !extras.dnsResponse) throw new Error("module 24 needs the DNS query + response fixtures");
   if (!extras.certChain) throw new Error("module 24 needs the google-cert-chain fixture");
+  if (!extras.dnsDelegation) throw new Error("module 24 needs the DNS delegation fixture");
   const leafDer = extras.certChain.certs[0].der_hex;
+  const cryptoDiff = extras.cryptoDiff;
 
+  // The PEEL/Diff spine: the real DNS query + response (RFC 1035 parser) + the real leaf cert, and
+  // (when the cert-diff fixture is supplied) the broken wrong-host twin for the t11 Diff click.
   const panels: VisualHostOptions["panels"] = [
     { id: "dns-query", label: "DNS · query example.com A", source: { oracle: "dns", hex: extras.dnsQuery.hex } },
     { id: "dns-response", label: "DNS · response (2 A records)", source: { oracle: "dns", hex: extras.dnsResponse.hex } },
     { id: "cert-leaf", label: "Cert · www.google.com leaf", source: { oracle: "x509", derHex: leafDer } },
   ];
-  return { mode, oracle, panels };
+  const wrongHost = cryptoDiff?.pairs.find((p) => p.id === "cert-wrong-host");
+  if (wrongHost) {
+    panels.push({ id: "cert-wrong-host-broken", label: "Cert · wrong.host.badssl.com (broken)", source: { oracle: "x509", derHex: wrongHost.broken.der_hex } });
+  }
+
+  // The two REAL state-machine decks the mixed exercise carries ALONGSIDE the peel spine (Bug #4):
+  //  - the DNS delegation treasure-hunt (dnsres-sim) — deck name `example.com` (its canonical_ref);
+  //  - the RFC 8446 TLS 1.3 handshake (tls13-sim) — deck name `tls13-full-handshake`, + the illegal
+  //    early ApplicationData break card the t9 round injects to read unexpected_message(10).
+  // The canonical sequences come from the committed sims (canonicalDelegation / canonicalHandshake)
+  // — the state machine IS the oracle, serialized as data; no authored answer key.
+  const delegationCanon = canonicalDelegation(extras.dnsDelegation);
+  const delegationDeck: VisualTraceSeed = {
+    name: extras.dnsDelegation.qname, // "example.com" — the t7 canonical_ref
+    canonical: { [extras.dnsDelegation.qname]: delegationCanon.map((m) => ({ from: m.from, to: m.to, type: m.type })) },
+    cards: delegationCanon.map((m) => ({ from: m.from, to: m.to, type: m.type, fields: m.fields })),
+    participants: ["stub", "recursive", "root", "tld", "authoritative"],
+    alert: { name: "referral" },
+    assign_routing: true,
+  };
+
+  const tlsCanon = canonicalHandshake();
+  const tlsBreakCard = { from: "client", to: "server", type: "ApplicationData" };
+  const tlsDeck: VisualTraceSeed = {
+    name: "tls13-full-handshake",
+    canonical: { "tls13-full-handshake": tlsCanon.map((m) => ({ from: m.from, to: m.to, type: m.type })) },
+    cards: [...tlsCanon.map((m) => ({ from: m.from, to: m.to, type: m.type, fields: m.fields })), tlsBreakCard],
+    participants: ["client", "server"],
+    alert: { name: "unexpected_message", code: 10 },
+    assign_routing: true,
+  };
+
+  return { mode, oracle, panels, traces: [delegationDeck, tlsDeck] };
 }
 
 // ---------------------------------------------------------------------------
@@ -245,30 +275,12 @@ export function buildLoggingVisualOptions(mode: VisualMode, oracle: string, fx: 
     { id: "pair-auth-severity-broken", label: "auth-severity · broken (Debug)", source: { oracle: "syslog", line: pair.broken.raw } },
   ];
 
-  const stages = [
-    { from: "event", to: "collector", type: "source" },
-    { from: "source", to: "store", type: "collector" },
-    { from: "collector", to: "query", type: "store" },
-    { from: "store", to: "alert", type: "query" },
-    { from: "query", to: "operator", type: "alert" },
-  ];
-  const canonical = { "log-pipeline": stages.map((s) => ({ from: s.from, to: s.to, type: s.type })) };
-
-  const mapItems = [
-    { id: "pri-severity", label: "PRI Severity (auth alerting)", keyZone: "ac7-ia5", keyRef: "NIST 800-53 AC-7 / IA-5" },
-    { id: "audit-content", label: "Actor / time / outcome (audit content)", keyZone: "au3", keyRef: "NIST 800-53 AU-3; SOC 2 CC7.2" },
-    { id: "retention-horizon", label: "Store retention horizon", keyZone: "au11", keyRef: "NIST 800-53 AU-11" },
-    { id: "auth-failure-line", label: "su auth-failure line", keyZone: "audit", keyRef: "§4.7 audit record (who/what/when/outcome)" },
-    { id: "do-nuts-line", label: "do-nuts line", keyZone: "application", keyRef: "§4.7 application log (debugging noise)" },
-  ];
-
-  return {
-    mode,
-    oracle,
-    panels,
-    trace: { canonical, cards: stages, participants: ["event", "collector", "source", "store", "query", "alert", "operator"] },
-    map: { zones: ["ac7-ia5", "au3", "au11", "audit", "application"], items: mapItems },
-  };
+  // The born-vs-queried pipeline TRACE deck (`log-pipeline`) and the field→control MAP block are
+  // authored as DATA in module 25's exercise.yaml (`visual.traces[]` + `visual.map`, Wave-4 Bug #4)
+  // — sync-content merges them onto these host options — so this builder no longer hand-wires the
+  // `trace:`/`map:` seeds. Single source = the YAML, not this per-oracle builder; the syslog parser
+  // over the real §6.5 lines remains the PEEL/Diff oracle, and the pipeline ordering is its own oracle.
+  return { mode, oracle, panels };
 }
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,117 @@
         "from": "assets/logging/syslog-5424-examples.json"
       },
       "oracle": "syslog",
-      "mode": "diff-the-trace"
+      "mode": "diff-the-trace",
+      "traces": [
+        {
+          "name": "log-pipeline",
+          "engine": "pipeline",
+          "participants": [
+            "event",
+            "collector",
+            "source",
+            "store",
+            "query",
+            "alert",
+            "operator"
+          ],
+          "cards": [
+            {
+              "from": "event",
+              "to": "collector",
+              "type": "source"
+            },
+            {
+              "from": "source",
+              "to": "store",
+              "type": "collector"
+            },
+            {
+              "from": "collector",
+              "to": "query",
+              "type": "store"
+            },
+            {
+              "from": "store",
+              "to": "alert",
+              "type": "query"
+            },
+            {
+              "from": "query",
+              "to": "operator",
+              "type": "alert"
+            }
+          ],
+          "canonical": [
+            {
+              "from": "event",
+              "to": "collector",
+              "type": "source"
+            },
+            {
+              "from": "source",
+              "to": "store",
+              "type": "collector"
+            },
+            {
+              "from": "collector",
+              "to": "query",
+              "type": "store"
+            },
+            {
+              "from": "store",
+              "to": "alert",
+              "type": "query"
+            },
+            {
+              "from": "query",
+              "to": "operator",
+              "type": "alert"
+            }
+          ]
+        }
+      ],
+      "map": {
+        "zones": [
+          "ac7-ia5",
+          "au3",
+          "au11",
+          "audit",
+          "application"
+        ],
+        "items": [
+          {
+            "id": "pri-severity",
+            "label": "PRI Severity (auth alerting)",
+            "keyZone": "ac7-ia5",
+            "keyRef": "NIST 800-53 AC-7 / IA-5"
+          },
+          {
+            "id": "audit-content",
+            "label": "Actor / time / outcome (audit content)",
+            "keyZone": "au3",
+            "keyRef": "NIST 800-53 AU-3; SOC 2 CC7.2"
+          },
+          {
+            "id": "retention-horizon",
+            "label": "Store retention horizon",
+            "keyZone": "au11",
+            "keyRef": "NIST 800-53 AU-11"
+          },
+          {
+            "id": "auth-failure-line",
+            "label": "su auth-failure line",
+            "keyZone": "audit",
+            "keyRef": "§4.7 audit record (who/what/when/outcome)"
+          },
+          {
+            "id": "do-nuts-line",
+            "label": "do-nuts line",
+            "keyZone": "application",
+            "keyRef": "§4.7 application log (debugging noise)"
+          }
+        ]
+      }
     },
     "tasks": [
       {
@@ -371,9 +481,39 @@
         }
       }
     ],
-    "trace": {
-      "canonical": {
-        "log-pipeline": [
+    "traces": [
+      {
+        "name": "log-pipeline",
+        "canonical": {
+          "log-pipeline": [
+            {
+              "from": "event",
+              "to": "collector",
+              "type": "source"
+            },
+            {
+              "from": "source",
+              "to": "store",
+              "type": "collector"
+            },
+            {
+              "from": "collector",
+              "to": "query",
+              "type": "store"
+            },
+            {
+              "from": "store",
+              "to": "alert",
+              "type": "query"
+            },
+            {
+              "from": "query",
+              "to": "operator",
+              "type": "alert"
+            }
+          ]
+        },
+        "cards": [
           {
             "from": "event",
             "to": "collector",
@@ -399,45 +539,18 @@
             "to": "operator",
             "type": "alert"
           }
+        ],
+        "participants": [
+          "event",
+          "collector",
+          "source",
+          "store",
+          "query",
+          "alert",
+          "operator"
         ]
-      },
-      "cards": [
-        {
-          "from": "event",
-          "to": "collector",
-          "type": "source"
-        },
-        {
-          "from": "source",
-          "to": "store",
-          "type": "collector"
-        },
-        {
-          "from": "collector",
-          "to": "query",
-          "type": "store"
-        },
-        {
-          "from": "store",
-          "to": "alert",
-          "type": "query"
-        },
-        {
-          "from": "query",
-          "to": "operator",
-          "type": "alert"
-        }
-      ],
-      "participants": [
-        "event",
-        "collector",
-        "source",
-        "store",
-        "query",
-        "alert",
-        "operator"
-      ]
-    },
+      }
+    ],
     "map": {
       "zones": [
         "ac7-ia5",

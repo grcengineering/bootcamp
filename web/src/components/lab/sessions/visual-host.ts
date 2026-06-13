@@ -18,6 +18,40 @@ import type { ProbeSession, TraceProbe, MapProbe, VisualActionProbe, ValidatorRu
 
 export type VisualMode = "peel" | "trace" | "map" | "build-and-break" | "diff-the-trace";
 
+/**
+ * One named TRACE deck (Wave-4 Bug #4): the orderable cards + the sim's accepted sequence + the
+ * real-alert engine. A mixed host holds several of these at once (keyed by `name`), and a TRACE
+ * task selects the deck it assembles. `canonical` is the real state machine's accepted order
+ * serialized as data (computed by the committed sim, never an authored answer key); `alert` is the
+ * real RFC alert the sim raises on the first illegal move. The single-deck `trace` seed is
+ * normalized into this shape under the name `"default"`.
+ */
+export interface VisualTraceSeed {
+  /**
+   * Deck name (a TRACE task's `canonical_ref`/`deck` resolves to this). Optional on the single
+   * `trace` shorthand — defaults to `"default"`; required (and unique) for `traces[]` entries.
+   */
+  name?: string;
+  canonical: TraceProbe["canonical"];
+  cards: Array<{ from: string; to: string; type: string; fields?: Record<string, string> }>;
+  participants: string[];
+  /**
+   * The real protocol alert the stateful sim raises on the first out-of-order/mis-routed move
+   * (sim_alert_is reads it). Defaults to TCP's `RST` (the canary). A module agent's sim names
+   * its protocol's real alert here — e.g. `{ name: "unexpected_message", code: 10 }` (TLS 1.3,
+   * RFC 8446) or `{ name: "invalid_request" }` (OAuth, RFC 6749). The state machine raising it
+   * is the consequence; the name is the RFC's, never authored "try again".
+   */
+  alert?: { name: string; code?: number };
+  /**
+   * Require the learner to route each card from→to the canonical participants (folds in
+   * participant_routing_correct). When false (default) only ORDER is asserted, so cards carry
+   * their canonical routing pre-set; when true the surface exposes from/to selects and the sim
+   * checks routing on every move (web-app WAF-bypass leg).
+   */
+  assign_routing?: boolean;
+}
+
 /** One panel of the surface — a real artifact's parse tree (PEEL/Diff use ≥1 panel). */
 export interface VisualPanel {
   id: string;
@@ -47,27 +81,22 @@ export interface VisualHostOptions {
    * `validator_passes` reads `validatorRun`, `sequence_matches` reads the trace (set on `trace`).
    */
   buildAndBreak?: { validatorRun: ValidatorRunProbe };
-  /** TRACE seed: canonical sequence(s) the sim accepts + the orderable cards. */
-  trace?: {
-    canonical: TraceProbe["canonical"];
-    cards: Array<{ from: string; to: string; type: string; fields?: Record<string, string> }>;
-    participants: string[];
-    /**
-     * The real protocol alert the stateful sim raises on the first out-of-order/mis-routed move
-     * (sim_alert_is reads it). Defaults to TCP's `RST` (the canary). A module agent's sim names
-     * its protocol's real alert here — e.g. `{ name: "unexpected_message", code: 10 }` (TLS 1.3,
-     * RFC 8446) or `{ name: "invalid_request" }` (OAuth, RFC 6749). The state machine raising it
-     * is the consequence; the name is the RFC's, never authored "try again".
-     */
-    alert?: { name: string; code?: number };
-    /**
-     * Require the learner to route each card from→to the canonical participants (folds in
-     * participant_routing_correct). When false (default) only ORDER is asserted, so cards carry
-     * their canonical routing pre-set; when true the surface exposes from/to selects and the sim
-     * checks routing on every move (web-app WAF-bypass leg).
-     */
-    assign_routing?: boolean;
-  };
+  /**
+   * TRACE seed: canonical sequence(s) the sim accepts + the orderable cards. A single-deck seed.
+   * For a MIXED exercise that needs more than one protocol's deck simultaneously, use `traces`
+   * (the keyed multi-deck form) — this single `trace` is the convenient one-deck shorthand and is
+   * normalized into the multi-deck store under the name `"default"` (or the canonical_ref key).
+   */
+  trace?: VisualTraceSeed;
+  /**
+   * MULTIPLE named TRACE decks held simultaneously (Wave-4 Bug #4 fix). A mixed exercise (modules
+   * 21/22/23/24/25) carries one deck per protocol — e.g. a `delegation` deck (dnsres-sim) AND a
+   * `tls13` deck (tls13-sim) in one host. A TRACE task names which deck it assembles (its
+   * `canonical_ref`/`deck`), the surface renders THAT deck, and the verifier reads its real
+   * state-machine verdict. This fixes the single-trace limitation the replay test worked around
+   * by building the decks itself. Keyed by deck name; each deck holds its own order/routing.
+   */
+  traces?: VisualTraceSeed[];
   /** MAP seed: the cited authoritative key + the cards/zones. */
   map?: {
     zones: string[];
@@ -108,10 +137,16 @@ export interface VisualSnapshot {
   /** The active panel + the last action the learner performed (drives the live probe). */
   activePanel: string | null;
   action: VisualActionProbe | null;
-  /** TRACE: the learner's current card order (ids). */
+  /** TRACE: the active deck's card order (ids) — single-deck back-compat mirror. */
   traceOrder?: string[];
-  /** TRACE: the learner's per-card routing overrides (assign_routing leg). */
+  /** TRACE: the active deck's per-card routing overrides — single-deck back-compat mirror. */
   traceRouting?: Record<string, { from?: string; to?: string }>;
+  /** TRACE (multi-deck): every held deck's assembled order, keyed by deck name. */
+  traceOrders?: Record<string, string[]>;
+  /** TRACE (multi-deck): every held deck's per-card routing overrides, keyed by deck name. */
+  traceRoutings?: Record<string, Record<string, { from?: string; to?: string }>>;
+  /** TRACE (multi-deck): the active deck name. */
+  activeDeck?: string | null;
   /** MAP: itemId → placedZone (scalar mirror of the multi-set). */
   placements?: Record<string, string | null>;
   /** MAP: itemId → placed zones (THROUGHOUT multi-zone cards). */
@@ -129,11 +164,14 @@ export class VisualHost {
   private activePanel: string | null = null;
   private action: VisualActionProbe | null = null;
 
-  // TRACE state — the assembled order (ids `card-<seedIndex>`), the learner's per-card routing
-  // overrides (assign_routing leg), and the sim's real protocol alert.
-  private readonly traceSeed?: VisualHostOptions["trace"];
-  private traceOrder: string[] = [];
-  private traceRouting: Record<string, { from?: string; to?: string }> = {};
+  // TRACE state — MULTIPLE named decks held at once (Wave-4 Bug #4). `traceDecks` keys each deck's
+  // seed by name; `traceOrders`/`traceRoutings` hold per-deck assembled order (`card-<seedIndex>`)
+  // + per-card routing overrides; `activeDeck` is the deck the current TRACE task is assembling.
+  private readonly traceDecks: Map<string, VisualTraceSeed> = new Map();
+  private readonly traceDeckOrder: string[] = [];
+  private traceOrders: Record<string, string[]> = {};
+  private traceRoutings: Record<string, Record<string, { from?: string; to?: string }>> = {};
+  private activeDeck: string | null = null;
   // MAP state — itemId → placed zone(s) (THROUGHOUT cards hold a set) + the service-model slider.
   private readonly mapSeed?: VisualHostOptions["map"];
   private placements: Record<string, string | null> = {};
@@ -159,7 +197,20 @@ export class VisualHost {
       this.revealed[p.id] = new Set();
     }
     this.activePanel = this.panels[0]?.id ?? null;
-    this.traceSeed = opts.trace;
+    // Normalize the single `trace` shorthand + the keyed `traces[]` into one named-deck store.
+    // A deck's name defaults to its sole canonical_ref key (so a single-deck host keeps the exact
+    // ref the verifier already targets), or "default". Decks are insertion-ordered so the FIRST
+    // becomes the active deck — the surface switches the active deck per the current TRACE task.
+    const allSeeds: VisualTraceSeed[] = [...(opts.trace ? [opts.trace] : []), ...(opts.traces ?? [])];
+    for (const seed of allSeeds) {
+      const name = seed.name ?? Object.keys(seed.canonical)[0] ?? "default";
+      if (this.traceDecks.has(name)) continue; // first wins; names are unique by schema for traces[]
+      this.traceDecks.set(name, seed);
+      this.traceDeckOrder.push(name);
+      this.traceOrders[name] = [];
+      this.traceRoutings[name] = {};
+    }
+    this.activeDeck = this.traceDeckOrder[0] ?? null;
     this.mapSeed = opts.map;
     if (opts.map) {
       for (const it of opts.map.items) {
@@ -288,62 +339,96 @@ export class VisualHost {
   }
 
   // ---- TRACE (orderable message cards driving the real protocol state machine) --------
+  // All the single-deck methods below operate on the ACTIVE deck (the one the current TRACE task
+  // assembles), so every existing caller keeps working unchanged on a one-deck host. A mixed host
+  // switches the active deck per task via `setActiveDeck` (the surface infers it from the task).
+
+  /** The names of every held deck, in seed order (the first is the initial active deck). */
+  traceDeckNames(): string[] {
+    return [...this.traceDeckOrder];
+  }
+  /** The active deck name (the deck the single-deck methods read), or null when no deck is held. */
+  activeDeckName(): string | null {
+    return this.activeDeck;
+  }
+  /** Switch the active TRACE deck (a mixed host's per-task deck selection). Unknown names ignored. */
+  setActiveDeck(name: string): void {
+    if (this.traceDecks.has(name)) this.activeDeck = name;
+  }
+  /** The active deck's seed (or null). */
+  private activeSeed(): VisualTraceSeed | null {
+    return this.activeDeck ? this.traceDecks.get(this.activeDeck) ?? null : null;
+  }
+  private orderFor(deck: string | null): string[] {
+    return deck ? (this.traceOrders[deck] ??= []) : [];
+  }
+  private routingFor(deck: string | null): Record<string, { from?: string; to?: string }> {
+    return deck ? (this.traceRoutings[deck] ??= {}) : {};
+  }
 
   traceParticipants(): string[] {
-    return this.traceSeed?.participants ?? [];
+    return this.activeSeed()?.participants ?? [];
   }
-  traceCards(): NonNullable<VisualHostOptions["trace"]>["cards"] {
-    return this.traceSeed?.cards ?? [];
+  traceCards(): VisualTraceSeed["cards"] {
+    return this.activeSeed()?.cards ?? [];
   }
   /** Does this TRACE require the learner to route each card (assign_routing leg)? */
   traceAssignsRouting(): boolean {
-    return this.traceSeed?.assign_routing ?? false;
+    return this.activeSeed()?.assign_routing ?? false;
   }
   /** The assembled order, as `card-<seedIndex>` ids (left→right / top→bottom). */
   traceOrderIds(): string[] {
-    return [...this.traceOrder];
+    return [...this.orderFor(this.activeDeck)];
   }
   /** Seed-card indices NOT yet placed in the assembled order (the pool the listbox draws from). */
   tracePoolIndices(): number[] {
-    const placed = new Set(this.traceOrder.map((id) => Number(id.replace("card-", ""))));
-    return (this.traceSeed?.cards ?? []).map((_, i) => i).filter((i) => !placed.has(i));
+    const order = this.orderFor(this.activeDeck);
+    const placed = new Set(order.map((id) => Number(id.replace("card-", ""))));
+    return (this.activeSeed()?.cards ?? []).map((_, i) => i).filter((i) => !placed.has(i));
   }
   /** Place a seed card at the next position in the assembled order (append). */
   appendTraceCard(index: number): void {
-    if (!this.traceSeed) return;
-    if (index < 0 || index >= this.traceSeed.cards.length) return;
+    const seed = this.activeSeed();
+    if (!seed) return;
+    if (index < 0 || index >= seed.cards.length) return;
+    const order = this.orderFor(this.activeDeck);
     const id = `card-${index}`;
-    if (!this.traceOrder.includes(id)) this.traceOrder.push(id);
+    if (!order.includes(id)) order.push(id);
   }
   /** Remove a placed card back into the pool. */
   removeTraceCard(index: number): void {
-    this.traceOrder = this.traceOrder.filter((id) => id !== `card-${index}`);
+    if (!this.activeDeck) return;
+    this.traceOrders[this.activeDeck] = this.orderFor(this.activeDeck).filter((id) => id !== `card-${index}`);
   }
   /**
    * Move the card currently at `from` to `to` in the assembled order (keyboard reorder: the
    * roving listbox swaps a grabbed card up/down). Out-of-range positions are clamped/ignored.
    */
   moveTraceCard(from: number, to: number): void {
-    const n = this.traceOrder.length;
+    const order = this.orderFor(this.activeDeck);
+    const n = order.length;
     if (from < 0 || from >= n) return;
     const dest = Math.max(0, Math.min(n - 1, to));
     if (dest === from) return;
-    const [card] = this.traceOrder.splice(from, 1);
-    this.traceOrder.splice(dest, 0, card);
+    const [card] = order.splice(from, 1);
+    order.splice(dest, 0, card);
   }
   /** Record the learner's routing choice for a card (assign_routing leg). */
   setTraceRouting(index: number, from: string | undefined, to: string | undefined): void {
-    if (!this.traceSeed) return;
-    if (index < 0 || index >= this.traceSeed.cards.length) return;
-    this.traceRouting[`card-${index}`] = { from, to };
+    const seed = this.activeSeed();
+    if (!seed) return;
+    if (index < 0 || index >= seed.cards.length) return;
+    this.routingFor(this.activeDeck)[`card-${index}`] = { from, to };
   }
   /** The learner's routing override for a placed card (assign_routing leg), or undefined. */
   traceRoutingFor(index: number): { from?: string; to?: string } | undefined {
-    return this.traceRouting[`card-${index}`];
+    return this.routingFor(this.activeDeck)[`card-${index}`];
   }
+  /** Clear the active deck's assembled order + routing (a reset of just this deck). */
   resetTrace(): void {
-    this.traceOrder = [];
-    this.traceRouting = {};
+    if (!this.activeDeck) return;
+    this.traceOrders[this.activeDeck] = [];
+    this.traceRoutings[this.activeDeck] = {};
   }
 
   // ---- MAP (keyboard-assignable cards onto labeled zones; slider + THROUGHOUT) ---------
@@ -416,22 +501,34 @@ export class VisualHost {
     return this.action;
   }
 
-  /** TRACE probe — sequence_matches / sim_alert_is read this. */
+  /** TRACE probe for the ACTIVE deck — sequence_matches / sim_alert_is read this. */
   traceProbe(): TraceProbe | null {
-    if (!this.traceSeed) return null;
-    const assignRouting = this.traceSeed.assign_routing ?? false;
-    const ordered = this.traceOrder.map((id) => {
+    return this.activeDeck ? this.traceProbeFor(this.activeDeck) : null;
+  }
+
+  /**
+   * TRACE probe for a NAMED deck (Wave-4 Bug #4): runs the deck's real protocol state machine over
+   * its assembled order. The end-state is reached only when every message matches the deck's
+   * canonical sequence in type AND (when assigned) from/to routing — the sim's verdict serialized as
+   * the deck's `canonical`, computed by the committed sim, never an authored "correct". The first
+   * illegal move surfaces the deck's real RFC alert. `sequence_matches` / `sim_alert_is` consume
+   * the active deck's probe through the SAME closed registry the packet TRACE uses.
+   */
+  traceProbeFor(name: string): TraceProbe | null {
+    const seed = this.traceDecks.get(name);
+    if (!seed) return null;
+    const assignRouting = seed.assign_routing ?? false;
+    const order = this.orderFor(name);
+    const routing = this.routingFor(name);
+    const ordered = order.map((id) => {
       const idx = Number(id.replace("card-", ""));
-      const c = this.traceSeed!.cards[idx];
+      const c = seed.cards[idx];
       // assign_routing leg: the learner's routing override stands; otherwise the card's canonical
       // routing (cards carry their from/to pre-set when only ORDER is being assessed).
-      const route = assignRouting ? this.traceRouting[id] : undefined;
+      const route = assignRouting ? routing[id] : undefined;
       return { from: route?.from ?? c.from, to: route?.to ?? c.to, type: c.type, fields: c.fields };
     });
-    // run the real protocol state machine against the assembled order. The end-state is reached
-    // only when every message matches the canonical sequence in type AND from/to routing — the
-    // sim's verdict, not an authored "correct".
-    const canon = this.traceSeed.canonical;
+    const canon = seed.canonical;
     const ref = Object.keys(canon)[0];
     const expected = ref ? canon[ref] : [];
     const reachedEndState =
@@ -439,7 +536,7 @@ export class VisualHost {
       ordered.every((m, i) => m.type === expected[i].type && m.from === expected[i].from && m.to === expected[i].to);
     // honest consequence: the first out-of-order/mis-routed move makes the sim raise its real
     // protocol alert (TCP RST by default; a module agent's sim names its RFC alert in the seed).
-    const alert = this.traceSeed.alert ?? { name: "RST" };
+    const alert = seed.alert ?? { name: "RST" };
     let lastAlert: TraceProbe["lastAlert"] = null;
     if (ordered.length > 0 && !reachedEndState) lastAlert = { ...alert };
     return { orderedMessages: ordered, reachedEndState, lastAlert, canonical: canon };
@@ -499,14 +596,20 @@ export class VisualHost {
   }
 
   snapshot(): VisualSnapshot {
+    const activeOrder = this.orderFor(this.activeDeck);
+    const activeRouting = this.routingFor(this.activeDeck);
     return {
       v: 1,
       selections: { ...this.selections },
       revealed: Object.fromEntries(Object.entries(this.revealed).map(([k, v]) => [k, [...v]])),
       activePanel: this.activePanel,
       action: this.action,
-      traceOrder: [...this.traceOrder],
-      traceRouting: { ...this.traceRouting },
+      // single-deck back-compat mirror (the active deck) + the full multi-deck store.
+      traceOrder: [...activeOrder],
+      traceRouting: { ...activeRouting },
+      traceOrders: Object.fromEntries(Object.entries(this.traceOrders).map(([k, v]) => [k, [...v]])),
+      traceRoutings: Object.fromEntries(Object.entries(this.traceRoutings).map(([k, v]) => [k, { ...v }])),
+      activeDeck: this.activeDeck,
       placements: { ...this.placements },
       multiPlacements: Object.fromEntries(Object.entries(this.multiPlacements).map(([k, v]) => [k, [...v]])),
       sliderValue: this.sliderValue,
@@ -519,8 +622,24 @@ export class VisualHost {
     this.revealed = Object.fromEntries(Object.entries(snap.revealed).map(([k, v]) => [k, new Set(v)]));
     this.activePanel = snap.activePanel;
     this.action = snap.action;
-    this.traceOrder = snap.traceOrder ? [...snap.traceOrder] : [];
-    this.traceRouting = snap.traceRouting ? { ...snap.traceRouting } : {};
+    // Multi-deck restore: prefer the full keyed store; fall back to the single-deck mirror written
+    // by older snapshots (restored into the initial active deck) so old saves never crash.
+    if (snap.traceOrders) {
+      this.traceOrders = Object.fromEntries(Object.entries(snap.traceOrders).map(([k, v]) => [k, [...v]]));
+      this.traceRoutings = Object.fromEntries(Object.entries(snap.traceRoutings ?? {}).map(([k, v]) => [k, { ...v }]));
+    } else {
+      const deck = snap.activeDeck ?? this.traceDeckOrder[0] ?? null;
+      this.traceOrders = {};
+      this.traceRoutings = {};
+      for (const name of this.traceDeckOrder) { this.traceOrders[name] = []; this.traceRoutings[name] = {}; }
+      if (deck) {
+        this.traceOrders[deck] = snap.traceOrder ? [...snap.traceOrder] : [];
+        this.traceRoutings[deck] = snap.traceRouting ? { ...snap.traceRouting } : {};
+      }
+    }
+    // make sure every held deck has an entry (a deck added since the snapshot stays empty)
+    for (const name of this.traceDeckOrder) { this.traceOrders[name] ??= []; this.traceRoutings[name] ??= {}; }
+    this.activeDeck = (snap.activeDeck && this.traceDecks.has(snap.activeDeck)) ? snap.activeDeck : (this.traceDeckOrder[0] ?? null);
     this.placements = snap.placements ? { ...snap.placements } : {};
     this.multiPlacements = snap.multiPlacements
       ? Object.fromEntries(Object.entries(snap.multiPlacements).map(([k, v]) => [k, new Set(v)]))

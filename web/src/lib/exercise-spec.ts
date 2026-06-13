@@ -57,10 +57,82 @@ export const ConsoleSpecSchema = z.object({
 }).strict();
 
 /**
+ * One orderable message card on a TRACE deck (VISUAL-ENGINE-SPEC §1.3). Carries REAL protocol
+ * field values (`fields`) read off the oracle/sim — never code. `from`/`to` are participant ids;
+ * `type` is the protocol act (e.g. "ClientHello", "referral"). This is DATA: the spec lists the
+ * cards a learner orders; the named sim engine runs the REAL state machine that judges the order.
+ */
+export const TraceCardSchema = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  type: z.string().min(1),
+  /** Real protocol field values shown on the card (string-valued only — never code-in-data). */
+  fields: z.record(z.string(), z.string()).optional(),
+}).strict();
+
+/**
+ * One named TRACE deck a mixed visual block can carry ALONGSIDE its peel artifact
+ * (VISUAL-ENGINE-SPEC §1.3). The `name` is what a `sequence_matches`/`sim_alert_is` task points at
+ * (its `canonical_ref` / `deck`); `engine` names which committed sim/consequence engine produces
+ * the real alerts; `participants` are the routing nodes; `cards` are the orderable message cards;
+ * `canonical` is the sim's accepted order (the REAL state machine's output, serialized — NOT an
+ * authored answer key); `alert` is the real RFC alert the sim raises on the first illegal move.
+ * `assign_routing` turns on per-card from/to assignment (folds in participant_routing_correct).
+ */
+export const TraceDeckSchema = z.object({
+  /** Deck name — a TRACE task's `canonical_ref`/`deck` resolves to this (e.g. "tls13-full-handshake"). */
+  name: z.string().min(1),
+  /**
+   * Which committed sim/consequence engine produces the real alerts for this deck. The protocol
+   * sims (dnsres/tls13/oauth/gqlsim/pkt) raise their RFC alert on the first illegal move; `pipeline`
+   * names a generic stage-ordering deck (module 25's born-vs-queried log pipeline) whose `canonical`
+   * IS the committed stage order and whose only consequence is the host default (no RFC sim, no
+   * `sim_alert_is` round) — the ordering itself is the oracle, never an authored answer.
+   */
+  engine: z.enum(["dnsres", "tls13", "oauth", "gqlsim", "pkt", "pipeline"]),
+  participants: z.array(z.string().min(1)).min(1),
+  cards: z.array(TraceCardSchema).min(1),
+  /** The sim's accepted sequence (real state-machine output, serialized — never authored). */
+  canonical: z.array(TraceCardSchema).min(1),
+  /** The real RFC alert the sim raises on the first illegal move (defaults to TCP RST). */
+  alert: z.object({ name: z.string().min(1), code: z.number().int().optional() }).strict().optional(),
+  /** Per-card from/to assignment (folds in participant_routing_correct). */
+  assign_routing: z.boolean().optional(),
+}).strict();
+
+/**
+ * MAP data a visual block can carry ALONGSIDE its peel artifact (VISUAL-ENGINE-SPEC §1.4). The
+ * cited authoritative key (`keyZone`/`keyZones`/`keyByModel`, each with a `keyRef` citation) IS the
+ * oracle — never an opinion. `items` are the classifiable cards, `zones` the drop-zones, `slider`
+ * the optional IaaS/PaaS/SaaS service-model positions that re-derive the cited key per position.
+ */
+export const MapDataSchema = z.object({
+  zones: z.array(z.string().min(1)).min(1),
+  items: z.array(z.object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    /** The single authoritative zone (mapping_correct reads it). */
+    keyZone: z.string().min(1),
+    /** Citation for this item's zone (NIST/SOC2/AWS/CSA/CIS/OWASP). */
+    keyRef: z.string().optional(),
+    /** THROUGHOUT multi-zone card — correct only when placed in EVERY listed zone. */
+    keyZones: z.array(z.string().min(1)).optional(),
+    /** Service-model-dependent key (slider): the authoritative zone re-derived per position. */
+    keyByModel: z.record(z.string(), z.string()).optional(),
+  }).strict()).min(1),
+  /** Service-model slider (cloud shared-responsibility) positions. */
+  slider: z.object({ options: z.array(z.string().min(1)).min(1), initial: z.string().optional() }).strict().optional(),
+}).strict();
+
+/**
  * Visual-surface seed (engine: visual) — the Inspect-&-Assemble island's payload
  * (VISUAL-ENGINE-SPEC §1.1). The artifact names the REAL committed bytes the oracle parses;
  * `oracle` names which ported engine produces the parse tree / state machine; `mode` selects
- * the surface. The spec stays data — all parse/state-machine logic lives in engine code.
+ * the DEFAULT surface. A MIXED exercise (modules 21/22/23/24/25) additionally carries optional
+ * `traces[]` decks and/or `map` data ALONGSIDE the peel artifact; the surface then renders the
+ * surface for the CURRENT TASK's mode (inferred from its verify primitives) rather than this one
+ * block mode. The spec stays data — all parse/state-machine logic lives in engine code; the
+ * `expr`/`js`/`script` ban applies unchanged (no code-in-data).
  */
 export const VisualSpecSchema = z.object({
   artifact: z.object({
@@ -81,9 +153,30 @@ export const VisualSpecSchema = z.object({
    * reads (the cited matrix IS the oracle for a conceptual MAP module; VISUAL-ENGINE-SPEC §1.4).
    */
   oracle: z.enum(["pkt", "dns", "x509", "jwt", "xform", "tls13", "dnsres", "oauth", "hdr", "oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim", "syslog", "oci", "saml", "csa"]),
-  /** Surface mode (PEEL fully implemented for the canary; TRACE/MAP stubbed for later waves). */
+  /**
+   * The block's DEFAULT surface mode. For a single-mode exercise this is the only surface. For a
+   * MIXED exercise it is the mode of the peel/diff spine; per-task TRACE/MAP surfaces are selected
+   * from the task's verify primitives at render time (the surface infers the mode per current task).
+   */
   mode: z.enum(["peel", "trace", "map", "build-and-break", "diff-the-trace"]),
-}).strict();
+  /**
+   * Optional named TRACE decks carried ALONGSIDE the peel artifact (mixed exercises). Each deck is
+   * orderable cards + the sim's accepted sequence + a real-alert engine. A `sequence_matches`/
+   * `sim_alert_is` task names its deck so the surface renders THAT deck and the verifier reads its
+   * real state-machine verdict. Backward-compatible: omit for any single-mode exercise.
+   */
+  traces: z.array(TraceDeckSchema).optional(),
+  /**
+   * Optional MAP data carried ALONGSIDE the peel artifact (mixed exercises). A `mapping_correct`/
+   * `mapping_score_at_least` task renders the MAP surface over this cited key. Backward-compatible.
+   */
+  map: MapDataSchema.optional(),
+}).strict().superRefine((v, ctx) => {
+  const names = (v.traces ?? []).map((d) => d.name);
+  const dupe = names.find((n, i) => names.indexOf(n) !== i);
+  if (dupe !== undefined)
+    ctx.addIssue({ code: "custom", message: `visual.traces deck names must be unique (duplicate: ${dupe})` });
+});
 
 /** Builder-surface configuration (engine: builder) — names which widget model renders. */
 export const BuilderSpecSchema = z.object({

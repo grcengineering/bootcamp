@@ -19,16 +19,26 @@
  * Interceptor/browser check (and the replay test) can drive it headlessly. Animations respect
  * prefers-reduced-motion (a CSS guard).
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ExerciseSpec } from "../../lib/exercise-spec";
 import type { VisualHost } from "./sessions/visual-host";
 import type { ParseRegion } from "../../engines/visual/pkt";
+import { blockFallbackMode, currentVisualTarget, type VisualTaskTarget } from "./sessions/visual-task-mode";
 
 interface VisualSurfaceProps {
   host: VisualHost;
   spec: ExerciseSpec;
   /** Fired after any selection/label/order/assign change (the player re-verifies + persists). */
   onChanged: () => void;
+  /**
+   * The current task's inferred surface target (mode + TRACE deck) — the player passes the
+   * first-incomplete task's target so a MIXED exercise renders the surface the CURRENT task needs
+   * (Wave-4 Bug #4). When omitted (e.g. the host's own render tests), the target is inferred from
+   * the spec's tasks against `completed` (or the block's default mode if there are no tasks).
+   */
+  activeTarget?: VisualTaskTarget;
+  /** Which task ids are already recorded (used only when `activeTarget` is not supplied). */
+  completed?: (taskId: string) => boolean;
 }
 
 /** Flatten the visible tree (respecting gating) into a roving-tabindex order. */
@@ -49,10 +59,25 @@ const REVEAL_STYLE = `
   @media (prefers-reduced-motion: reduce) { .grcb-region-new { animation: none; } }
 `;
 
-export default function VisualSurface({ host, spec, onChanged }: VisualSurfaceProps) {
-  const mode = spec.visual?.mode ?? "peel";
-  if (mode === "trace" || mode === "build-and-break") return <TraceSurface host={host} onChanged={onChanged} />;
-  if (mode === "map") return <MapSurface host={host} onChanged={onChanged} />;
+export default function VisualSurface({ host, spec, onChanged, activeTarget, completed }: VisualSurfaceProps) {
+  // The surface renders for the CURRENT TASK's mode, not the exercise's single block mode (Bug #4).
+  // The player passes `activeTarget` (the first-incomplete task's inferred mode + deck); without it
+  // we infer from the spec's tasks (or fall back to the block mode) so the host's own tests still
+  // render a sensible surface.
+  const fallback = blockFallbackMode(spec.visual?.mode);
+  const target: VisualTaskTarget =
+    activeTarget ??
+    currentVisualTarget(spec.tasks ?? [], completed ?? (() => false), fallback);
+
+  // A TRACE task names the deck it assembles; select it on the host so the surface renders + the
+  // verifier reads the RIGHT deck (a mixed host holds several at once).
+  useEffect(() => {
+    if (target.mode === "trace" && target.deck) host.setActiveDeck(target.deck);
+  }, [host, target.mode, target.deck]);
+  if (target.mode === "trace" && target.deck) host.setActiveDeck(target.deck);
+
+  if (target.mode === "trace") return <TraceSurface host={host} onChanged={onChanged} />;
+  if (target.mode === "map") return <MapSurface host={host} onChanged={onChanged} />;
   return <PeelSurface host={host} onChanged={onChanged} />;
 }
 

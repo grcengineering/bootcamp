@@ -414,6 +414,244 @@
           "oracle": "x509",
           "derHex": "308204573082033fa003020102021100abe74b4d866382bd12bc1dc4eabb54a1300d06092a864886f70d01010b0500303b310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232301e170d3236303532353038333931315a170d3236303831373038333931305a3019311730150603550403130e7777772e676f6f676c652e636f6d3059301306072a8648ce3d020106082a8648ce3d0301070342000450318e2d830a72703c0c1b74a7aba75d7bccc596359b2c9786146f3995b91b304e2f5fad9fa003a426cd918108f57826a1570ffa73942b901decdf7527a843f5a38202413082023d300e0603551d0f0101ff04040302078030130603551d25040c300a06082b06010505070301300c0603551d130101ff04023000301d0603551d0e04160414b39b0709e04824929aa0d7e9fdb900d6fa375736301f0603551d23041830168014de1b1eed7915d43e3724c321bbec34396d42b230305806082b06010505070101044c304a302106082b060105050730018615687474703a2f2f6f2e706b692e676f6f672f777232302506082b060105050730028619687474703a2f2f692e706b692e676f6f672f7772322e63727430190603551d1104123010820e7777772e676f6f676c652e636f6d30130603551d20040c300a3008060667810c01020130360603551d1f042f302d302ba029a0278625687474703a2f2f632e706b692e676f6f672f7772322f47537954314e34504272672e63726c30820104060a2b06010401d6790204020481f50481f200f0007600d809553b944f7affc816196f944f85abb0f8fc5e8755260f15d12e72bb454b140000019e5e80adff000004030047304502202e25902b90a1ee07a594b6dd56c5d6eb279ac1cb0f99d69720d572de1518b589022100c4dc90e18f01290a063797a4689b06153b66630e71419b76bc4fbffd9dcaf180007600cb38f715897c84a1445f5bc1ddfbc96ef29a59cd470a690585b0cb14c31458e70000019e5e80adf4000004030047304502203c1e9a90ddd5a63e0b768a2668502fb27fa917db1a410a2e48c7f306e2153aef02210092a090ded9fb566375ad38fc9d0e1c691a196a7c1a86cccc29d90328ff4de305300d06092a864886f70d01010b0500038201010032866c2e1cf922994cf7e72b415df2f55e6e3aaff8a8659556864091d3b89d2aea48cc29b4599e74c94d97123bfe90265e7c7f0373bfa62ea69500712e6b1ee94803643bdca3547c0aacc450ca13d0d51503120c5e1a484d041ce11950f488c2f608bfb23540a72feea3d974f27bdb3dbb0453692309f02dfc28dcfa5e4b7df6dacf6d258fdb901b08c056b9bccb010f1a17a1c48d2b298e7a305ca5536891041e1c7bbd55fbb88d6a6bfbae23221b99d402c34d1f9b0f326b4d0179c51d2e78c2d4aa171d7d168c455e79793fd4dc572c0c5f7a021fbd036b6ca1fb0364af8d7269de87d6955bd0aa43f8354809176ae1fd4980b705ebe8eb3f5d48bbe95fd3"
         }
+      },
+      {
+        "id": "cert-wrong-host-broken",
+        "label": "Cert · wrong.host.badssl.com (broken)",
+        "source": {
+          "oracle": "x509",
+          "derHex": "308204fe308203e6a00302010202120533dc28b318a1e111898df9309afbed3633300d06092a864886f70d01010b05003033310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303523133301e170d3236303532363230303235305a170d3236303832343230303234395a30173115301306035504030c0c2a2e62616473736c2e636f6d30820122300d06092a864886f70d01010105000382010f003082010a0282010100b4e8a00d65c2c948aff3bf9842c3b53ef10f7e70f761ca23f95d2399adcb63b08bb7b3633d69b67dcd8ddd862f47f4a5edf9b7b657ddea8f10001969006df1974fee92ff1442bb0b53996383ff83ec5f635e6abea3073d20e9cdedb48b4f187cb6976154cb41e5e5ea562bcdfac12c39f29f637ac926f330ae7a4fcb27f9d71a17e75ccbd6eabbf13235bbd801287d9a40ac6ce50a36f66f6118e41eb32f50b107bed8bbca733f88046c11f84a9ee24faad5af66558a9544770874a36720eb5305fe87cc0ca8d9ef01f1fa5fef53a9499735d863df0bb52e3e870e6406ca2e96a446c9e20992ceccd7e9ab765d314b0b60c4f891d53ff0786caec09d1813d1b70203010001a382022630820222300e0603551d0f0101ff0404030205a030130603551d25040c300a06082b06010505070301300c0603551d130101ff04023000301d0603551d0e0416041465f5e117141becc0eb110ea88ace4b12cbf8b76b301f0603551d23041830168014e7ab9f0f2c33a053d35e4f78c8b2840e3bd69233303306082b0601050507010104273025302306082b060105050730028617687474703a2f2f7231332e692e6c656e63722e6f72672f30230603551d11041c301a820c2a2e62616473736c2e636f6d820a62616473736c2e636f6d30130603551d20040c300a3008060667810c010201302e0603551d1f042730253023a021a01f861d687474703a2f2f7231332e632e6c656e63722e6f72672f35322e63726c3082010c060a2b06010401d6790204020481fd0481fa00f8007600d809553b944f7affc816196f944f85abb0f8fc5e8755260f15d12e72bb454b140000019e66178ebc000004030047304502203ec57eb06ce7ba9f6111e393d3d78781fc808fb6f3bf04c4a5b05d1dbea63ee2022100ac721627a2ae59eb9bf4190a11c23ae0af3b0f028f8e06f2d33853663b0e11ad007e001a8b9d6b0ffebf81b47939c6d2310a86d6d102d4f046e2182c9de35f5e2625ef0000019e66178fbc000800000500173b4670040300473045022026a964cd157da9967ca5182d288af85c738c66c42d40ab617a42b42e716f48dd022100d6dc146339745c8d62ef85546e84c927927ca08f9a24da469be077ebaba107bf300d06092a864886f70d01010b05000382010100348b02354a662b71f25f3e9371a5f1fc6d47d27f2ca342579b665a5926bd44930afc7e0db0072c7ed00c605d92a9a2b75fb9dac874fbc292f5fcef43f983072f35282dac2565ed9daaf296b26e92bdd57a70c4c69ad424cf61108d1cb5bb5b6bcedd3a62750bf373f80135182a1d1523ac53e162216a9d19b494da4cd0a2015da61765250e44953707a63432213e3c4f3a9b027ded6fc9bc072df13cd3459d94bd1e300ea331dac6dba05cb2f6724f0beb8c0836d62c62f2b720c23e1deff7d5037c84effe52ddcf7c64d06299f7b211bd4f300a4c0186ce0901080a0c8a7ed91af20cd0457dc79fdd3a3b7757664683768d3aee4f36067228b36d939a24e0ef"
+        }
+      }
+    ],
+    "traces": [
+      {
+        "name": "example.com",
+        "canonical": {
+          "example.com": [
+            {
+              "from": "stub",
+              "to": "recursive",
+              "type": "query"
+            },
+            {
+              "from": "recursive",
+              "to": "root",
+              "type": "query"
+            },
+            {
+              "from": "root",
+              "to": "recursive",
+              "type": "referral"
+            },
+            {
+              "from": "recursive",
+              "to": "tld",
+              "type": "query"
+            },
+            {
+              "from": "tld",
+              "to": "recursive",
+              "type": "referral"
+            },
+            {
+              "from": "recursive",
+              "to": "authoritative",
+              "type": "query"
+            },
+            {
+              "from": "authoritative",
+              "to": "recursive",
+              "type": "answer"
+            },
+            {
+              "from": "recursive",
+              "to": "stub",
+              "type": "answer"
+            }
+          ]
+        },
+        "cards": [
+          {
+            "from": "stub",
+            "to": "recursive",
+            "type": "query",
+            "fields": {
+              "name": "example.com",
+              "want": "A"
+            }
+          },
+          {
+            "from": "recursive",
+            "to": "root",
+            "type": "query",
+            "fields": {
+              "name": "example.com"
+            }
+          },
+          {
+            "from": "root",
+            "to": "recursive",
+            "type": "referral",
+            "fields": {
+              "to_zone": "com",
+              "ns": "a.gtld-servers.net … m.gtld-servers.net"
+            }
+          },
+          {
+            "from": "recursive",
+            "to": "tld",
+            "type": "query",
+            "fields": {
+              "name": "example.com"
+            }
+          },
+          {
+            "from": "tld",
+            "to": "recursive",
+            "type": "referral",
+            "fields": {
+              "to_zone": "example.com",
+              "ns": "elliott.ns.cloudflare.com / hera.ns.cloudflare.com"
+            }
+          },
+          {
+            "from": "recursive",
+            "to": "authoritative",
+            "type": "query",
+            "fields": {
+              "name": "example.com"
+            }
+          },
+          {
+            "from": "authoritative",
+            "to": "recursive",
+            "type": "answer",
+            "fields": {
+              "name": "example.com",
+              "address": "104.20.23.154"
+            }
+          },
+          {
+            "from": "recursive",
+            "to": "stub",
+            "type": "answer",
+            "fields": {
+              "name": "example.com",
+              "address": "104.20.23.154"
+            }
+          }
+        ],
+        "participants": [
+          "stub",
+          "recursive",
+          "root",
+          "tld",
+          "authoritative"
+        ],
+        "alert": {
+          "name": "referral"
+        },
+        "assign_routing": true
+      },
+      {
+        "name": "tls13-full-handshake",
+        "canonical": {
+          "tls13-full-handshake": [
+            {
+              "from": "client",
+              "to": "server",
+              "type": "ClientHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "ServerHello"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "EncryptedExtensions"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Certificate"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "CertificateVerify"
+            },
+            {
+              "from": "server",
+              "to": "client",
+              "type": "Finished"
+            },
+            {
+              "from": "client",
+              "to": "server",
+              "type": "Finished"
+            }
+          ]
+        },
+        "cards": [
+          {
+            "from": "client",
+            "to": "server",
+            "type": "ClientHello",
+            "fields": {
+              "versions": "TLS 1.3"
+            }
+          },
+          {
+            "from": "server",
+            "to": "client",
+            "type": "ServerHello"
+          },
+          {
+            "from": "server",
+            "to": "client",
+            "type": "EncryptedExtensions"
+          },
+          {
+            "from": "server",
+            "to": "client",
+            "type": "Certificate"
+          },
+          {
+            "from": "server",
+            "to": "client",
+            "type": "CertificateVerify",
+            "fields": {
+              "proves": "server holds the private key for the cert's public key"
+            }
+          },
+          {
+            "from": "server",
+            "to": "client",
+            "type": "Finished"
+          },
+          {
+            "from": "client",
+            "to": "server",
+            "type": "Finished"
+          },
+          {
+            "from": "client",
+            "to": "server",
+            "type": "ApplicationData"
+          }
+        ],
+        "participants": [
+          "client",
+          "server"
+        ],
+        "alert": {
+          "name": "unexpected_message",
+          "code": 10
+        },
+        "assign_routing": true
       }
     ]
   }

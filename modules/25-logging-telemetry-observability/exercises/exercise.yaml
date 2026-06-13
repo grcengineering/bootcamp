@@ -29,6 +29,61 @@ visual:
     from: assets/logging/syslog-5424-examples.json
   oracle: syslog
   mode: diff-the-trace
+  # The born-vs-queried log pipeline TRACE deck (Wave-4 Bug #4): authored HERE as data — the mixed
+  # exercise carries this orderable deck ALONGSIDE the peel/diff syslog spine, so the surface renders
+  # the TRACE surface for t7 (mode inferred from its `sequence_matches` primitive) and the verifier
+  # reads THIS deck's real verdict. The deck name is `log-pipeline` (t7's `canonical_ref`). `engine:
+  # pipeline` marks it a generic stage-ordering deck — not an RFC protocol sim — so `canonical` IS
+  # the committed stage order (source → collector → store → query → alert) and the only consequence
+  # is the host default (there is no break-round / `sim_alert_is` for the pipeline). The ordering
+  # itself is the oracle: assemble the five stages in their declared order and the sim reaches its
+  # end-state; that reachedEndState is the consequence, never an authored "correct".
+  traces:
+    - name: log-pipeline
+      engine: pipeline
+      participants: [event, collector, source, store, query, alert, operator]
+      cards:
+        - { from: event, to: collector, type: source }
+        - { from: source, to: store, type: collector }
+        - { from: collector, to: query, type: store }
+        - { from: store, to: alert, type: query }
+        - { from: query, to: operator, type: alert }
+      canonical:
+        - { from: event, to: collector, type: source }
+        - { from: source, to: store, type: collector }
+        - { from: collector, to: query, type: store }
+        - { from: store, to: alert, type: query }
+        - { from: query, to: operator, type: alert }
+  # The field→control MAP block (Wave-4 Bug #4): authored HERE as data — the mixed exercise carries
+  # these cited-key item mappings ALONGSIDE the peel/diff spine, so the surface renders the MAP
+  # surface for t8 (mode inferred from its `mapping_correct` primitive) and `mapping_correct` reads
+  # placedZone === keyZone item-for-item. The cited authoritative key (NIST 800-53 families / SOC 2
+  # / RFC 5424 §4.7 audit-vs-application) IS the oracle for each mapping; the fields themselves are
+  # read off the real syslog lines by the `syslog` oracle. Zone strings match the MAP drop-zone
+  # labels verbatim.
+  map:
+    zones: [ac7-ia5, au3, au11, audit, application]
+    items:
+      - id: pri-severity
+        label: "PRI Severity (auth alerting)"
+        keyZone: ac7-ia5
+        keyRef: "NIST 800-53 AC-7 / IA-5"
+      - id: audit-content
+        label: "Actor / time / outcome (audit content)"
+        keyZone: au3
+        keyRef: "NIST 800-53 AU-3; SOC 2 CC7.2"
+      - id: retention-horizon
+        label: "Store retention horizon"
+        keyZone: au11
+        keyRef: "NIST 800-53 AU-11"
+      - id: auth-failure-line
+        label: "su auth-failure line"
+        keyZone: audit
+        keyRef: "§4.7 audit record (who/what/when/outcome)"
+      - id: do-nuts-line
+        label: "do-nuts line"
+        keyZone: application
+        keyRef: "§4.7 application log (debugging noise)"
 
 intro: |
   A control's continuous evidence is born once, at the source, in a single structured log line — at a

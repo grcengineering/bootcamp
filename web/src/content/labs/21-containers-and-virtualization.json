@@ -23,7 +23,48 @@
         "from": "assets/containers/oci-images.json"
       },
       "oracle": "oci",
-      "mode": "diff-the-trace"
+      "mode": "diff-the-trace",
+      "map": {
+        "zones": [
+          "CM-6 (run as non-root)",
+          "CM-7 (least functionality)",
+          "IA-5 / SC-28 (secrets)",
+          "own host kernel",
+          "shared host kernel"
+        ],
+        "items": [
+          {
+            "id": "finding-runs-as-root",
+            "label": "config.User = root (uid 0)",
+            "keyZone": "CM-6 (run as non-root)",
+            "keyRef": "CIS Docker 4.1 / NIST 800-190 §4.4.2 / NIST 800-53 CM-6"
+          },
+          {
+            "id": "finding-exposed-ports",
+            "label": "ExposedPorts 22/tcp + 8080/tcp",
+            "keyZone": "CM-7 (least functionality)",
+            "keyRef": "CIS Docker 5.7 / NIST 800-53 CM-7"
+          },
+          {
+            "id": "finding-baked-secret",
+            "label": "layer 1 bakes /app-credentials.env",
+            "keyZone": "IA-5 / SC-28 (secrets)",
+            "keyRef": "CIS Docker 4.10 / NIST 800-53 IA-5, SC-28"
+          },
+          {
+            "id": "vm-card",
+            "label": "Virtual machine (hardware-virtualized guest)",
+            "keyZone": "own host kernel",
+            "keyRef": "NIST 800-190 §2.1 (VM = own guest kernel; container = shared host kernel)"
+          },
+          {
+            "id": "container-card",
+            "label": "Container (namespace/cgroup isolation)",
+            "keyZone": "shared host kernel",
+            "keyRef": "NIST 800-190 §2.1 / §2.3 (containers share the host kernel — a larger blast radius)"
+          }
+        ]
+      }
     },
     "tasks": [
       {

@@ -117,6 +117,7 @@ import {
   type ContentExtras,
 } from "../src/lib/visual-content-seed";
 import type { OciManifest, OciImageConfig } from "../src/engines/visual/oci";
+import type { DnsDelegationData } from "../src/engines/visual/dnsres-sim";
 import { loadManifest } from "../../.ci/fixtures/load-manifest";
 
 /** The Wave-4 contract/wire oracles served from .ci/fixtures/assets/api/ (vs the net `pkt` canary). */
@@ -153,10 +154,14 @@ function loadContentExtras(oracle: string): ContentExtras {
     extras.samlClean = readAssetText("identity", "saml-assertion.xml");
     extras.samlExpired = readAssetText("identity", "saml-assertion-expired.xml");
   } else if (oracle === "dns") {
-    // module 24: the DNS query + response + the leaf cert (the encryption-boundary surface).
+    // module 24: the DNS query + response + the leaf cert (the encryption-boundary surface), plus
+    // the REAL state-machine decks the mixed exercise carries ALONGSIDE the peel spine (Bug #4):
+    // the DNS delegation treasure-hunt (dnsres-sim) and the cert-diff broken twin for the t11 Diff.
     extras.dnsQuery = readAssetJson<DnsFixture>("net", "dns-query-example-com.json");
     extras.dnsResponse = readAssetJson<DnsFixture>("net", "dns-response-example-com.json");
     extras.certChain = readAssetJson<CryptoChainFixture>("crypto", "google-cert-chain.json");
+    extras.dnsDelegation = readAssetJson<{ delegation: DnsDelegationData }>("net", "dns-delegation.json").delegation;
+    extras.cryptoDiff = readAssetJson<CryptoDiffFixture>("crypto", "cert-diff-the-trace.json");
   }
   return extras;
 }
@@ -394,12 +399,16 @@ for (const id of readdirSync(MODULES).sort()) {
         process.exit(1);
       }
       const fx = JSON.parse(readFileSync(fxPath, "utf8")) as OciFixture;
+      // Wave-4 Bug #4: the OCI builder no longer sources the MAP key from the fixture — module 21's
+      // cited findings→controls + VM/container key now lives in the exercise.yaml `visual.map` block
+      // (spec-authored data, not a fixture wire). Leaving the builder's map UNSET lets the generic
+      // spec-authored merge below (`spec.visual.map && !visual.map`) carry the YAML map onto the host,
+      // so the browser + replay test build the MAP surface from the SAME spec data the surface renders.
       visual = buildOciVisualOptions(
         spec.visual.mode,
         spec.visual.oracle,
         loadOciBlobs(fx.images.clean),
         loadOciBlobs(fx.images.misconfigured),
-        fx.map,
       );
     } else if (API_ORACLES.has(spec.visual.oracle)) {
       // Wave-4 contract/wire oracle: parse the committed api artifacts into the SAME parse-tree
@@ -452,6 +461,30 @@ for (const id of readdirSync(MODULES).sort()) {
         process.exit(1);
       }
       visual = buildVisualOptions(spec.visual.mode, spec.visual.oracle, primary, set);
+    }
+
+    // Spec-authored mixed-mode data (Wave-4 Bug #4): a MIXED exercise may carry `visual.traces[]`
+    // decks and/or `visual.map` data ALONGSIDE its peel artifact (this is the WireModules path — a
+    // module authors the decks/map in YAML rather than relying on a per-oracle builder). Carry them
+    // onto the host options here so the browser holds every deck + the map simultaneously. A deck's
+    // `canonical` is the sim's accepted order serialized as data; the builders may also have attached
+    // their own decks (module 24's worked example), so spec decks ADD to (never silently replace) them.
+    if (visual) {
+      if (spec.visual.traces?.length) {
+        const authored = spec.visual.traces.map((d) => ({
+          name: d.name,
+          canonical: { [d.name]: d.canonical.map((c) => ({ from: c.from, to: c.to, type: c.type })) },
+          cards: d.cards.map((c) => ({ from: c.from, to: c.to, type: c.type, ...(c.fields ? { fields: c.fields } : {}) })),
+          participants: d.participants,
+          ...(d.alert ? { alert: d.alert } : {}),
+          ...(d.assign_routing ? { assign_routing: true } : {}),
+        }));
+        const existing = new Set((visual.traces ?? []).map((d) => d.name));
+        visual = { ...visual, traces: [...(visual.traces ?? []), ...authored.filter((d) => !existing.has(d.name))] };
+      }
+      if (spec.visual.map && !visual.map) {
+        visual = { ...visual, map: spec.visual.map };
+      }
     }
   }
 
