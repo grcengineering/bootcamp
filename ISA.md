@@ -1,12 +1,12 @@
 ---
 project: grc-engineering-bootcamp
 effort: E5
-phase: complete
+phase: observe
 progress: 79/80
 mode: build
 started: 2026-05-28
 updated: 2026-06-13
-iteration: 2
+iteration: 3
 owner: Justin Pagano (accountable) · Jai (operational)
 ---
 
@@ -157,6 +157,18 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 - [x] ISC-78: determinism substrate pinned and audited per engine: PYTHONHASHSEED + float repr (Python), ORDER BY required in expected SQL results, jq/opa/cedar key-iteration order, no wall-clock leak into any transcript (grep gate over fixtures for capture-date strings) (advisor 2026-06-12)
 - [x] ISC-79: exercise-lint validates the spec↔registry seam: every declared verifier exists in the registry, its params satisfy the verifier's Zod schema, and the fixture's match-class is compatible with the verifier kind (advisor 2026-06-12)
 - [x] ISC-80: integration-canary matrix gates fan-out: one minimal smoke exercise per engine × match-class combination in actual use, all green in `bun test` + built site, BEFORE per-module authoring fan-out (advisor 2026-06-12: Module 01 is a content milestone, not an integration proof)
+
+### Wave 3 — IT-foundations expansion: enumeration + research + activity design (added 2026-06-13)
+> Owner directive: add IT-foundations modules to the Tier-1/100-level foundations (SQL/NoSQL, web app architecture, REST/SOAP/GraphQL/gRPC, networking) + enumerate the gaps, then deeply research and design highly-interactive visual/puzzle simulation activities. THIS wave's deliverable is the enumeration + research dossiers + build-ready activity designs + the shared visual-engine spec + sequencing — the actual module/exercise BUILD is a gated follow-on (Wave 4) pending owner go.
+- [x] ISC-81: `research/it-foundations/ENUMERATION.md` enumerates the topic set (owner's 4 + recommended gaps), each loop-stage-mapped and deconflicted against existing modules 06/07
+- [x] ISC-82: `research/it-foundations/VISUAL-PUZZLE-MODALITY.md` designs the reusable Inspect-&-Assemble surface (PEEL/TRACE/MAP) + Build-and-Break + Diff-the-Trace, all under the honesty doctrine
+- [ ] ISC-83: every enumerated topic has a deep, cited research dossier (`RESEARCH.json`) grounding real-artifact fidelity (real header layouts, JWT/cert/SAML/log/manifest shapes, protocol sequences) with verified sources
+- [ ] ISC-84: every topic has a build-ready activity design (`ACTIVITY-DESIGNS.json` + `MODULE-DESIGNS.md`) conforming to `style/EXERCISE-SPEC.md`: 5-6 Bloom objectives, visual-puzzle-first for abstractions, machine-verifiable tasks, named honesty source per shown value
+- [ ] ISC-85: Anti: no designed activity is a quiz — every task manipulates/queries a real artifact or simulated state (assessment = Diff-the-Trace forensic or produced evidence artifact)
+- [ ] ISC-86: Anti: every design frames the topic by its loop question, never "learn this stack" (manifesto thesis preserved); originality-clean (no third-party framing presented as original)
+- [ ] ISC-87: `VISUAL-ENGINE-SPEC.md` specifies the new `visual` Lab Player surface + the minimal new verifier-primitive set + the new parsers/engines, each with its honest ground-truth source; reuses wave-2 engines where the topic fits
+- [ ] ISC-88: `SEQUENCING.md` places the modules in the Tier-1 dependency graph + track map with a numbering recommendation (additive vs 3-digit relabel), prerequisites among new modules noted
+- [ ] ISC-89: Antecedent: owner reviews the enumeration + designs and authorizes the build wave before any module/exercise is built (no auto-build of 10 modules on green design)
 
 ## Test Strategy
 
