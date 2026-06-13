@@ -186,6 +186,25 @@ export class VisualHost {
     return this.panel(this.activePanel ?? "")?.tree ?? null;
   }
 
+  /**
+   * The label radiogroup's choices for a panel — the distinct, non-empty region-layer values
+   * the oracle's parse tree actually carries, in tree-walk order. DERIVED from real regions,
+   * never a hardcoded list: a packet yields its OSI layers (L2/L3/L4/L7), the crypto-sort panel
+   * yields HASH/ENCODE, an OCI image yields its config/layer labels, etc. This is the fix for the
+   * hardcoded-OSI bug where `expect_layer: HASH` was unreachable in the browser (the replay test
+   * bypassed the UI by calling the host directly).
+   */
+  labelChoices(panelId: string | null = this.activePanel): string[] {
+    const tree = panelId ? this.panel(panelId)?.tree ?? null : null;
+    if (!tree) return [];
+    const seen: string[] = [];
+    for (const r of tree.regions) {
+      const l = (r.layer ?? "").trim();
+      if (l !== "" && !seen.includes(l)) seen.push(l);
+    }
+    return seen;
+  }
+
   setActivePanel(id: string): void {
     if (this.panel(id)) this.activePanel = id;
   }

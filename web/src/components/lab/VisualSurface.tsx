@@ -42,7 +42,6 @@ function visibleNodes(host: VisualHost, panelId: string, region: ParseRegion, de
   }
 }
 
-const LAYER_CHOICES = ["L2", "L3", "L4", "L6", "L7"];
 
 const REVEAL_STYLE = `
   @keyframes grcb-reveal { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
@@ -229,11 +228,14 @@ function PeelSurface({ host, onChanged }: { host: VisualHost; onChanged: () => v
                 {selectedRegion.rfc ? ` · ${selectedRegion.rfc}` : ""}
               </p>
 
-              {/* OSI/layer label entry (region_labeled_correctly with expect_layer reads this) */}
+              {/* Layer/class label entry (region_labeled_correctly with expect_layer reads this).
+                  Choices are DERIVED from the panel's real region layers — OSI layers for a packet,
+                  HASH/ENCODE for the crypto sort, config/layer for an OCI image — never hardcoded. */}
+              {host.labelChoices(activePanel).length > 0 && (
               <fieldset className="mt-4">
-                <legend className="text-xs text-ink-soft">Which OSI layer is this?</legend>
-                <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="OSI layer">
-                  {LAYER_CHOICES.map((l) => {
+                <legend className="text-xs text-ink-soft">Which layer / class is this?</legend>
+                <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Region layer or class">
+                  {host.labelChoices(activePanel).map((l) => {
                     const chosen = host.visualAction()?.enteredLayer === l;
                     return (
                       <button
@@ -256,6 +258,7 @@ function PeelSurface({ host, onChanged }: { host: VisualHost; onChanged: () => v
                   })}
                 </div>
               </fieldset>
+              )}
             </>
           )}
         </div>
