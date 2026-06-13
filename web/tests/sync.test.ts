@@ -65,7 +65,7 @@ describe("encrypted sync envelope", () => {
       ivs.push(envelope.iv);
     }
     expect(new Set(ivs).size).toBe(N); // every IV distinct — zero collisions across N exports
-  });
+  }, 60_000); // 64 real exports each run PBKDF2-600k — heavy on slow CI runners; bump past the 5s default
 
   test("garbage and wrong-header inputs produce friendly errors (ISC-146)", async () => {
     await expect(importEncrypted("not a blob", "x".repeat(10))).rejects.toThrow(/bad header/);

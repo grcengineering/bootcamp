@@ -25,7 +25,10 @@ jobs:
       - name: Lab reproduction smoke test
         run: bash .ci/lab-repro.sh
       - name: Tooling tests + coverage (95% floor on .ci/lib.ts)
-        run: bun test --coverage
+        # Explicit file — `bun test` treats a bare `tests/` as a name FILTER (still recurses into
+        # web/tests/, where web deps aren't installed → Cannot find package 'yaml'). The web suite
+        # has its own job (simulation-fidelity) with web deps installed.
+        run: bun test --coverage ./tests/lib.test.ts
       - name: Exercise spec lint (schema + verifier seam + completability + transcripts)
         run: bun install --frozen-lockfile && cd web && bun install --frozen-lockfile && cd .. && bun .ci/exercise-lint.ts
       - name: Fidelity manifest lint (taxonomy + provenance + citations + loosening tripwire)
@@ -46,6 +49,8 @@ jobs:
           bun-version: latest
       - name: Install web deps
         run: cd web && bun install --frozen-lockfile
+      - name: Stage engine assets + sync content (public/engines is gitignored — fetch-engines copies the WASM payloads the payload-budget tests assert on)
+        run: cd web && bun run sync
       - name: Fidelity suite (simulator vs captured ground truth) + engine + verifier + replay gates
         run: cd web && bun test
       - name: Web build (incl. exercise content sync)
