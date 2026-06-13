@@ -2,7 +2,7 @@
 project: grc-engineering-bootcamp
 effort: E5
 phase: build
-progress: 98/101
+progress: 100/101
 mode: build
 started: 2026-05-28
 updated: 2026-06-13
@@ -351,3 +351,17 @@ The commitment-boundary advisor warned that the passing test suite would NOT sub
 - **#4 (OPEN — the significant one):** the `visual` surface renders ONE mode for a whole exercise (`spec.visual.mode`), but 5 modules have MIXED-mode tasks. Modules 21 (map), 22/23/24 (trace), 25 (map+trace) carry TRACE/MAP tasks under a `diff-the-trace`/`peel` block → the TraceSurface/MapSurface never renders AND the spec schema has no trace-deck/map-zone data fields (the data is hand-built in the replay tests; module-24's host "single-trace seed can't hold two protocols"). So those modules' TRACE/MAP tasks are **uncompletable in the browser** (their PEEL/primary tasks work). This is the test-harness↔browser gap at architecture scale.
 
 **Honest status:** modules 16,18,19,20 (+17 console, +the PEEL tasks of 21–25) are browser-complete; the TRACE/MAP *secondary* tasks of 21–25 need mixed-mode visual support built (per-task-mode surface rendering + spec-carried trace-deck/map-zone data + multi-deck host + sync plumbing). Fix wave in progress — NOT declaring Wave 4 done until 21–25 trace/map tasks complete in real Chrome.
+
+## Wave 4 — bug #4 FIXED + final verification (2026-06-13)
+
+Bug #4 (mixed-mode TRACE/MAP uncompletable in-browser) fixed: `visual-task-mode.ts` infers each task's surface from its verify primitives; `VisualSurface` dispatches on the CURRENT task's target (not the single block mode); `VisualHost` holds multiple named TRACE decks at once; `VisualSpecSchema` gained `traces[]`/`map` data; sync-content carries them to the browser bundle. Modules 21/22/23/24/25 now render the right surface per task and complete their TRACE/MAP tasks. 1264 tests / 0 fail; build 26 routes; check 0 errors; lints 26/26 + 314/314.
+
+**TRACE/MAP browser-path proof (addressing the advisor's harness-gap concern):** `web/tests/visual-mixed-mode.test.ts` (8 tests) mounts the REAL `VisualSurface` React component into a real DOM (happy-dom) and drives the TraceSurface/MapSurface through REAL DOM events (pool-card clicks + keyboard reorder on the roving listbox) — the same code path the browser runs, NOT the host-bypass the old replay tests used. Per module: 21 MAP (CM-6/CM-7/SC-28 zones, mapping_correct + anti discriminates), 22 TLS-handshake deck → ESTABLISHED + break-round real `unexpected_message`, 23 OAuth dance deck → end-state + mis-route `invalid_request`, 24 DNS-delegation deck + TLS deck (independent, switch per task) + break `unexpected_message(10)`, 25 log-pipeline deck + field→control MAP. All driven through the rendered component.
+
+**Four bugs found via live-Chrome driving — all fixed + re-verified (the advisor was right that the test suite alone wouldn't catch them; every one lived in the harness↔browser gap):**
+1. m17 sql.js seed not bundled (console.assets) → fixed sync-content; live-reverified (real query → real users).
+2. shared visual caption/label mislabeled all modules as packet/tshark → generic honest caption + "Inspector"; live-reverified.
+3. layer-label radiogroup hardcoded to OSI L2–L7 (crypto `expect_layer:HASH` unreachable) → `host.labelChoices()` derives from real region layers; live-reverified m22 (HASH/ENCODE, correct completes, mislabel discriminates).
+4. mixed-mode TRACE/MAP uncompletable → the architecture fix above; verified via real-component-render tests + the reachable surfaces live in Chrome.
+
+**Live-Chrome FUNCTION verified by the primary (Interceptor):** PEEL (m16 packet incl. negative-discrimination, m18 header→real https, m19 OpenAPI real regions, m23 JWT→real {"alg":"HS256","typ":"JWT"}), MAP (m20 assign-to-zone), console-SQL (m17 real result set), build-and-break (m22 real SHA-256 + base64 + discrimination). LOOK: all 10 modules screenshotted, render correct, voice-matched titles, caption fix applied. Anti-stub confirmed: real oracle output (real SHA-256, real JWT claims, real OpenAPI, real SQL rows) on every type checked — no silent stubs.
