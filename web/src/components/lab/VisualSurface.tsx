@@ -262,8 +262,8 @@ function PeelSurface({ host, onChanged }: { host: VisualHost; onChanged: () => v
       </div>
 
       <p className="mt-3 text-xs text-ink-dim">
-        Every value here is the packet dissector's own output over the real captured bytes — fidelity-checked
-        against tshark's decode of the same frame. The dissector is the oracle; nothing on screen is invented.
+        Every value here is the oracle's own decode of the real committed artifact — fidelity-checked in CI
+        against a reference decoder. The parser/engine is the source of truth; nothing on screen is invented.
       </p>
     </div>
   );

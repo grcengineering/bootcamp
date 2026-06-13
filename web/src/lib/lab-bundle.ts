@@ -45,6 +45,6 @@ export const ENGINE_LABELS: Record<ExerciseSpec["engine"], string> = {
   api: "API lab",
   git: "Git",
   builder: "Guided builder",
-  visual: "Packet inspector",
+  visual: "Inspector",
   mixed: "Mixed engines",
 };

@@ -945,7 +945,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
                 ? "Code console"
                 : kind === "builder"
                   ? "Guided builder"
-                  : "Packet inspector"
+                  : "Inspector"
           }
           className="order-2 min-w-0"
         >
@@ -1046,8 +1046,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
               "This is the real engine, compiled to WebAssembly and served from this site — your code genuinely runs. Output is the engine's own, never invented."}
             {kind === "builder" &&
               "Every verdict here comes from the module's own validator, ported byte-for-byte from the repo's lab checks — the UI never re-implements a check."}
-            {kind === "visual" &&
-              "Every region and value here is the packet dissector's output over real captured bytes — fidelity-checked against tshark. The parse tree is the oracle; nothing is invented."}
+            {/* visual surfaces render their own oracle caption inside VisualSurface — no duplicate here */}
           </p>
         </section>
       </div>
