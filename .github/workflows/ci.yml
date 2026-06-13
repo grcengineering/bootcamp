@@ -47,6 +47,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install root deps (web fidelity tests import .ci/fixtures/load-manifest.ts, which resolves `yaml` from the ROOT node_modules — bun walks up from the importing file's dir, not from web/)
+        run: bun install --frozen-lockfile
       - name: Install web deps
         run: cd web && bun install --frozen-lockfile
       - name: Stage engine assets + sync content (public/engines is gitignored — fetch-engines copies the WASM payloads the payload-budget tests assert on)
