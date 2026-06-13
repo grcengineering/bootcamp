@@ -334,6 +334,24 @@ for (const id of readdirSync(MODULES).sort()) {
     };
   }
 
+  // Console-engine exercise assets (Wave-4 fix 2026-06-13): a `console.assets` list (e.g.
+  // module 17's stores-seed.sql) names files under modules/<id>/exercises/assets/ that the
+  // ConsoleHost must hand the engine on every run (the sql adapter execs *.sql first). These
+  // are spec-local content, NOT a manifest seed profile, so they must be loaded INTO seed.files
+  // here — otherwise the browser ConsoleHost gets an empty DB and the real engine honestly
+  // reports `no such table` (the replay test seeds directly and hid this). seedToFileMap keys
+  // on file.path, so path === the bare asset name the spec's `assets:` references.
+  for (const assetName of spec.console?.assets ?? []) {
+    const src = join(MODULES, id, "exercises", "assets", assetName);
+    if (!existsSync(src)) {
+      console.error(`sync-content: FAIL — ${id} console.assets '${assetName}' not found at exercises/assets/${assetName}`);
+      process.exit(1);
+    }
+    if (!seed.files.some((f) => f.path === assetName)) {
+      seed.files.push({ path: assetName, content: readFileSync(src, "utf8") });
+    }
+  }
+
   // PowerShell engine seed (web ISA ISC-63): the manifest profile's typed object stores,
   // with the authored gpresult report file resolved — same loader rule the m04 fidelity
   // suite uses (trailing newline stripped when seeding gpresultReport).
