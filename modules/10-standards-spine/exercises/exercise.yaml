@@ -1,0 +1,291 @@
+id: lab-10
+module: 10-standards-spine
+title: One spine, many profiles, an honest crosswalk
+owner: Justin Pagano
+volatility: B
+review_due: 2026-11-28
+engine: builder
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m10
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+builder:
+  surface: workspace
+  validator: crosswalk
+  validator_args: [work/crosswalk.csv]
+
+intro: |
+  Your team is consolidating five framework obligations onto one internal spine. Your
+  workspace holds exactly what `bash setup.sh ./work` stages on a real machine: the
+  twenty valid 800-53 family abbreviations (`work/spine-families.txt`) and a seed
+  crosswalk with four rows — one of them a deliberately planted orphan. The "Run
+  validator" button runs the same logic as the lab's `validate-crosswalk.ts`, ported and
+  verified byte-for-byte in CI against real runs of the committed validator, always
+  against whatever your crosswalk says RIGHT NOW — its verdicts are earned, never
+  scripted. Where the module's lab redirects output into `validation-before.txt` and
+  `validation-after.txt`, you copy the verdict into those files here; same artifact,
+  same discipline. One familiar face: the seed's `SC-28` row is the data-at-rest claim —
+  the laptop-encryption question you have been asking machines since module 00 — now
+  seen from the MODEL stage, where one encrypted-disk evidence package gets to answer
+  four frameworks at once. One honesty note: the validator checks structure (real
+  families, no orphans, legal labels). Whether a label tells the truth is yours to
+  supply — the lab makes you feel exactly where that line sits.
+
+tasks:
+  - id: t1
+    type: reflection
+    objective: [2]
+    instruction: |
+      §6 task 1 — orientation. Open `work/spine-families.txt` and `work/crosswalk.csv`
+      and read them. Then write one sentence each: what the spine file IS (what those
+      twenty two-letter rows are, and what they are FOR in this table), and what a
+      crosswalk row IS (its four columns and what a single row claims).
+    hints:
+      - nudge: "The spine file is the answer to: which values may a row's spine_control start with? Count its lines. The crosswalk's header names the row's anatomy."
+      - concept: "§4.1 — families as the addressing scheme; §4.6 — the crosswalk row"
+
+  - id: t2
+    type: action
+    objective: [2, 3, 4]
+    instruction: |
+      §6 task 2 — add three rows to `work/crosswalk.csv` mapping these requirements to
+      spine controls: SOC 2 `CC7.2` (system monitoring), ISO 27001 `A.8.15` (logging),
+      and CIS v8 `8.2` (collect audit logs). All three concern logging/monitoring —
+      decide which of the twenty families they belong to, pick a control number in it,
+      and give each row an HONEST relationship label (`exact` / `broader` / `narrower` /
+      `partial`). Mind the shapes: a broad outcome criterion is rarely `exact` against
+      one control, and a prescriptive safeguard is usually the narrow end of its line.
+    verify:
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^SOC2, ?CC7\\.2, ?AU-\\d+, ?(broader|narrower|partial)\\s*$"
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^ISO27001, ?A\\.8\\.15, ?AU-\\d+, ?(exact|broader|narrower|partial)\\s*$"
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^CIS8, ?8\\.2, ?AU-\\d+, ?(narrower|partial)\\s*$"
+    hints:
+      - nudge: "Logging and monitoring have a family of their own — say its full name, then its two letters. For labels: re-read each row aloud as a claim about how much of the requirement that one control covers."
+      - concept: "§4.4–4.6 — what kind of object each framework is decides which end of the line is narrow"
+      - reveal: "Append: SOC2,CC7.2,AU-6,narrower · ISO27001,A.8.15,AU-2,exact · CIS8,8.2,AU-2,narrower — AU is Audit and Accountability; CC7.2 is a broad criterion one AU control only partly answers, and CIS 8.2 is a prescriptive safeguard."
+    explain: |
+      Three frameworks, three dialects, one family — that convergence is the load-bearing
+      fact of the whole module, and you just recorded it as data. Notice what the labels
+      bought you: `exact` only where the meanings genuinely line up, `narrower` where a
+      single control answers only a slice. A reviewer can now read coverage off the
+      table instead of taking your word for it.
+
+  - id: t3
+    type: reflection
+    objective: [5]
+    instruction: |
+      §6 task 3 — find the planted orphan row in the seed (its `spine_control` is
+      empty). Do NOT delete it and do not fix it yet. In one or two sentences: name the
+      spine control it SHOULD map to (the module names the likely home — a system
+      component inventory control), and explain why papering over it with a
+      loosely-related control instead would be a false equivalence.
+    hints:
+      - nudge: "PCI's 6.3.2 wants an inventory of bespoke and custom software. Which family manages configurations and components? What does mapping it to, say, an access-control row silently claim?"
+      - concept: "§4.7 + §5.3 — an orphan is a signal, not a clerical error; force-fitting converts an honest gap into a hidden over-claim"
+
+  - id: t4
+    type: action
+    objective: [5, 6]
+    instruction: |
+      §6 task 4 — run the validator UNRESOLVED: press **Run validator** with the orphan
+      still in place. Confirm the verdict: exit code `1`, and the orphan named by
+      profile and control. Then capture the verdict: copy the full output (summary
+      line, FAIL lines, and the `exit: 1` line) into `validation-before.txt`, replacing
+      its placeholder — the in-browser stand-in for
+      `bun validate-crosswalk.ts work/crosswalk.csv > validation-before.txt 2>&1`.
+    verify:
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^PCI4, ?6\\.3\\.2, ?, ?orphan\\s*$"
+      - check: validator_passes
+        exit: 1
+      - check: file_content_matches
+        path: ~/validation-before.txt
+        regex: "^profiles: \\d+ \\| rows: \\d+ \\| spine families referenced: \\d+/20$"
+      - check: file_content_matches
+        path: ~/validation-before.txt
+        regex: "FAIL: 1 orphan\\(s\\)"
+      - check: file_content_matches
+        path: ~/validation-before.txt
+        regex: "PCI4 6\\.3\\.2 \\(relationship=orphan\\)"
+      - check: file_content_matches
+        path: ~/validation-before.txt
+        regex: "^exit: 1\\s*$"
+      - check: history_contains
+        regex: "^validator:crosswalk work/crosswalk\\.csv$"
+    hints:
+      - nudge: "Nothing to fix yet — the point of this run is to watch the machine refuse. A check that cannot fail verifies nothing; keep the refusal as evidence."
+      - concept: "§5.4 — the validator's verdict, the way a machine reports it; §4.4 of module 01 — exit code as the verdict"
+      - reveal: "Press Run validator (it exits 1, naming PCI4 6.3.2), then select validation-before.txt and paste the output: the profiles/rows summary line, the two FAIL lines, and exit: 1."
+    explain: |
+      That exit code is a machine-readable verdict a CI gate can act on — no human
+      reading required to know the crosswalk isn't yet trustworthy. And the capture you
+      just kept is evidence in the audit sense: when someone asks "how do you know the
+      orphan was caught before it was resolved?", `validation-before.txt` IS the answer.
+
+  - id: t5
+    type: action
+    objective: [4, 6]
+    instruction: |
+      §6 task 5 — resolve the orphan: edit the `PCI4,6.3.2` row, fill in the correct
+      `spine_control` (`CM-8`, system component inventory) and an honest non-`orphan`
+      relationship label. Press **Run validator** again and confirm it now exits `0`.
+      Capture the passing verdict into `validation-after.txt`, replacing its
+      placeholder — copy the output exactly as the validator printed it.
+    verify:
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^PCI4, ?6\\.3\\.2, ?CM-8, ?(exact|broader|narrower|partial)\\s*$"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "PASS: every profile requirement maps to a real spine family"
+      - check: file_content_equals
+        path: ~/validation-after.txt
+        from: generated
+    hints:
+      - nudge: "Change only the orphan row: spine_control becomes CM-8, relationship becomes the honest call (does CM-8 cover the requirement and more, or only part of it?). If the validator still exits 1, its output names exactly what's left."
+      - concept: "§5.3 — the orphan's job is to be resolved deliberately: extend the spine, or correct the mapping"
+      - reveal: "Rewrite the row as PCI4,6.3.2,CM-8,broader · press Run validator (profiles: 5 | rows: 7 | spine families referenced: 4/20, then the PASS line) · paste those two lines into validation-after.txt."
+    explain: |
+      The fail-then-pass pair you now hold is the artifact pattern this whole curriculum
+      keeps producing: a check that refused, the deliberate fix, and the same check
+      blessing the result. The crosswalk stopped being a spreadsheet someone asserts is
+      complete and became a VERIFIED artifact — the exact table module 12 converts to
+      OSCAL without a rewrite.
+
+  - id: t6
+    type: action
+    objective: [3, 5]
+    instruction: |
+      §6 task 6, part one — a deliberate false equivalence. Take the seed's data-at-rest
+      row (`CSF2,PR.DS-01,SC-28,partial` — the crosswalk face of the laptop-encryption
+      claim) and temporarily relabel it `exact`. Press **Run validator** and read its
+      verdict carefully. Read the row aloud as a claim: "encryption-at-rest alone fully
+      satisfies the data-at-rest outcome."
+    verify:
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^CSF2, ?PR\\.DS-01, ?SC-28, ?exact\\s*$"
+      - check: validator_passes
+        exit: 0
+    hints:
+      - nudge: "Yes, really — make the dishonest edit. The lesson only lands when you watch what the machine does with it."
+      - concept: "§4.7 — the validator enforces vocabulary, not truth; false equivalences look complete"
+      - reveal: "Change the row's last cell from partial to exact and press Run validator: it still exits 0. exact is in the allowed set — the machine cannot know it's a lie."
+    explain: |
+      The validator said PASS — and that is the most important verdict in this lab,
+      because it is wrong about the one thing it cannot see. Structure was legal;
+      semantics were false. §5.2 already showed you why: PR.DS-01 takes SC-28 AND key
+      management AND validated crypto together. This is the exact boundary §4.7 drew —
+      machines catch structure, completeness, and vocabulary; the honesty of a label is
+      forced into the open precisely so a HUMAN must make the call you just unmade.
+
+  - id: t7
+    type: reflection
+    objective: [5]
+    instruction: |
+      §6 task 6, part two — in one sentence, state why the `exact` claim you just made
+      is false for this row: what else does the data-at-rest outcome require that
+      encryption-at-rest alone does not provide? (The laptop-encryption thread gives you
+      the concrete version: the disk is encrypted — what about the keys, and the
+      algorithm's strength?)
+    hints:
+      - nudge: "§5.2 maps PR.DS-01 to a SET of three spine controls, each honestly partial. Name what the other two cover."
+      - concept: "§5.2 — a one-to-many map where every line labeled exact would be a lie"
+
+  - id: t8
+    type: action
+    objective: [5]
+    instruction: |
+      §6 task 6, part three — restore the honest label: set the `CSF2,PR.DS-01,SC-28`
+      row back to `partial` and run the validator once more, leaving the crosswalk
+      validator-clean with every label telling the truth again.
+    verify:
+      - check: file_content_matches
+        path: ~/work/crosswalk.csv
+        regex: "^CSF2, ?PR\\.DS-01, ?SC-28, ?partial\\s*$"
+      - check: file_not_matches
+        path: ~/work/crosswalk.csv
+        regex: "PR\\.DS-01, ?SC-28, ?exact"
+      - check: validator_passes
+        exit: 0
+    hints:
+      - nudge: "Same cell, honest value. The validator's verdict won't change — which is the point you just proved — but the table's truthfulness does."
+      - concept: "§4.6 — the relationship column is the honesty call, not decoration"
+      - reveal: "Change exact back to partial on the CSF2 row and press Run validator (exit 0)."
+    explain: |
+      Note what changed and what didn't: the machine's verdict is identical before and
+      after, but the table now tells the truth. That delta — invisible to the validator,
+      decisive to an auditor — is why §4.7 says the artifact is DESIGNED to force the
+      human judgment into the open rather than pretend a machine can make it.
+
+  - id: t9
+    type: action
+    objective: [1, 6]
+    instruction: |
+      §6 task 7 — write the crosswalk's `README.md` (replace the placeholder) in 4–6
+      sentences, for a teammate who has never seen the table: what the spine is; why
+      800-53 is the spine and not one of the profiles (the superset argument — use the
+      word); how to read a row's relationship label (name all four); and what the
+      validator guarantees versus what it deliberately cannot (who supplies the
+      semantic honesty).
+    verify:
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "[Ss]uperset"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "\\bexact\\b"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "\\bbroader\\b"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "\\bnarrower\\b"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "\\bpartial\\b"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "[Ss]tructure|[Vv]ocabulary|[Oo]rphan"
+      - check: file_content_matches
+        path: ~/README.md
+        regex: "[Hh]uman|[Ss]emantic"
+    hints:
+      - nudge: "Four required ideas, one or two sentences each: spine, superset, the four labels, the machine/human split. You lived all four in the last six tasks — write what happened."
+      - concept: "§3 — the whole model in one sentence; §4.7 — what machines catch and what they can't"
+      - reveal: "Cover, in order: (1) the spine is the one catalog we own, (2) 800-53 is the superset so smaller frameworks map onto it downhill, (3) exact/broader/narrower/partial say how much of the requirement the spine control covers, (4) the validator guarantees structure — real families, no orphans, legal labels — while semantic honesty is supplied by a human."
+    explain: |
+      That README is the difference between a table you understand and a table the TEAM
+      owns. Notice it documents the validator's limits as carefully as its guarantees —
+      writing down what a check cannot catch is the same discipline as keeping
+      validation-before.txt: it makes the boundary auditable instead of assumed.
+
+  - id: t10
+    type: reflection
+    objective: [1, 3]
+    instruction: |
+      The defense, in writing (4–6 sentences), for a colleague who has only ever worked
+      inside one framework: walk them out of the trap. Start where §3 starts — what
+      happens to a program that builds one control set per framework — then explain the
+      way out using the spine-and-profile model in your own words, and end with what the
+      four frameworks you touched today (SOC 2, ISO 27001, CSF 2.0, CIS v8) each ARE,
+      in one honest phrase apiece.
+    hints:
+      - nudge: "The trap is structural, not personal: five control sets, 70% the same control said five ways, drifting apart. The way out is one sentence — frameworks become views onto a single source of truth you own."
+      - concept: "§3 — the mental model; §4.2–4.5 — what kind of object each framework actually is"
+
+completion:
+  evidence_pack: true

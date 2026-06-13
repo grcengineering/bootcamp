@@ -1,0 +1,8 @@
+{
+  "_provenance": "bootstrap values from the docker captures m09-mycheck-redirect (post: cat check-violation.out), m09-mygate-violation / m09-mygate-clean / m09-tamper-revoke-flip / m09-inject-grant-flip (post: cat of each evidence record) \u2014 the m09s solution-seed runs of the taught-subset my-check.sh/my-gate.sh in the pinned container; regenerated + asserted equal by web/tests/exercise-replay.test.ts replaying golden.jsonl through the shell engine (root ISA ISC-60)",
+  "t4:4": "DENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\nRESULT  control=AC-6-legacy-admin  decision=deny  violations=1\n",
+  "t6:4": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-violation.csv\", \"evaluated_at\": \"2026-05-28T17:04:00Z\", \"run\": \"ci-1789\"}\n",
+  "t7:2": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"allow\", \"passed\": true, \"violations\": 0, \"input_ref\": \"access-clean.csv\", \"evaluated_at\": \"2026-05-28T17:22:00Z\", \"run\": \"ci-1804\"}\n",
+  "t8:3": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"allow\", \"passed\": true, \"violations\": 0, \"input_ref\": \"access-tampered.csv\", \"evaluated_at\": \"2026-05-28T18:00:00Z\", \"run\": \"ci-tamper\"}\n",
+  "t8:5": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-injected.csv\", \"evaluated_at\": \"2026-05-28T18:05:00Z\", \"run\": \"ci-inject\"}\n"
+}

@@ -1,0 +1,5 @@
+{"anti_for": "t6", "reason": "active (running) but disabled — the §4.3 trap: passes a careless check today, silently gone after the next reboot"}
+{"input": "mkdir evidence"}
+{"input": "sudo apt install -y ./evidence-collector_1.0.0_all.deb\nlabpass"}
+{"input": "sudo systemctl start evidence-collector"}
+{"input": "systemctl status evidence-collector > evidence/service-status.txt"}

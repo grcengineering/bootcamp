@@ -1,0 +1,4 @@
+{
+  "_provenance": "bootstrap value from docker capture m05-cat-lt05 (cat evidence/lt-05.json after the seeded labs/setup.sh ran in the pinned container); regenerated + asserted equal by web/tests/exercise-replay-05.test.ts replaying golden.jsonl through the engine (root ISA ISC-60)",
+  "t1:2": "{\"host\": \"lt-05\", \"encrypted\": tr"
+}

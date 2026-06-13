@@ -1,0 +1,41 @@
+{
+  "id": "m09-mycheck-violation",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09s",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cp my-check.sh lab09/my-check.sh",
+    "cp my-gate.sh lab09/my-gate.sh",
+    "cd lab09",
+    "chmod +x my-check.sh my-gate.sh"
+  ],
+  "cmd": "./my-check.sh access-violation.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the authored verdict-function on the violating export: one DENY line (row 4 carol), RESULT decision=deny violations=1, exit 1 — decision = policy(input) made real.\n",
+  "stdout": "DENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\nRESULT  control=AC-6-legacy-admin  decision=deny  violations=1\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:39.719Z",
+    "captured_with": "capture.ts v1"
+  }
+}

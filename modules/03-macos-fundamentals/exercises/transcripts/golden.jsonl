@@ -1,0 +1,27 @@
+{"input": "pwd"}
+{"input": "ls"}
+{"input": "bash labs/setup.sh ./lab03"}
+{"input": "cd lab03"}
+{"input": "ls samples"}
+{"input": "cat samples/fdesetup-status.txt"}
+{"input": "fdesetup status"}
+{"input": "csrutil status"}
+{"input": "mkdir evidence"}
+{"input": "fdesetup status | tee evidence/filevault.txt"}
+{"input": "spctl --status | tee evidence/gatekeeper.txt"}
+{"input": "profiles status -type enrollment | tee evidence/mdm.txt"}
+{"input": "system_profiler SPConfigurationProfileDataType | tee evidence/profiles.txt"}
+{"input": "cat > evaluate.sh << 'EOF'\n#!/usr/bin/env bash\nraw=\"$1\"\ngood=\"$2\"\nbad=\"$3\"\nif test -z \"$(printf '%s' \"$raw\" | tr -d '[:space:]')\"; then\n  echo \"UNKNOWN\"\nelif printf '%s' \"$raw\" | grep -Eqi -- \"$good\"; then\n  echo \"PASS\"\nelif printf '%s' \"$raw\" | grep -Eqi -- \"$bad\"; then\n  echo \"FAIL\"\nelse\n  echo \"UNKNOWN\"\nfi\nEOF"}
+{"input": "chmod +x evaluate.sh"}
+{"input": "./evaluate.sh \"$(cat samples/fdesetup-status.txt)\" 'FileVault is On' 'FileVault is Off'"}
+{"input": "./evaluate.sh \"$(cat samples/fdesetup-status-off.txt)\" 'FileVault is On' 'FileVault is Off'"}
+{"input": "./evaluate.sh \"$(cat samples/profiles-status-unknown.txt)\" 'MDM enrollment: Yes' 'MDM enrollment: No'"}
+{"input": "cat > collect-endpoint-evidence.sh << 'EOF'\n#!/usr/bin/env bash\nL=\"$HOME/lab03\"\nE=\"$L/evaluate.sh\"\nFV=\"$(fdesetup status)\"\nSIP=\"$(csrutil status)\"\nGK=\"$(spctl --status)\"\nMDM=\"$(profiles status -type enrollment | grep 'MDM enrollment')\"\nPROF=\"$(system_profiler SPConfigurationProfileDataType | grep 'askForPassword')\"\nGAP=\"$(cat \"$L/samples/profiles-status-unknown.txt\")\"\nif test -z \"$GAP\"; then\n  echo \"WARN: profile sample query returned nothing\" >&2\nfi\nMV=\"$(\"$E\" \"$MDM\" 'MDM enrollment: Yes' 'MDM enrollment: No')\"\nPV=\"$(\"$E\" \"$PROF\" 'askForPassword=1' 'no profiles installed')\"\nif test \"$MV\" = \"PASS\" && test \"$PV\" = \"PASS\"; then SL=\"PASS\"; else SL=\"FAIL\"; fi\necho \"CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: $(\"$E\" \"$FV\" 'FileVault is On' 'FileVault is Off') | RAW: $FV\"\necho \"CONTROL: OS tamper protection (CC6.8) | SUBSYSTEM: SIP | VERDICT: $(\"$E\" \"$SIP\" 'status: enabled' 'status: disabled') | RAW: $SIP\"\necho \"CONTROL: Software execution control (CC6.8) | SUBSYSTEM: Gatekeeper | VERDICT: $(\"$E\" \"$GK\" 'assessments enabled' 'assessments disabled') | RAW: $GK\"\necho \"CONTROL: Centrally managed (CC1.x) | SUBSYSTEM: MDM | VERDICT: $MV | RAW: $MDM\"\necho \"CONTROL: Screen-lock policy enforced (CC6.1) | SUBSYSTEM: MDM/profiles | VERDICT: $SL | RAW: $PROF\"\necho \"CONTROL: Profile query (sample gap) | SUBSYSTEM: MDM/profiles | VERDICT: $(\"$E\" \"$GAP\" 'ScreenLock' 'no profiles') | RAW: <query returned nothing>\"\nEOF"}
+{"input": "chmod +x collect-endpoint-evidence.sh"}
+{"input": "./collect-endpoint-evidence.sh > evidence/packet.txt 2> collection-errors.log"}
+{"input": "cat evidence/packet.txt"}
+{"input": "cat collection-errors.log"}
+{"input": "./collect-endpoint-evidence.sh > evidence/packet2.txt 2>> collection-errors.log"}
+{"input": "diff evidence/packet.txt evidence/packet2.txt"}
+{"input": "echo $?"}
+{"input": "grep 'VERDICT: UNKNOWN' evidence/packet.txt"}

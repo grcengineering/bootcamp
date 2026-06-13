@@ -1,0 +1,31 @@
+{
+  "id": "m09-cat-rego-ref",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "cat policy.rego",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "# Control AC-6-legacy-admin: access changes must never grant the legacy-admin role.\n# Rego frames the same verdict as a query that collects denials over arbitrary JSON.\n# A request is rejected when deny is non-empty.\npackage access\n\nimport rego.v1\n\ndeny contains msg if {\n    input.action == \"grantRole\"\n    input.resource.role == \"legacy-admin\"\n    msg := \"granting the legacy-admin role is forbidden\"\n}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:37.611Z",
+    "captured_with": "capture.ts v1"
+  }
+}

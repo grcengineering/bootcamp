@@ -179,6 +179,8 @@ The lesson across both: the boundary isn't ideological. It's drawn stage by stag
 
 **Scenario.** You own one control area. You must deliver a build-vs-buy decision memo that (a) reframes the control as a product, (b) quantifies one gap as a loss-exposure distribution, (c) scores all seven loop stages build/buy/hybrid, (d) draws an explicit owned-vs-vendor boundary, and (e) justifies the boundary with the loss number. The lab gives you a committed FAIR-style input fixture and a tiny calculator so the *quantification* is reproducible; the *judgment* is yours.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 14 → Interactive lab) in a guided workspace whose calculator verdicts come from the module's own `expected_loss.ts` ported line-for-line and CI-verified byte-identical to real `bun` runs — the numbers you record there are the same numbers a real machine produces.
+
 **Setup.** Run `labs/setup.sh` (it writes `fixtures/risk-input.json` — a frequency range, a magnitude range, and an iteration count for one control gap). Inspect the fixture; it is plain JSON and you should be able to read every field.
 
 **Tasks.**

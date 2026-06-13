@@ -165,6 +165,8 @@ Each field is named for the SOC 2 CC6 control it supports, and `ConvertTo-Json` 
 
 **Scenario.** You are asked to produce, from one Windows endpoint, a single machine-readable evidence bundle that an auditor can read against SOC 2 CC6 — proving disk encryption, endpoint-protection posture, the effective screen-lock setting, recent failed-logon activity, and local-administrator membership — and to make it re-runnable so the same machine can be re-evidenced next quarter and compared.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 04 → Interactive lab) as a simulated Windows PowerShell 5.1 session on the endpoint WIN-LAB04. No PowerShell engine exists for the browser, so its outputs are an object pipeline rendered by PowerShell's documented formatting rules, pinned to this module's worked examples and committed lab fixtures — and the simulation labels its own boundaries instead of pretending.
+
 **Tasks.**
 
 1. Open PowerShell **as Administrator**. Run `Get-BitLockerVolume -MountPoint C:` and pipe it to `Select-Object MountPoint, VolumeStatus`. Write down, in words, which subsystem owns the encryption claim and which property decides it. *(Objectives 1, 3)*

@@ -1,0 +1,10 @@
+{"anti_for": "t6", "reason": "a date-stamped packet passes a naive same-session double-run diff but is NOT re-runnable evidence — clock-skewed clean runs disagree (web ISA ISC-127)"}
+{"input": "bash labs/setup.sh ./lab03"}
+{"input": "cd lab03"}
+{"input": "mkdir evidence"}
+{"input": "cat > collect-endpoint-evidence.sh << 'EOF'\n#!/usr/bin/env bash\nFV=\"$(fdesetup status)\"\necho \"COLLECTED: $(date)\"\necho \"CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: PASS | RAW: $FV\"\nEOF"}
+{"input": "chmod +x collect-endpoint-evidence.sh"}
+{"input": "./collect-endpoint-evidence.sh > evidence/packet.txt 2> collection-errors.log"}
+{"input": "./collect-endpoint-evidence.sh > evidence/packet2.txt 2>> collection-errors.log"}
+{"input": "diff evidence/packet.txt evidence/packet2.txt"}
+{"input": "echo $?"}

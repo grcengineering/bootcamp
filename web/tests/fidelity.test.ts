@@ -56,6 +56,13 @@ describe("fidelity: simulator vs captured ground truth", () => {
     const fx = JSON.parse(readFileSync(join(FIXTURES, "captured", file), "utf8"));
     if (!fx.source.startsWith("docker-linux") && fx.source !== "macos-host") continue;
     if (fx.source === "docker-linux-booted") continue; // module 02 wave — separate suite
+    // Entries whose simulation surface is NOT the shell engine (declared via the manifest
+    // entry's sim_suite) are acceptance-tested by their own engine-class suite — e.g. the
+    // m13 CCM captures exercise `source` + bash functions the shell engine doesn't claim;
+    // their ported-library equivalence is byte-asserted by exercise-replay-13.test.ts and
+    // tests/builders-validators.test.ts (same precedent as the booted skip above).
+    const entry = (manifest.entries ?? []).find((e: { id: string }) => e.id === fx.id);
+    if (entry?.sim_suite && entry.sim_suite !== "shell") continue;
 
     test(`${fx.id} [${fx.match}] ${fx.cmd}`, () => {
       const contract = manifest.meta.contracts[fx.source];

@@ -1,0 +1,406 @@
+{
+  "spec": {
+    "id": "lab-14",
+    "module": "14-product-ownership-build-vs-buy",
+    "title": "The decision memo with a number in it",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-11-28",
+    "engine": "builder",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m14",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You own one control area, and this lab ends with the artifact that proves it: a\nbuild-vs-buy decision memo a finance partner would accept. Your workspace is the lab\ndirectory — the committed FAIR-style fixture (`risk-input.json`, the §5.2 scenario:\n12 standing prod-db grants that never expire), the reference calculator's source\n(`expected_loss.ts`, read it — it is ~80 lines), a scoring-table skeleton, and the\nmemo template. The **Run validator** button runs the module's own calculator against\n`risk-input.json`: the same deterministic TypeScript the lab ships, ported line for\nline and CI-verified byte-identical to real `bun expected_loss.ts` runs — every\nnumber you see here is the real tool's output, not a prop. On your own machine the\nsame flow is `bash labs/setup.sh`, then `bun expected_loss.ts fixtures/risk-input.json`.\nOne honesty note: the checks here are structural — they verify the memo has every\nload-bearing part, not that your judgment is good. The judgment is the part that\ntransfers, and it is yours.\n",
+    "builder": {
+      "surface": "workspace",
+      "validator": "expected-loss",
+      "validator_args": [
+        "lab14/risk-input.json"
+      ]
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1
+        ],
+        "instruction": "§6 task 1 — the product card. In the memo's **Control as a product** section, pick\none real control you own (or keep the §5 prod-db access control) and complete the\ncard in the §5.1 shape: `Owner:` exactly one accountable human (a name — not a team,\nnot a committee), `Customers (priority order):` at least two of engineer/auditor/\nbusiness as a numbered list in deliberate order, `Backlog (ranked):` your top three\ndefects numbered with the riskiest first, a one-line `UX target:`, and `Metrics:`\nincluding at least one dollar-denominated loss-exposure metric (write the $).\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Control as a product[^#]*Owner: *[A-Za-z]"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Owner:[^\\n]*([Tt]eam|[Cc]ommittee|TBD)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Customers \\(priority order\\):[\\s\\S]*?1\\.[\\s\\S]*?2\\.[\\s\\S]*?Backlog \\(ranked\\)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Backlog \\(ranked\\):[\\s\\S]*?1\\.[\\s\\S]*?2\\.[\\s\\S]*?3\\.[\\s\\S]*?UX target"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "UX target: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Metrics:[^#]*\\$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Who is this control FOR, in priority order? If your honest answer is 'the auditor', §3 calls that the disease. One owner means one name."
+          },
+          {
+            "concept": "§4.1–4.2 — customers, backlog, UX, owner, metrics; §5.1 shows the exact card shape"
+          },
+          {
+            "reveal": "Fill the card like §5.1: 'Owner: M. Okafor', customers '1. Engineer … 2. Auditor … 3. Business …', backlog '1. 12 standing grants never expire … 2. Evidence is a manual quarterly export … 3. No alert when a grant outlives its shift', 'UX target: access auto-granted at shift start, auto-revoked at shift end; the revocation log IS the evidence', 'Metrics: standing-grant count (target 0), mean grant lifetime, evidence toil hrs/qtr, loss exposure bought down ($/yr)'."
+          }
+        ],
+        "explain": "The card didn't change the control's name — it changed what \"good\" means: from \"the\nbox is checked at audit time\" to a ranked backlog, an owner with a name, and a\ndollar metric. The next tasks put the number on that metric; the memo's\nrecommendation will spend it.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "§6 task 2 — read the input before you trust the output. Open `lab14/risk-input.json`\n(and skim `expected_loss.ts` if you want to see exactly what will be done with it).\nThen, in the memo's **Quantified loss exposure** section, state in your own words\nwhat the two ranges mean — frequency in events/year, magnitude in dollars per\nevent — and why they are estimated separately (different evidence informs each).\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*events ?(/|per) ?year"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*(per event|/event|per incident)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*([Ss]eparate|different evidence)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Two questions, estimated apart: how OFTEN does the loss event happen (per year), and how BAD is one occurrence (in dollars)? What different evidence would you pull for each?"
+          },
+          {
+            "concept": "§4.4 — the FAIR move: decompose loss into frequency and magnitude"
+          },
+          {
+            "reveal": "Write e.g.: 'Frequency 0.1–0.6 events/year: how often a standing grant is abused. Magnitude $300,000–$2,500,000 per event: what one incident costs. Estimated separately because different evidence informs each — incident history speaks to frequency, the value at stake speaks to magnitude.'"
+          }
+        ],
+        "explain": "You can now read every field the calculator consumes — which is the difference\nbetween quantification and a black box. A range is a real measurement (§4.3): it\nhas units, it combines, and it admits how uncertain you are. The red cell does none\nof that.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "§6 task 3 — run the reference calculator. Press **Run validator**: it computes the\nloss-exposure distribution from `lab14/risk-input.json` exactly as\n`bun expected_loss.ts fixtures/risk-input.json` does. Then record both figures in\nthe memo's **Quantified loss exposure** section: the mean expected annual loss\n(the planning figure) and the 95th-percentile \"bad year\" (the tail).\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "\"mean\": 493516[\\s\\S]*\"tailValue\": 1133873"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^validator:expected-loss lab14/risk-input\\.json$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*493,?516"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*1,?133,?873"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The button is the same as the command. Copy the two numbers the JSON output reports — mean and tailValue — into the memo, exactly."
+          },
+          {
+            "concept": "§4.5 — sample the ranges; the distribution (mean AND tail) is the answer"
+          },
+          {
+            "reveal": "Run validator outputs mean 493516 and tailValue 1133873 (the §5.2 ~$494k/yr and ~$1.13M figures, unrounded). Record both in the exposure section, e.g. 'mean expected annual loss $493,516/yr; 95th-percentile bad year (the tail) $1,133,873/yr'."
+          }
+        ],
+        "explain": "The top backlog item now has a price: ~$494k/yr of expected loss with a seven-figure\ntail. Because the calculator is seeded and deterministic, anyone re-running it on the\ncommitted fixture gets these exact bytes — the quantification is reproducible\nevidence, not an analyst's opinion.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "§6 task 4 — move the ranges and watch the shape. Edit `lab14/risk-input.json`:\nraise the magnitude maximum from 2500000 to 5000000 (the honest \"what if the bad\ncase is twice as bad\" question), then press **Run validator** again. Confirm the\ndistribution moved the way §4.5 predicts — wider magnitude range, fatter tail —\nthen add one sentence to the exposure section that names the new tail figure and\nsays why the tail, not the mean, is the executive's concern.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/risk-input.json",
+            "regex": "\"max\": *5000000"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab14/risk-input.json",
+            "regex": "\"max\": *2500000"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "\"mean\": 934417[\\s\\S]*\"tailValue\": 2240391"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*([Bb]ad year|[Ww]orst[- ]case|1-in-20|[Tt]ail)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Quantified loss exposure[^#]*(2,?240,?391|2\\.24 ?M)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Only the magnitude object's max changes — keep the JSON valid. Re-run and compare BOTH numbers to t3's: which one moved more?"
+          },
+          {
+            "concept": "§4.5 — the tail is the part a colored grid erases and the part executives lose sleep over"
+          },
+          {
+            "reveal": "Change magnitude to { \"min\": 300000, \"max\": 5000000, \"unit\": \"USD/event\" } and re-run: mean 934417, tailValue 2240391. Then write e.g.: 'The executive underwrites the bad year, not the average — doubling the worst-case magnitude moved the p95 tail to $2.24M.'"
+          }
+        ],
+        "explain": "One field changed and the bad year doubled. That sensitivity is exactly what the\nmemo's reader needs to see — and exactly what a red/amber/green cell cannot show,\nbecause colors have no arithmetic. Note the §4.5 caveat: uniform sampling understates\nthis tail, so read it as a conservative floor.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "§6 task 5 — score all seven loop stages. Complete `lab14/scoring-table.tsv` in the\n§5.3 shape: one tab-separated row per stage, in loop order — UNDERSTAND, LOCATE,\nQUERY, EVALUATE, EVIDENCE, MONITOR, OWN — each with its deciding question and your\nBUILD / BUY / HYBRID call (uppercase; the calls are the contract). The module's\none hard rule: UNDERSTAND and OWN are *always own* — context and accountability\ncannot be outsourced. Every other stage is your judgment; keep a one-line reason\nper call for the memo.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^stage\\tdeciding_question\\tcall$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^UNDERSTAND\\t[^\\t\\n]+\\tBUILD$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^LOCATE\\t[^\\t\\n]+\\t(BUILD|BUY|HYBRID)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^QUERY\\t[^\\t\\n]+\\t(BUILD|BUY|HYBRID)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^EVALUATE\\t[^\\t\\n]+\\t(BUILD|BUY|HYBRID)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^EVIDENCE\\t[^\\t\\n]+\\t(BUILD|BUY|HYBRID)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^MONITOR\\t[^\\t\\n]+\\t(BUILD|BUY|HYBRID)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/scoring-table.tsv",
+            "regex": "^OWN\\t[^\\t\\n]+\\tBUILD$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Seven rows, one deciding question each (§4.6 gives all seven), tab-separated, calls in caps. If you scored OWN as BUY, ask: who answers the auditor when the vendor's dashboard is wrong?"
+          },
+          {
+            "concept": "§4.6 — the seven-stage build/buy lens, one deciding question per stage; §5.3 shows the worked table"
+          },
+          {
+            "reveal": "The §5.3 worked table, tab-separated: UNDERSTAND→BUILD, LOCATE→BUY, QUERY→BUY, EVALUATE→BUILD, EVIDENCE→HYBRID, MONITOR→BUY, OWN→BUILD — each row 'STAGE<tab>deciding question<tab>CALL'. Your calls on the middle five may differ; the reasons are what make them defensible."
+          }
+        ],
+        "explain": "This is the same assertion set the module's CI (`happy-path.sh`) runs against its\nown lab: all seven stages present, every call a real BUILD/BUY/HYBRID token. The\nreusable pattern from §5.3 — buy the breadth, own the judgment and the\naccountability — emerged from the deciding questions, not from ideology.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "§6 task 6 — draw the boundary line, honestly in both directions. In the memo's\n**The boundary argument** section: one explicit paragraph naming which stages are\nvendor-owned and which are yours, and specifically why you own (or don't) the\nEVALUATE policy-and-evidence layer. Then complete BOTH lines — `Vendor wins:` with\none honest case where the platform's abstraction beats building (undifferentiated\nbreadth), and `Owning wins:` with one honest case where your library beats the\nabstraction. For the owning case, use the module's worked one: the platform marks a\npublic-data server \"FAIL: unencrypted disk\" that you have risk-accepted with a\ndocumented exception — the same disk-encryption claim you've chased since module 00.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## The boundary argument[^#]*EVALUATE"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Vendor wins: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "Owning wins: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## The boundary argument[^#]*[Rr]isk[- ]accept"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## The boundary argument[^#]*[Uu]nencrypted"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A boundary argued in only one direction is not a boundary — it's a posture. NIH and vendor-worship are the same mistake (§4.8): outsourcing the decision instead of making it."
+          },
+          {
+            "concept": "§4.7–4.8 and §5.4 — where the abstraction pays and where owning the policy/evidence library beats it"
+          },
+          {
+            "reveal": "e.g. 'Vendor wins: LOCATE across forty SaaS apps — maintaining forty OAuth integrations is undifferentiated heavy lifting the platform amortizes across hundreds of customers.' 'Owning wins: the EVALUATE layer for our risk-accepted exception — the platform shows FAIL: unencrypted disk on the public-data server; our owned policy-as-code encodes the documented exception so the auditor sees a defensible decision, not a quarterly manual override.'"
+          }
+        ],
+        "explain": "Both directions on file is the anti-NIH, anti-vendor-worship discipline made\nstructural. And notice where the laptop-encryption thread surfaced: the generic\ncheck can read the disk flag, but only YOUR policy layer knows the exception is\ndocumented and compensated — that nuance is precisely what the EVALUATE stage's\ndeciding question protects.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "§6 task 7 — assemble the deliverable. Carry your seven-row scoring table (with your\none-line reasons) into the memo's **Seven-stage build/buy/hybrid scoring** section,\nthen close the **Recommendation** section with one paragraph that ties the boundary\nto the loss number: name the dollar exposure the calculator computed, and state the\ndecision as a decision — which stage you own/build/buy and why that is where the\nquantified risk lives. All five memo parts must now be present, in order.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Control as a product[\\s\\S]*## Quantified loss exposure[\\s\\S]*## Seven-stage build/buy/hybrid scoring[\\s\\S]*## The boundary argument[\\s\\S]*## Recommendation"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Seven-stage build/buy/hybrid scoring[^#]*UNDERSTAND[^#]*EVALUATE[^#]*OWN"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Recommendation[^#]*\\$ ?~? ?(493,?516|494,?000|494k|1,?133,?873|1\\.13[0-9]? ?M|934,?417|2,?240,?391|2\\.24 ?M)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab14/decision-memo.md",
+            "regex": "## Recommendation[^#]*([Oo]wn|[Bb]uild|[Bb]uy)[^#]*(UNDERSTAND|LOCATE|QUERY|EVALUATE|EVIDENCE|MONITOR|OWN)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The §5.2 close is the template: a one-time engineering spend against a recurring $X/yr exposure with a $Y tail. A summary restates; a recommendation decides."
+          },
+          {
+            "concept": "§5.2 and §5.4 — the boundary justified in the language finance accepts"
+          },
+          {
+            "reveal": "End with e.g.: 'We own EVALUATE (and keep UNDERSTAND/OWN) because the $493,516/yr exposure — $1,133,873 in the p95 bad year — lives in a posture the generic check cannot model; we buy LOCATE/QUERY/MONITOR as commodity breadth and run EVIDENCE hybrid. A one-time $40k time-boxing build against ~$494k/yr of recurring exposure argues itself.'"
+          }
+        ],
+        "explain": "That paragraph is the whole module in one artifact: a product card that names who\nit's for, a distribution instead of a color, seven deliberate calls instead of one\nideology, a boundary defended in both directions — and a recommendation a CFO can\narbitrate because it has units. This memo is the §7 assessment shape; the capstone\nwill ask you to produce it unaided.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "The grid demolition, in writing (4–6 sentences): a peer proposes funding either one\n\"high\" risk closure at $200k or two \"medium\" closures at $50k each, using the 5×5\ncolored grid. Explain why the grid structurally cannot answer which to fund, how the\nsampling approach you just ran answers it, and one honest limitation of OUR\ncalculator (§4.5's uniform-sampling caveat) that you would disclose to the executive\nbefore they trust your tail number.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Colors have no units, no zero, no interval — you cannot add two ambers or divide a red by $200k. What CAN you divide a dollar distribution by?"
+          },
+          {
+            "concept": "§3 and §4.5 — measurement as uncertainty reduction; the uniform-sampling tail is a conservative floor"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/lab14",
+        "dir": true
+      },
+      {
+        "path": "~/lab14/decision-memo.md",
+        "content": "# Build-vs-Buy Decision Memo\n\nControl area:\n\n## Control as a product\n\nControl:\nOwner:\nCustomers (priority order):\nBacklog (ranked):\nUX target:\nMetrics:\n\n## Quantified loss exposure\n\n## Seven-stage build/buy/hybrid scoring\n\n## The boundary argument\n\nVendor wins:\nOwning wins:\n\n## Recommendation\n"
+      },
+      {
+        "path": "~/lab14/expected_loss.ts",
+        "content": "#!/usr/bin/env bun\n// Module 14 reference calculator (original lab asset).\n// Reads a FAIR-style risk-input.json (frequency range, magnitude range, iterations)\n// and computes a loss-exposure DISTRIBUTION via a tiny Monte-Carlo-lite sample:\n//   - draw N (frequency, magnitude) pairs uniformly from their ranges\n//   - annual loss per draw = frequency * magnitude\n//   - report the MEAN (planning figure) and a TAIL percentile (the \"bad year\")\n//\n// This is the learner-facing reference. The CI happy-path re-implements the same\n// math deterministically in awk so it runs on a clean machine with no bun.\n//\n// Usage:  bun expected_loss.ts <path/to/risk-input.json>\n// Output: JSON { mean, tailPercentile, tailValue, iterations } to stdout.\n\ninterface Range { min: number; max: number; unit?: string }\ninterface RiskInput {\n  frequency: Range;\n  magnitude: Range;\n  iterations?: number;\n  tail_percentile?: number;\n  seed?: number;\n}\n\n// Deterministic LCG so results are reproducible across runs given the same seed.\nfunction makeRng(seed: number): () => number {\n  let state = (seed >>> 0) || 1;\n  return () => {\n    // Numerical Recipes LCG constants.\n    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;\n    return state / 0x100000000;\n  };\n}\n\nfunction uniform(rng: () => number, lo: number, hi: number): number {\n  return lo + (hi - lo) * rng();\n}\n\nfunction percentile(sortedAsc: number[], p: number): number {\n  if (sortedAsc.length === 0) return 0;\n  const rank = (p / 100) * (sortedAsc.length - 1);\n  const lowIdx = Math.floor(rank);\n  const highIdx = Math.ceil(rank);\n  if (lowIdx === highIdx) return sortedAsc[lowIdx];\n  const frac = rank - lowIdx;\n  return sortedAsc[lowIdx] + frac * (sortedAsc[highIdx] - sortedAsc[lowIdx]);\n}\n\nfunction computeExposure(input: RiskInput) {\n  const n = input.iterations ?? 10000;\n  const tailP = input.tail_percentile ?? 95;\n  const rng = makeRng(input.seed ?? 42);\n  const losses: number[] = new Array(n);\n  let sum = 0;\n  for (let i = 0; i < n; i++) {\n    const freq = uniform(rng, input.frequency.min, input.frequency.max);\n    const mag = uniform(rng, input.magnitude.min, input.magnitude.max);\n    const loss = freq * mag;\n    losses[i] = loss;\n    sum += loss;\n  }\n  losses.sort((a, b) => a - b);\n  return {\n    mean: Math.round(sum / n),\n    tailPercentile: tailP,\n    tailValue: Math.round(percentile(losses, tailP)),\n    iterations: n,\n  };\n}\n\nfunction main() {\n  const path = process.argv[2];\n  if (!path) {\n    console.error(\"usage: bun expected_loss.ts <path/to/risk-input.json>\");\n    process.exit(2);\n  }\n  const raw = require(\"fs\").readFileSync(path, \"utf8\");\n  const input = JSON.parse(raw) as RiskInput;\n  const result = computeExposure(input);\n  console.log(JSON.stringify(result, null, 2));\n}\n\nmain();\n"
+      },
+      {
+        "path": "~/lab14/risk-input.json",
+        "content": "{\n  \"control\": \"prod-db-access-least-privilege\",\n  \"gap\": \"12 standing prod-db access grants that never expire\",\n  \"loss_event\": \"a standing grant is abused or compromised, causing a data incident\",\n  \"frequency\": { \"min\": 0.1, \"max\": 0.6, \"unit\": \"events/year\" },\n  \"magnitude\": { \"min\": 300000, \"max\": 2500000, \"unit\": \"USD/event\" },\n  \"iterations\": 10000,\n  \"tail_percentile\": 95,\n  \"seed\": 42\n}\n"
+      },
+      {
+        "path": "~/lab14/scoring-table.tsv",
+        "content": "stage\tdeciding_question\tcall\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z"
+}

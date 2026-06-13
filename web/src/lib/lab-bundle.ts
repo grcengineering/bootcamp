@@ -18,6 +18,13 @@ export interface LabBundle {
    * as engines/powershell WindowsSeed. Absent for every other engine class.
    */
   windowsSeed?: unknown;
+  /**
+   * Linux-admin lab wiring (module 02's booted web-01 profile only): the shell session is
+   * created with `adminLab` so the booted command family (sudo/systemctl/journalctl/ssh…)
+   * is live, and `host` overrides the prompt hostname (web-01). Absent everywhere else.
+   */
+  adminLab?: { password: string };
+  host?: string;
 }
 
 export const ENGINE_LABELS: Record<ExerciseSpec["engine"], string> = {

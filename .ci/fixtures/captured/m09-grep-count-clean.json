@@ -1,0 +1,38 @@
+{
+  "id": "m09-grep-count-clean",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "grep -c ',grantRole,legacy-admin$' access-clean.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "grep -c prints 0 AND exits 1 when nothing matches — the count is data, the exit code is the verdict channel; the learner's script must branch on the count.\n",
+  "stdout": "0\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:27:35.672Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "_provenance": "lab-13 uses no from:generated checks — every verifier compares against the CCM scheduler's live validator run, whose verdicts come from the ported ccm-check library byte-accepted against real bash runs of modules/13 labs/setup.sh's generated ccm-check.sh (web/tests/fixtures/builder-captures.json m13) and against the docker captures .ci/fixtures/captured/m13-*.json. The keys below are documentation pinned by web/tests/exercise-replay-13.test.ts replaying golden.jsonl, not lookup values.",
+  "_golden_t1_run_line": "2026-05-20T09:00:00Z run-20260520090000 rc=0",
+  "_golden_t3_run_line": "2026-06-20T09:00:00Z run-20260620090000 rc=1 alert=ccm-lab/evidence/alert-run-20260620090000.txt",
+  "_golden_t5_run_line": "2026-06-28T09:00:00Z run-20260628090000 rc=0",
+  "_golden_first_ledger_row": "2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0",
+  "_golden_drift_alert": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-06-20T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\ndrifted_resource=acme-public-website"
+}

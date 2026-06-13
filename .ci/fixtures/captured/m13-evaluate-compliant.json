@@ -1,0 +1,37 @@
+{
+  "id": "m13-evaluate-compliant",
+  "module": "13",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m13",
+  "cwd": "/home/analyst",
+  "pre": [
+    "source ccm-lab/ccm-check.sh"
+  ],
+  "cmd": "evaluate_control labs/fixtures/state-compliant.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "§5.1/§6 task 2 canon: PASS line, exit 0. Runs the library's pure-awk fallback (no bun on the box) — must byte-match builder-captures.json m13 evalCases (bun branch), the two-parser same-output contract.\n",
+  "stdout": "PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "0\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:23:37.374Z",
+    "captured_with": "capture.ts v1"
+  }
+}

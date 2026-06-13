@@ -174,9 +174,14 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Terminal(
         return;
       }
       echoInput(line);
-      const nano = line.match(/^\s*nano\s+(\S+)\s*$/);
-      if (nano && onOpenEditor) {
-        onOpenEditor(nano[1]);
+      // Editor affordance: bash worlds open the nano-style editor; the PowerShell lab's
+      // equivalent is `notepad <file>` (how a real Windows session opens an editor).
+      const editorCmd =
+        promptMode === "ps"
+          ? line.match(/^\s*notepad\s+(\S+)\s*$/)
+          : line.match(/^\s*nano\s+(\S+)\s*$/);
+      if (editorCmd && onOpenEditor) {
+        onOpenEditor(editorCmd[1]);
         return;
       }
       const heredoc = promptMode === "bash" && /<<-?\s*['"]?\w/.test(line);

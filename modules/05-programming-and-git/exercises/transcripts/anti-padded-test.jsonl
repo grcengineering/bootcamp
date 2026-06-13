@@ -1,0 +1,22 @@
+{"anti_for": "t5", "reason": "coverage-padding cheat — the malformed-handling 'test' calls validate_dir and asserts NOTHING: the line is exercised, the behavior is never checked; exactly the assertion-free padding §4.6 forbids"}
+{"input": "pwd"}
+{"input": "cd lab05"}
+{"input": "bash labs/setup.sh evidence/"}
+{"input": "cat evidence/lt-05.json"}
+{"input": "git init"}
+{"input": "touch validator.py"}
+{"input": "git add validator.py"}
+{"input": "git commit -m \"Start with an empty validator on main\""}
+{"input": "cat > validator.py << 'EOF'\ndef evaluate(record):\n    \"\"\"PASS when the record shows disk encryption on; FAIL otherwise.\"\"\"\n    return \"PASS\" if record.get(\"encrypted\") is True else \"FAIL\"\nEOF"}
+{"input": "cat > test_validator.py << 'EOF'\nfrom validator import evaluate\n\n\ndef test_encrypted_is_pass():\n    assert evaluate({\"host\": \"lt-01\", \"encrypted\": True}) == \"PASS\"\n\n\ndef test_unencrypted_is_fail():\n    assert evaluate({\"host\": \"lt-02\", \"encrypted\": False}) == \"FAIL\"\n\n\ndef test_missing_field_is_fail():\n    assert evaluate({\"host\": \"lt-03\"}) == \"FAIL\"\nEOF"}
+{"input": "git add validator.py test_validator.py"}
+{"input": "git commit -m \"Add encryption-control validator with tests\""}
+{"input": "cat > validator.py << 'EOF'\nimport json\nimport os\n\n\ndef evaluate(record):\n    \"\"\"PASS when the record shows disk encryption on; FAIL otherwise.\"\"\"\n    return \"PASS\" if record.get(\"encrypted\") is True else \"FAIL\"\n\n\ndef validate_dir(path):\n    results, errors = [], []\n    for name in sorted(os.listdir(path)):\n        try:\n            with open(os.path.join(path, name)) as f:\n                record = json.loads(f.read())\n        except (OSError, ValueError) as e:\n            errors.append({\"file\": name, \"error\": str(e)})\n            continue\n        results.append({\"file\": name, \"verdict\": evaluate(record)})\n    return {\"results\": results, \"errors\": errors}\n\n\ndef write_report(path, out=\"report.json\"):\n    report = validate_dir(path)\n    with open(out, \"w\") as f:\n        f.write(json.dumps(report, indent=2, sort_keys=True) + \"\\n\")\n    return report\nEOF"}
+{"input": "cat > test_validator.py << 'EOF'\nfrom validator import evaluate, validate_dir\n\n\ndef test_encrypted_is_pass():\n    assert evaluate({\"host\": \"lt-01\", \"encrypted\": True}) == \"PASS\"\n\n\ndef test_unencrypted_is_fail():\n    assert evaluate({\"host\": \"lt-02\", \"encrypted\": False}) == \"FAIL\"\n\n\ndef test_missing_field_is_fail():\n    assert evaluate({\"host\": \"lt-03\"}) == \"FAIL\"\n\n\ndef test_malformed_is_recorded():\n    validate_dir(\"evidence\")\nEOF"}
+{"input": "git status"}
+{"input": "git switch -c handle-malformed"}
+{"input": "git add validator.py test_validator.py"}
+{"input": "git commit -m \"Record malformed evidence files as errors instead of crashing\""}
+{"input": "git switch main"}
+{"input": "git merge handle-malformed"}
+{"input": "git log --oneline --graph"}

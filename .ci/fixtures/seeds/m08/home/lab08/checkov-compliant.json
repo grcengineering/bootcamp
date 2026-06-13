@@ -1,0 +1,43 @@
+{
+  "check_type": "terraform",
+  "results": {
+    "passed_checks": [
+      {
+        "check_id": "CKV_AWS_18",
+        "check_name": "Ensure the S3 bucket has access logging configured",
+        "resource": "aws_s3_bucket.evidence",
+        "severity": "LOW",
+        "file_path": "/main.tf"
+      },
+      {
+        "check_id": "CKV_AWS_19",
+        "check_name": "Ensure all data stored in the S3 bucket is securely encrypted at rest",
+        "resource": "aws_s3_bucket.evidence",
+        "severity": "HIGH",
+        "file_path": "/main.tf"
+      },
+      {
+        "check_id": "CKV_AWS_20",
+        "check_name": "Ensure the S3 bucket does not allow public read access",
+        "resource": "aws_s3_bucket.evidence",
+        "severity": "HIGH",
+        "file_path": "/main.tf"
+      },
+      {
+        "check_id": "CKV_AWS_21",
+        "check_name": "Ensure the S3 bucket has versioning enabled",
+        "resource": "aws_s3_bucket.evidence",
+        "severity": "MEDIUM",
+        "file_path": "/main.tf"
+      }
+    ],
+    "failed_checks": []
+  },
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "resource_count": 1,
+    "checkov_version": "3.2.0"
+  }
+}

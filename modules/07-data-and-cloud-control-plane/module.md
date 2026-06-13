@@ -218,7 +218,9 @@ Byte-for-byte identical, because the evaluation is a pure function of its input 
 
 **Scenario.** You are asked to produce one reproducible evidence report covering two controls — one **encryption** (state) and one **access** (event) — plus a single SQL-derived risk metric, and to make the whole thing re-runnable so it can later go on a monitoring schedule.
 
-**Setup.** Run `bash labs/setup.sh` to generate the fixtures into `labs/fixtures/`: a posture-findings file (`posture-findings.json`), an audit-events file (`audit-events.json`), and an evidence table (`evidence.csv`). These stand in for what you'd pull from your cloud's posture service and audit log; in the real lab you'd replace the setup step with authenticated pulls.
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 07 → Interactive lab): a simulated terminal whose command outputs are CI-verified against a real Linux machine, beside a real SQLite engine (compiled to WebAssembly) querying the evidence table your own setup run produces — the same commands and the same query on a real box give the same answers.
+
+**Setup.** Run `bash labs/setup.sh` to generate the fixtures into `fixtures/` (the script writes to `./fixtures` in your working directory): a posture-findings file (`posture-findings.json`), an audit-events file (`audit-events.json`), and an evidence table (`evidence.csv`). These stand in for what you'd pull from your cloud's posture service and audit log; in the real lab you'd replace the setup step with authenticated pulls.
 
 **Tasks.**
 

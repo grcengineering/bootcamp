@@ -194,6 +194,8 @@ The diagnosis is precise and routable: the seam between the scheduled QUERY and 
 
 **Scenario.** You are shipping one real control end to end and proving it covers all seven loop stages, with a measurable before/after of the same control. You will build the manifest-and-validator scaffold that makes your coverage machine-checkable, then attach your real artifacts to it.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 15 → Interactive lab) as a capstone-repo simulation: the repo it seeds is byte-identical to what `labs/setup.sh` writes, and every coverage verdict comes from a port of `validate-capstone.sh` that CI verifies byte-for-byte against real `bash` runs of that script — the same manifest on a real machine produces the same per-stage transcript and exit code.
+
 **Setup.** Run `bash labs/setup.sh "$PWD/capstone-lab"`. It writes a starter capstone repo: a `capstone-manifest.yaml`, placeholder artifacts for each loop stage, a `before-after.md` skeleton, and the `validate-capstone.sh` self-check. (The fixture proves the *coverage logic*; in your real capstone these placeholders are replaced by your actual control's artifacts.)
 
 **Tasks.**

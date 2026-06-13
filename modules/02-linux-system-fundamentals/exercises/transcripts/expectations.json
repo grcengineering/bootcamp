@@ -1,0 +1,7 @@
+{
+  "_provenance": "bootstrap values from the docker-linux-booted captures (m02-id-grcops, m02-id-intern, m02-effective-directive-etc, m02-effective-permitrootlogin); regenerated + asserted equal by web/tests/exercise-replay-02.test.ts replaying golden.jsonl through the admin-lab engine session (root ISA ISC-60)",
+  "t1:0": "uid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)",
+  "t2:0": "uid=1002(intern) gid=1002(intern) groups=1002(intern)",
+  "t5:0": "PasswordAuthentication no",
+  "t5:2": "PermitRootLogin no"
+}

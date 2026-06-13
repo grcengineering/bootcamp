@@ -1,0 +1,452 @@
+{
+  "spec": {
+    "id": "lab-11",
+    "module": "11-threat-informed-grc",
+    "title": "The control that mitigated nothing",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-11-28",
+    "engine": "builder",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m11",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You inherit a control library that grew by accretion: every control was added for a\nreason once, and nothing has ever been removed. Your workspace is the lab's working\ndirectory, staged exactly as `bash setup.sh ./work` leaves it — the team's owned\ntop-threat list, the controls actually run, a seed coverage map with honest mitigation\nlabels, and the validator. The \"Run validator\" button IS the lab's\n`bun validate-coverage.ts work/coverage-map.csv …` step: a port of the committed\nvalidator, CI-verified byte-for-byte against real `bun` runs of that script, and it\nalways evaluates your CURRENT files — the failure you start from and the pass you end\non are both earned, never scripted. Module 00 asked whether one claim (a laptop's disk\nis encrypted) was true; this lab asks the question that decides whether such a control\ndeserves to exist at all: which threat does it make less likely or less damaging? One\nhonesty note: the validator and this page's checks are structural floors — the verdict\nsentences are yours to mean.\n",
+    "builder": {
+      "surface": "workspace",
+      "validator": "coverage",
+      "validator_args": [
+        "work/coverage-map.csv",
+        "work/prioritized-threats.txt",
+        "work/controls-in-scope.txt"
+      ]
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "§6 task 1, plus the read every map deserves first. Open the three fixture files\n(tabs above) and, in `work/map-reading.md`, finish the three one-sentence\ndefinitions: what the threat list IS, what the in-scope control list IS, and what\none coverage-map row IS. Then read the seed map like an auditor and fill in both\ndefect lines BY ID — the prioritized threat no control reaches, and the in-scope\ncontrol no map line touches — before the validator tells you.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^The threat list \\(prioritized-threats\\.txt\\) is: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^The in-scope control list \\(controls-in-scope\\.txt\\) is: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^A coverage-map row \\(coverage-map\\.csv\\) is: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^Coverage gap \\(prioritized threat with no mapped control\\): *T-1486\\b"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^Zero-threat control \\(in-scope control on no line of the map\\): *CTRL-DLP-AGENT-04\\b"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The gap is visible as an empty cell: one CSV row has nothing after its second comma. The zero-threat control is visible only by ABSENCE — read controls-in-scope.txt, then hunt each ID through the map's control_id column."
+          },
+          {
+            "concept": "§4.4 — the two defects: coverage gaps and zero-threat controls"
+          },
+          {
+            "reveal": "The gap is T-1486 (its row's control_id is empty); the zero-threat control is CTRL-DLP-AGENT-04 (in scope, on no map line). Fill the two defect lines with those IDs and finish the three definitions in your own words."
+          }
+        ],
+        "explain": "You just did by eye what the validator does by set arithmetic: left column minus\ncovered threats, right column minus mapped controls. Frameworks are decent at\ncatching the first defect because they push you to add; almost nobody looks for\nthe second, because no framework ever asks you to remove anything.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2,
+          6
+        ],
+        "instruction": "§6 task 2 — run the validator unresolved. Click **Run validator** and read its\nverdict: it must exit non-zero and report BOTH defects by name. Then keep the\nrecord: copy the complete output — summary line, both FAIL blocks, and the final\nexit line, exactly as the panel shows them — into `work/validation-before.txt`,\nreplacing the placeholder (on a real box this is `… > validation-before.txt 2>&1`).\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^validator:coverage work/coverage-map\\.csv work/prioritized-threats\\.txt work/controls-in-scope\\.txt$"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "threats covered: 4/5"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-before.txt",
+            "regex": "^prioritized threats: 5 \\| in-scope controls: 4 \\| map rows: 6 \\| threats covered: 4/5$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-before.txt",
+            "regex": "^  - T-1486$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-before.txt",
+            "regex": "^  - CTRL-DLP-AGENT-04$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-before.txt",
+            "regex": "^exit: 1$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The button runs `bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt` against your files as they are right now. The output panel is selectable text — keeping the failing run is the point, not an afterthought."
+          },
+          {
+            "concept": "§4.4 — the validator catches both defects mechanically; the exit code is the verdict"
+          },
+          {
+            "reveal": "Click Run validator (exit 1 — coverage gap T-1486, zero-threat control CTRL-DLP-AGENT-04), then copy all of its output, including the 'exit: 1' line, into work/validation-before.txt in place of the placeholder."
+          }
+        ],
+        "explain": "That failing run is evidence, not embarrassment: it proves the check can\ndiscriminate. A validator that cannot fail verifies nothing — and the before/after\npair you are building is the same fail-then-pass discipline every CI gate in this\ncurriculum runs on.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "§6 task 3 — close the coverage gap. The team is standing up a backup-and-restore\nprogram as `CTRL-BACKUP-RESTORE-05` (the next free control ID). Edit\n`work/coverage-map.csv` so the T-1486 row maps to it with an HONEST mitigation\nlabel — backups do not stop ransomware from encrypting; they shrink what the\nencryption costs you. Add `CTRL-BACKUP-RESTORE-05` on its own line at the end of\n`work/controls-in-scope.txt` (a control on the map but out of scope would itself\nlook unmapped from the other side). Then write one sentence after \"Label\nrationale:\" in `work/map-reading.md` on why your label and not a stronger one.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/work/coverage-map.csv",
+            "regex": "^T-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,(detects|partial)$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/controls-in-scope.txt",
+            "regex": "^CTRL-BACKUP-RESTORE-05$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/map-reading.md",
+            "regex": "^Label rationale \\(task 3 — why this label and not a stronger one\\): *\\S"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "§5.1 shows one control carrying two different honest strengths against two threats. Ask what a restore actually changes about a ransomware event: not whether it happens — what it costs."
+          },
+          {
+            "concept": "§4.3 — the mitigation label is an honesty call: prevents / detects / partial, never a silent claim of full mitigation"
+          },
+          {
+            "reveal": "Rewrite the gap row as `T-1486,Data encrypted for ransom,CTRL-BACKUP-RESTORE-05,detects` (or `partial`), append `CTRL-BACKUP-RESTORE-05` to work/controls-in-scope.txt, and give one sentence: backups detect-and-recover — claiming `prevents` would be the false-confidence defect."
+          }
+        ],
+        "explain": "Note what this page rejected that the validator would have accepted: `prevents` is\ninside the validator's allowed vocabulary, so the mechanical floor would pass it.\nThe honesty bar sits above the floor — a map where every line silently claims full\nmitigation is the false-confidence defect industrialized, one dropdown at a time.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "§6 task 4 — the verdict on the zero-threat control. Fill in\n`work/removal-recommendation.md` for `CTRL-DLP-AGENT-04`: what it was ASSUMED to\nmitigate, how many prioritized threats it actually maps to (read your map), what\nit costs to run, and the verdict — `kill`, `downgrade`, or\n`keep-and-fix-threat-list` — with a rationale built from those facts. \"We've\nalways had it\" is a habit, not evidence; this page rejects it. If your verdict is\nkeep-and-fix-threat-list, also add the missing threat to\n`work/prioritized-threats.txt` and draw its line in the map — the validator will\nhold you to whichever verdict you choose.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^control_id: *CTRL-DLP-AGENT-04\\b"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^assumed_to_mitigate: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^maps_to_prioritized_threats: *0\\b"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^running_cost: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^verdict: *(kill|downgrade|keep-and-fix-threat-list)\\b"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "^rationale: *\\S"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/work/removal-recommendation.md",
+            "regex": "[Aa]lways (had|been)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "§5.2 is the shape: name the threat it was confused with (which prioritized threat sounds adjacent but lives on a different data path?), quantify the cost, and let the verdict follow. Each of the three verdicts blames a different thing — the control, its tier, or the threat list."
+          },
+          {
+            "concept": "§4.5 — kill, downgrade, or keep-and-fix-threat-list: what a zero-threat control deserves"
+          },
+          {
+            "reveal": "e.g. control_id: CTRL-DLP-AGENT-04 · assumed_to_mitigate: \"data exfiltration generally\" · maps_to_prioritized_threats: 0 · running_cost: endpoint agent on every laptop plus ~3 hrs/wk of false-positive triage · verdict: kill (or downgrade) · rationale: the exfiltration threat we prioritized is T-1530, cloud-storage theft — a data path the endpoint agent never sees; the freed triage hours fund the new T-1486 coverage."
+          }
+        ],
+        "explain": "Recommending a removal is a GRC engineering act, not recklessness — and now it is\na documented one: assumed threat named, zero mappings shown, cost stated, verdict\nargued. The burden of proof just moved to whoever wants to keep paying for it.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          6
+        ],
+        "instruction": "§6 task 5 — enact the verdict, then make the machine agree. Make the files match\nwhat you decided: a `kill` (or a downgrade out of the load-bearing tier) means\ndeleting the `CTRL-DLP-AGENT-04` line from `work/controls-in-scope.txt`;\nkeep-and-fix-threat-list means the new threat and its line are already in place.\nClick **Run validator** and confirm it now exits 0 — every prioritized threat\ncovered, no zero-threat controls, all labels valid. Copy the passing output into\n`work/validation-after.txt`, replacing the placeholder.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "^PASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid\\."
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-after.txt",
+            "regex": "^PASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid\\.$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/validation-after.txt",
+            "regex": "^prioritized threats: [0-9]+ \\|"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Still failing? Its output names the exact leftover defect. The classic: the verdict file says kill but CTRL-DLP-AGENT-04 still sits in controls-in-scope.txt — the validator only believes the files."
+          },
+          {
+            "concept": "§4.4 — \"resolve\" is a file edit the validator can see, not a sentence in a document"
+          },
+          {
+            "reveal": "Delete the CTRL-DLP-AGENT-04 line from work/controls-in-scope.txt, click Run validator (exit 0, threats covered 5/5), then copy the full PASS output into work/validation-after.txt."
+          }
+        ],
+        "explain": "The pass you just captured was computed from your current files — paste-without-fix\ncannot produce it, because the page checks the validator's last real run, not the\ntext in your capture file. before exits 1, after exits 0: \"kill controls that\nmitigate nothing\" just went from opinion to verdict, with the exit code as proof.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "§6 task 6 — interview the customer of a SURVIVING control (one your edited map\nstill maps to a prioritized threat — `CTRL-ACCESS-REVIEW-02` is a natural choice,\nnot the control you just sentenced). In `work/interview-notes.md`, answer the four\n§4.6 questions concretely — improvise the customer if you must, but make the\nanswers specific enough to act on — and finish the Q4 lines naming where the\ncontrol's TRUTH lives versus where its EVIDENCE is gathered today.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^control: *CTRL-[A-Z0-9-]+"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^control: *CTRL-DLP-AGENT-04"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^A1: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^A2: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^A3: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^truth_lives_in: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/interview-notes.md",
+            "regex": "^evidence_gathered_in: *\\S"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "§5.3 is a worked interview. The tell you are listening for: the real decisions already happen in some system, and the evidence is a separate re-typing of what that system already knows."
+          },
+          {
+            "concept": "§4.6 — stakeholder-as-customer: the gap between where truth lives and where evidence is gathered is the design defect"
+          },
+          {
+            "reveal": "For CTRL-ACCESS-REVIEW-02: A1 the engineering lead signs a quarterly spreadsheet+PDF · A2 they already approve every access request in the access tool, timestamped · A3 the whole spreadsheet ritual re-types the tool's truth · truth_lives_in: the access tool's approval log · evidence_gathered_in: a hand-built quarterly spreadsheet and signed PDF."
+          }
+        ],
+        "explain": "The interview located the defect precisely, in the customer's own words: truth in\na system the work already touches, evidence hand-built somewhere else. That gap is\nwhy threat-justified controls still rot — the evidence depends on a busy human\ndoing extra work that has nothing to do with their real job.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "§6 task 7 — redesign that control so the evidence is a by-product of the work. In\n`work/redesigned-control-flow.md`, fill §5.4's shape: the toil-laden BEFORE (work,\nevidence, failure mode), the AFTER where doing the real work emits the evidence\nautomatically, one sentence on why it is cheaper, one on why it is harder to fake,\nand the prioritized threat the control STILL mitigates — a redesigned control must\nstill earn its place.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "BEFORE \\(toil-laden\\):\\n  Work: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "BEFORE \\(toil-laden\\):\\n  Work: [^\\n]*\\n  Evidence: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "^  Failure: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "AFTER \\(evidence as by-product\\):\\n  Work: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "AFTER \\(evidence as by-product\\):\\n  Work: [^\\n]*\\n  Evidence: *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "^  Why better \\(cheaper\\): *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "^  Why better \\(harder to fake\\): *\\S"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/work/redesigned-control-flow.md",
+            "regex": "^  Still mitigates: *T-[0-9]{4}\\b"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The AFTER's Work line should be nearly identical to the BEFORE's — that is the point. Only the Evidence line changes: from something a human builds to something the work's own system emits."
+          },
+          {
+            "concept": "§4.7 — arrange the control so doing the real work correctly emits the evidence automatically"
+          },
+          {
+            "reveal": "BEFORE: work = lead approves requests in the tool; evidence = separate quarterly spreadsheet+PDF; failure = skipped or back-dated under deadline. AFTER: work unchanged; evidence = a scheduled export of the tool's approval log IS the review record. Cheaper: no separate chore. Harder to fake: a system log can't be back-dated like a spreadsheet. Still mitigates: T-1078."
+          }
+        ],
+        "explain": "Same control, same threat, two improvements at once: cheaper because no one is\nnagged into extra work, harder to fake because no human hand produced the record.\nThreat-informed says which controls survive; this redesign is how survivors get\nbuilt. Together they are the §4.8 portfolio shape the module-15 capstone demands.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1
+        ],
+        "instruction": "The walkthrough, in writing (4–6 sentences, no peeking at §3): explain to a\nframework-checklist colleague why \"we have a control for that\" and \"that control\nreduces a threat we actually face\" are different claims, and why only the second\nis defensible — using the control you sentenced as the example. Read two rows of your\nfinished map aloud as sentences and justify their mitigation labels. Then close\nthe thread you have carried since module 00: which prioritized threat would\njustify the laptop-encryption control from your one-pager, and which honest label\ndoes it deserve against a stolen-laptop scenario — what does `prevents` overclaim\nthe moment a session is left unlocked?\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The three answers to \"why does this control exist\": a threat, a citation, a shrug. Your DLP verdict is the worked case of demanding the first kind of answer — and laptop encryption protects data at rest, which is not the same as protecting a logged-in machine."
+          },
+          {
+            "concept": "§3 — The Mental Model: threat, citation, or shrug"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/work",
+        "dir": true
+      },
+      {
+        "path": "~/work/controls-in-scope.txt",
+        "content": "# The controls the team actually RUNS (Module 11 lab fixture).\n# One control identifier per line. These are the RIGHT column — every control here costs real\n# effort to operate, so every one must earn its place by mapping to a prioritized threat (§4.4).\n# The validator asserts that each in-scope control appears on at least one coverage-map line to a\n# prioritized threat; a control here that maps to nothing is the ZERO-THREAT defect (§4.4/§4.5).\nCTRL-MFA-01\nCTRL-ACCESS-REVIEW-02\nCTRL-BUCKET-ENC-03\nCTRL-DLP-AGENT-04\n"
+      },
+      {
+        "path": "~/work/coverage-map.csv",
+        "content": "threat_id,threat_name,control_id,mitigation\nT-1566,Phishing for credentials,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-MFA-01,partial\nT-1078,Abuse of valid accounts,CTRL-ACCESS-REVIEW-02,detects\nT-1530,Data theft from cloud storage,CTRL-BUCKET-ENC-03,partial\nT-1486,Data encrypted for ransom,,\nT-1110,Brute-force of credentials,CTRL-MFA-01,prevents\n"
+      },
+      {
+        "path": "~/work/interview-notes.md",
+        "content": "# Stakeholder-as-customer interview — find where the control's truth lives\n\nInterview the customer of ONE surviving control (a control your edited map\nstill maps to a prioritized threat — not the one you just sentenced). If you\nhave no real stakeholder handy, improvise the answers, but make them concrete.\n\ncontrol:\n\nQ1 — Who actually produces the evidence for this control?\nA1:\n\nQ2 — What work were they already doing when they produce it?\nA2:\n\nQ3 — Where does the control force extra work that has nothing to do with the real task?\nA3:\n\nQ4 — Where does the control's truth actually live, versus where is its evidence gathered today?\ntruth_lives_in:\nevidence_gathered_in:\n"
+      },
+      {
+        "path": "~/work/map-reading.md",
+        "content": "# Reading the map before the machine does\n\nOne sentence each, in your own words:\n\nThe threat list (prioritized-threats.txt) is:\nThe in-scope control list (controls-in-scope.txt) is:\nA coverage-map row (coverage-map.csv) is:\n\nName both defects by ID — by reading, before the validator runs:\n\nCoverage gap (prioritized threat with no mapped control):\nZero-threat control (in-scope control on no line of the map):\n\nLabel rationale (task 3 — why this label and not a stronger one):\n"
+      },
+      {
+        "path": "~/work/prioritized-threats.txt",
+        "content": "# The team's OWNED top-threat list for a SaaS environment (Module 11 lab fixture).\n# One stable threat identifier per line. These are the LEFT column of the coverage map —\n# the handful of techniques the team decided it actually faces (§4.2). Comments and blank\n# lines are ignored by the validator. Identifiers are illustrative, modeled on a public\n# adversary-technique taxonomy; a real list cites the official current numbering.\nT-1566\nT-1078\nT-1530\nT-1486\nT-1110\n"
+      },
+      {
+        "path": "~/work/redesigned-control-flow.md",
+        "content": "# Redesigned control flow — same control, evidence as a by-product\n\nThe control and the threat that justifies it stay the same; only the way its\nevidence is produced changes. Follow §5.4's shape, one line per slot.\n\nBEFORE (toil-laden):\n  Work:\n  Evidence:\n  Failure:\n\nAFTER (evidence as by-product):\n  Work:\n  Evidence:\n  Why better (cheaper):\n  Why better (harder to fake):\n  Still mitigates:\n"
+      },
+      {
+        "path": "~/work/removal-recommendation.md",
+        "content": "# Removal recommendation — the documented verdict on the zero-threat control\n\ncontrol_id:\nassumed_to_mitigate:\nmaps_to_prioritized_threats:\nrunning_cost:\nverdict:\nrationale:\n\n(The verdict is one of kill / downgrade / keep-and-fix-threat-list. Make it\nevidence, not habit: name what the control was assumed to mitigate, show how\nmany prioritized threats it actually maps to, state what it costs to run, and\nlet the verdict follow from those facts.)\n"
+      },
+      {
+        "path": "~/work/validate-coverage.ts",
+        "content": "#!/usr/bin/env bun\n// Module 11 threat->control coverage-map validator (original lab asset).\n// Asserts the GRC-relevant core logic of threat-informed control evaluation:\n//   1. COVERAGE GAP: every prioritized threat maps to at least one control. A prioritized threat\n//      with no mapped control fails the build — it is a threat you face with nothing run against it.\n//   2. ZERO-THREAT CONTROL: every in-scope control appears on at least one map line to a\n//      prioritized threat. A control that mitigates none of the prioritized threats fails the\n//      build — it is unpriced toil and a candidate for removal/downgrade (§4.4/§4.5). This is the\n//      defect frameworks are blind to, because they never ask you to remove a control.\n//   3. HONEST MITIGATION LABEL: every mapped row carries a mitigation strength from the allowed\n//      vocabulary (prevents|detects|partial), forcing a deliberate honesty call instead of a\n//      default claim of full mitigation (the false-confidence defect).\n//\n// Usage: bun validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]\n// Exit 0 = verified (no gaps, no zero-threat controls, all rows honest); non-zero = FAIL w/ defects.\n//\n// Deliberately schema-light and dependency-free, mirroring Module 10's crosswalk validator: this\n// flat CSV is the artifact the capstone (Module 15) expects per control.\n\nimport { readFileSync, existsSync } from \"node:fs\";\nimport { dirname, join } from \"node:path\";\n\nconst ALLOWED_MITIGATIONS = new Set([\"prevents\", \"detects\", \"partial\"]);\n\nfunction fail(msg: string): never {\n  console.error(msg);\n  process.exit(1);\n}\n\nfunction readList(path: string): Set<string> {\n  return new Set(\n    readFileSync(path, \"utf8\")\n      .split(\"\\n\")\n      .map((l) => l.replace(/#.*$/, \"\").trim())\n      .filter((l) => l.length > 0),\n  );\n}\n\nconst csvPath = process.argv[2];\nif (!csvPath) {\n  fail(\"usage: validate-coverage.ts <coverage-map.csv> [prioritized-threats.txt] [controls-in-scope.txt]\");\n}\n\nconst threatsPath = process.argv[3] ?? join(dirname(csvPath), \"prioritized-threats.txt\");\nconst controlsPath = process.argv[4] ?? join(dirname(csvPath), \"controls-in-scope.txt\");\n\nif (!existsSync(threatsPath)) fail(`FAIL: prioritized-threats file not found: ${threatsPath}`);\nif (!existsSync(controlsPath)) fail(`FAIL: controls-in-scope file not found: ${controlsPath}`);\n\nconst prioritizedThreats = readList(threatsPath);\nconst inScopeControls = readList(controlsPath);\n\nconst lines = readFileSync(csvPath, \"utf8\")\n  .split(\"\\n\")\n  .map((l) => l.trim())\n  .filter((l) => l.length > 0);\n\nif (lines.length < 2) fail(\"FAIL: coverage map has no data rows\");\n\nconst header = lines[0].split(\",\").map((c) => c.trim());\nconst expected = [\"threat_id\", \"threat_name\", \"control_id\", \"mitigation\"];\nif (header.join(\",\") !== expected.join(\",\")) {\n  fail(`FAIL: header must be '${expected.join(\",\")}', got '${header.join(\",\")}'`);\n}\n\n// Threats that have at least one real control line, and controls that touch at least one\n// prioritized threat. We build both so we can report BOTH defects in one pass.\nconst threatsWithControl = new Set<string>();\nconst controlsThatMitigateSomething = new Set<string>();\nconst badMitigation: string[] = [];\nconst unknownThreat: string[] = [];\nlet dataRows = 0;\n\nfor (let i = 1; i < lines.length; i++) {\n  const [threatId, , controlId, mitigation] = lines[i].split(\",\").map((c) => c.trim());\n  dataRows++;\n\n  // A row with no control is just a placeholder for a known gap — record nothing, the gap check\n  // below will catch the threat if it is prioritized.\n  if (controlId === \"\") continue;\n\n  // The threat on this line must be one the team actually prioritized; a line to a non-prioritized\n  // threat is noise that can hide a zero-threat control behind a phantom mapping.\n  if (!prioritizedThreats.has(threatId)) {\n    unknownThreat.push(`${controlId} -> '${threatId}' (threat is not on the prioritized list)`);\n    continue;\n  }\n\n  threatsWithControl.add(threatId);\n  controlsThatMitigateSomething.add(controlId);\n\n  if (!ALLOWED_MITIGATIONS.has(mitigation)) {\n    badMitigation.push(\n      `${threatId} -> ${controlId} has mitigation '${mitigation || \"missing\"}' (allowed: prevents|detects|partial)`,\n    );\n  }\n}\n\n// DEFECT 1 — coverage gaps: prioritized threats with no mapped control.\nconst coverageGaps = [...prioritizedThreats].filter((t) => !threatsWithControl.has(t)).sort();\n\n// DEFECT 2 — zero-threat controls: in-scope controls that map to no prioritized threat.\nconst zeroThreatControls = [...inScopeControls]\n  .filter((c) => !controlsThatMitigateSomething.has(c))\n  .sort();\n\nconsole.log(\n  `prioritized threats: ${prioritizedThreats.size} | in-scope controls: ${inScopeControls.size} | map rows: ${dataRows} | threats covered: ${threatsWithControl.size}/${prioritizedThreats.size}`,\n);\n\nlet failed = false;\n\nif (coverageGaps.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${coverageGaps.length} coverage gap(s) — prioritized threat with no mapped control:`);\n  for (const t of coverageGaps) console.error(`  - ${t}`);\n}\n\nif (zeroThreatControls.length > 0) {\n  failed = true;\n  console.error(\n    `FAIL: ${zeroThreatControls.length} zero-threat control(s) — in-scope control mitigates no prioritized threat (kill/downgrade candidate):`,\n  );\n  for (const c of zeroThreatControls) console.error(`  - ${c}`);\n}\n\nif (unknownThreat.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${unknownThreat.length} row(s) map a control to a non-prioritized threat:`);\n  for (const u of unknownThreat) console.error(`  - ${u}`);\n}\n\nif (badMitigation.length > 0) {\n  failed = true;\n  console.error(`FAIL: ${badMitigation.length} row(s) carry an invalid mitigation label:`);\n  for (const b of badMitigation) console.error(`  - ${b}`);\n}\n\nif (failed) {\n  console.error(\"exit: 1\");\n  process.exit(1);\n}\n\nconsole.log(\n  \"PASS: every prioritized threat has a mapped control; no zero-threat controls; all mitigation labels valid.\",\n);\nprocess.exit(0);\n"
+      },
+      {
+        "path": "~/work/validation-after.txt",
+        "content": "Replace this placeholder with the complete output of your passing validator\nrun — the verdict you earned, not asserted.\n"
+      },
+      {
+        "path": "~/work/validation-before.txt",
+        "content": "Replace this placeholder with the complete output of your first, failing\nvalidator run — the summary line, both FAIL blocks, and the final exit line,\nexactly as the output panel shows them.\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z"
+}

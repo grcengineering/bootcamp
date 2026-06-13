@@ -1,0 +1,54 @@
+{
+  "id": "m09-mygate-clean",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09s",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cp my-check.sh lab09/my-check.sh",
+    "cp my-gate.sh lab09/my-gate.sh",
+    "cd lab09",
+    "chmod +x my-check.sh my-gate.sh",
+    "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"
+  ],
+  "cmd": "GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 ./my-gate.sh access-clean.csv evidence-store",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the passing run after the failing one: exit 0, passed:true record — the §5.3 before/after audit trail produced by the gate, not by the learner. The ls post pins the two-record store listing.\n",
+  "stdout": "EVAL  control=AC-6-legacy-admin engine=cedar input=access-clean.csv\nRESULT  control=AC-6-legacy-admin  decision=allow  violations=0\nEVIDENCE  wrote evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json\nGATE  result=PASS  (violations=0)  exit=0\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "0\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json",
+      "stdout": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"allow\", \"passed\": true, \"violations\": 0, \"input_ref\": \"access-clean.csv\", \"evaluated_at\": \"2026-05-28T17:22:00Z\", \"run\": \"ci-1804\"}\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "ls -C -w80 evidence-store",
+      "stdout": "AC-6-legacy-admin-ci-1789-20260528170400.json\nAC-6-legacy-admin-ci-1804-20260528172200.json\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:27:36.328Z",
+    "captured_with": "capture.ts v1"
+  }
+}

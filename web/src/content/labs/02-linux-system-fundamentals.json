@@ -1,0 +1,638 @@
+{
+  "spec": {
+    "id": "lab-02",
+    "module": "02-linux-system-fundamentals",
+    "title": "Harden web-01 and prove it",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-01",
+    "engine": "shell-linux",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m02",
+      "home": "/home/grcops",
+      "files": [],
+      "path_tools": [
+        "lab-setup"
+      ]
+    },
+    "intro": "You are grcops on a freshly provisioned Ubuntu host, web-01, holding a three-line\nhardening standard: administration only by a named non-root user with sudo; SSH accepts\nkeys only — no passwords, no root login; and a defined background service installed,\nrunning, and enabled to survive a reboot. Implement each control, then prove each one\nfrom the host's own commands — evidence a reviewer can re-run, not a screenshot.\nThis terminal is a real simulation of web-01: its outputs are captured from a real\nsystemd-enabled Linux machine, and the same commands on a real box give the same\nanswers. Your sudo password is labpass.\n",
+    "walkthrough_first_input": "id grcops",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          3,
+          7
+        ],
+        "instruction": "The host was provisioned with your admin account. Prove the first half of control 1:\nrun `id grcops` and read the `groups=` field for the privileged group. Then start\nyour evidence trail — `mkdir evidence`, and capture the exact output with\n`id grcops > evidence/id-grcops.txt`.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/evidence/id-grcops.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/id-grcops.txt",
+            "required_commands": [
+              "id"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "file_content_matches",
+            "path": "/etc/group",
+            "regex": "^sudo:x:27:.*\\bgrcops\\b"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`id <user>` asks the kernel's own account database, not a dashboard. `>` turns what it said into something you keep."
+          },
+          {
+            "concept": "§4.4 — who can become root is THE access-control fact; §5.1 reads it straight from `id`"
+          },
+          {
+            "reveal": "mkdir evidence, then: id grcops > evidence/id-grcops.txt"
+          }
+        ],
+        "explain": "That one line is access-control evidence from the source of truth: `grcops` is in\n`sudo` (gid 27), so it can elevate — as the standard intends. You did not trust an\norg chart or a console screenshot; you asked the host who can become root.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          3,
+          7
+        ],
+        "instruction": "Control 1 is two-sided: an ordinary account must demonstrably NOT be able to\nelevate. Create `intern` (creating identities is a root-only act — `sudo` will ask\nfor your password), then capture `id intern > evidence/id-intern.txt`. The output\nmust show no privileged group.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/evidence/id-intern.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/id-intern.txt",
+            "required_commands": [
+              "id"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "file_content_matches",
+            "path": "/etc/passwd",
+            "regex": "^intern:x:1002:"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "/etc/group",
+            "regex": "^sudo:x:27:.*\\bintern\\b"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Bare `useradd` hits a permission wall — that wall is the point. Which gate lets an authorized user cross it, and what does the crossing cost (a logged event)?"
+          },
+          {
+            "concept": "§4.4 — the sudo gate; §5.1 — least privilege is only evidenced when BOTH sides are shown"
+          },
+          {
+            "reveal": "sudo useradd -m intern (password: labpass), then: id intern > evidence/id-intern.txt"
+          }
+        ],
+        "explain": "Two captured `id` outputs now evidence the control from both sides: the admin can\nelevate, the ordinary account cannot. One-sided least-privilege evidence is half a\nclaim — the absent membership is as load-bearing as the present one.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          4,
+          7
+        ],
+        "instruction": "Run `ls -l .ssh` and decode each ten-character permission string. One file is\nover-permissioned for SSH trust material: every account on the box can read\n`authorized_keys`. Fix it with `chmod 600`, then capture the corrected listing\nwith `ls -l .ssh > evidence/ssh-perms.txt`.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/ssh-perms.txt",
+            "regex": "^-rw------- 1 grcops grcops .* authorized_keys$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/ssh-perms.txt",
+            "regex": "^-rw------- 1 grcops grcops .* id_ed25519$"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/ssh-perms.txt",
+            "required_commands": [
+              "ls"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Three trios after the type character: owner, group, everyone-else. Which trio on which file says more than `---`? `chmod 600` means rw for owner, nothing for anyone."
+          },
+          {
+            "concept": "§4.5 — the ten-character string IS the verdict; §5.2 decodes it to yes/no"
+          },
+          {
+            "reveal": "chmod 600 .ssh/authorized_keys, then: ls -l .ssh > evidence/ssh-perms.txt"
+          }
+        ],
+        "explain": "`-rw-------` on both files means only `grcops` can touch the key material — group\nand world get nothing. You read a cryptic string to a per-user verdict, found the\nover-permission, and remediated it; the captured listing is the after-state evidence.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          5,
+          7
+        ],
+        "instruction": "Harden SSH. Append the two effective directives the standard requires —\n`PasswordAuthentication no` and `PermitRootLogin no` — to `/etc/ssh/sshd_config`.\nThe file is root-owned, so prime sudo with `sudo true`, then use the\n`printf ... | sudo tee -a` idiom. Reload the daemon. Then prove it from a fresh\nconnection: a key login to `grcops@web-01` succeeds, and a password-only probe\n(`-o PubkeyAuthentication=no -o BatchMode=yes`) is refused — capture the refusal\nby appending `2> evidence/ssh-password-refused.txt` to the probe.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "/etc/ssh/sshd_config",
+            "regex": "^PasswordAuthentication no$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "/etc/ssh/sshd_config",
+            "regex": "^PermitRootLogin no$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "\\| *sudo tee -a /etc/ssh/sshd_config"
+          },
+          {
+            "check": "history_contains",
+            "regex": "sudo systemctl (reload|restart) ssh"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ssh .*grcops@web-01"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/ssh-password-refused.txt",
+            "regex": "Permission denied \\(publickey\\)\\."
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/ssh-password-refused.txt",
+            "required_commands": [
+              "ssh"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`>>` runs as you, and you can't write a root-owned file — but a pipe into an elevated `tee -a` can. And the running daemon keeps using the OLD config until you tell it to re-read."
+          },
+          {
+            "concept": "§4.6 — key-only SSH is a control, not a preference; a config edit nobody reloaded is a control nobody enforced"
+          },
+          {
+            "reveal": "sudo true, then: printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config, then: sudo systemctl reload ssh, then: ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true, then: ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true 2> evidence/ssh-password-refused.txt"
+          }
+        ],
+        "explain": "`Permission denied (publickey).` is the server naming the ONLY method it still\noffers. Before the reload that same probe said `(publickey,password)` — the\ndifference between those two parentheses is the control taking effect, and your\ncaptured refusal is the negative test every auth control deserves.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          5,
+          7
+        ],
+        "instruction": "Evaluate the config the way `sshd` does. First witness the trap: run the naive\n`sudo grep PasswordAuthentication /etc/ssh/sshd_config` and notice the commented\ndecoy in the output. Then resolve the EFFECTIVE value the way the daemon parses it\n— comments stripped, last directive wins — keeping only the single effective line\nas evidence in `evidence/effective-passwordauth.txt`, and do the same for\n`PermitRootLogin` into `evidence/effective-permitrootlogin.txt`.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/evidence/effective-passwordauth.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/effective-passwordauth.txt",
+            "min_pipes": 2,
+            "required_commands": [
+              "grep",
+              "tail"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/evidence/effective-permitrootlogin.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/effective-permitrootlogin.txt",
+            "min_pipes": 2,
+            "required_commands": [
+              "grep",
+              "tail"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "sudo grep PasswordAuthentication /etc/ssh/sshd_config"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Three stages: drop every line whose first non-blank character is `#`, keep only the directive you're resolving, keep only the LAST survivor. The daemon ignores comments and honors the last duplicate — your evidence must too."
+          },
+          {
+            "concept": "§5.3 — evidence must be evaluated by the enforcing program's parse rules, or it's a guess that looks official"
+          },
+          {
+            "reveal": "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1 > evidence/effective-passwordauth.txt, then the same pipeline with PermitRootLogin into evidence/effective-permitrootlogin.txt"
+          }
+        ],
+        "explain": "Your evidence file holds exactly one line — the directive `sshd` actually enforces —\nwith the decoy gone. A naive grep would have shipped the commented `yes` to an\nauditor as a false finding. Same file, two methods, opposite conclusions: the parse\nrules are part of the evidence.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          2,
+          7
+        ],
+        "instruction": "Control 3: the evidence-collector service must be installed, running, AND\npersistent. The package is already on the box — install it with\n`sudo apt install -y ./evidence-collector_1.0.0_all.deb`, start it, then run\n`systemctl status evidence-collector` and READ the `Loaded:` line before you\ncelebrate: `active (running)` with `disabled` is a control that dies at the next\nreboot. Enable it, then capture the final status with\n`systemctl status evidence-collector > evidence/service-status.txt`.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/service-status.txt",
+            "regex": "Active: active \\(running\\)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/service-status.txt",
+            "regex": "evidence-collector\\.service; enabled;"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/service-status.txt",
+            "required_commands": [
+              "systemctl"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "sudo systemctl enable evidence-collector"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`apt install` puts the unit on disk, `start` makes it run NOW — neither says anything about the next boot. One word in the `Loaded:` line carries the reboot promise."
+          },
+          {
+            "concept": "§4.3 — a service is a program the OS guarantees keeps happening; §5.4 — read BOTH fields, not one"
+          },
+          {
+            "reveal": "sudo apt install -y ./evidence-collector_1.0.0_all.deb, then: sudo systemctl start evidence-collector, then: sudo systemctl enable evidence-collector, then: systemctl status evidence-collector > evidence/service-status.txt"
+          }
+        ],
+        "explain": "Your captured status shows both words that matter: `active (running)` — it is up\nnow — and `enabled` — it returns after a reboot. A check that records only the\nfirst is a point-in-time snapshot wearing a continuous control's name tag.\n"
+      },
+      {
+        "id": "t6a",
+        "type": "reflection",
+        "objective": [
+          2
+        ],
+        "instruction": "In one sentence: if you had skipped `enable`, what exactly would a reviewer find\nafter the next reboot — and why does a point-in-time \"it's running\" check miss\nthat failure mode entirely?\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Think about WHEN each of the two status fields is allowed to become false."
+          },
+          {
+            "concept": "§4.3 / §5.4 — active vs enabled is now vs next-boot"
+          }
+        ]
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          6,
+          7
+        ],
+        "instruction": "Controls leave records. Query the SSH unit's journal for the login you performed\nand keep the proof:\n`sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\" > evidence/auth-event.txt`.\nRead your captured line: method `publickey`, account `grcops` — and note that no\nsuccessful `password` line exists to be found.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence/auth-event.txt",
+            "regex": "Accepted publickey for grcops"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/evidence/auth-event.txt",
+            "regex": "Accepted password"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/evidence/auth-event.txt",
+            "min_pipes": 1,
+            "required_commands": [
+              "grep"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "nano"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "journalctl -u ssh"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The journal is queried per unit (`-u`). Which unit witnessed your login — and whose journal do you need sudo to read in full?"
+          },
+          {
+            "concept": "§4.7 — /etc is where a control is declared; the journal is where it is witnessed actually working"
+          },
+          {
+            "reveal": "sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\" > evidence/auth-event.txt"
+          }
+        ],
+        "explain": "`Accepted publickey for grcops` is the host's own append-only memory of the control\nbeing exercised — not configured, exercised. The absence of any `Accepted password`\nline is the other half of the proof, and absence is only evidence when you looked\nfor the thing and can show how you looked.\n"
+      },
+      {
+        "id": "t8",
+        "type": "action",
+        "objective": [
+          1,
+          7
+        ],
+        "instruction": "Assemble the writeup a reviewer could re-run. Create `evidence-writeup.md` in your\nhome directory — open the editor with `nano evidence-writeup.md` (or compose it\nwith a heredoc) — with one block per control: the control statement, WHERE its\ntruth lives on the host, the exact command, the evidence line, and a final line\nreading `Verdict: PASS`.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/evidence-writeup.md"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "id grcops"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "27\\(sudo\\)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "/etc/ssh/sshd_config"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "PasswordAuthentication no"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "active \\(running\\)"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "Accepted publickey"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/evidence-writeup.md",
+            "regex": "Verdict: PASS"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Three controls, three blocks. Each block answers four questions: what was claimed, where does its truth live (§4.1), what command was run, what line came back — then the verdict."
+          },
+          {
+            "concept": "§6 deliverable — evidence is defensible when a reviewer re-running every command reaches the identical verdict"
+          },
+          {
+            "reveal": "nano evidence-writeup.md — one block per control with its claim, its home (/etc/group · /etc/ssh/sshd_config · the unit + journal), the exact command (id grcops · the grep -v pipeline · systemctl status evidence-collector), the evidence line (27(sudo) · PasswordAuthentication no · active (running) plus enabled · Accepted publickey for grcops) and a final line Verdict: PASS"
+          }
+        ],
+        "explain": "This page is the assessment artifact in miniature: every verdict is welded to the\ncommand that produced it and the line it produced. Anyone with access to web-01 can\nre-run your three commands and arrive at your three verdicts — that re-runnability\nis what separates compliance evidence from compliance theater.\n"
+      },
+      {
+        "id": "t9",
+        "type": "reflection",
+        "objective": [
+          1,
+          4
+        ],
+        "instruction": "In 4–6 sentences for a non-technical reviewer: for each of the three controls, name\nwhere its truth physically lives on the host (a declaration in /etc, a record in\nthe journal, or running state) and how you would find it on an unfamiliar machine.\nThen decode `-rw-r----- root root` on /etc/ssh/sshd_config — who can read it, who\ncan write it, and why that shape is right for a security-relevant config.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 map: files persist (declarations), processes run, systemd supervises, the journal remembers. Every control is a checkable fact in exactly one of those places."
+          },
+          {
+            "concept": "§4.1 — the filesystem hierarchy is a map of where evidence is kept"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "/etc/passwd",
+        "content": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nsync:x:4:65534:sync:/bin:/bin/sync\ngames:x:5:60:games:/usr/games:/usr/sbin/nologin\nman:x:6:12:man:/var/cache/man:/usr/sbin/nologin\nlp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin\nmail:x:8:8:mail:/var/mail:/usr/sbin/nologin\nnews:x:9:9:news:/var/spool/news:/usr/sbin/nologin\nuucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin\nproxy:x:13:13:proxy:/bin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nbackup:x:34:34:backup:/var/backups:/usr/sbin/nologin\nlist:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin\nirc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin\n_apt:x:42:65534::/nonexistent:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\nsystemd-network:x:998:998:systemd Network Management:/:/usr/sbin/nologin\nmessagebus:x:100:101::/nonexistent:/usr/sbin/nologin\nsshd:x:101:65534::/run/sshd:/usr/sbin/nologin\ngrcops:x:1001:1001::/home/grcops:/bin/bash\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/group",
+        "content": "root:x:0:\ndaemon:x:1:\nbin:x:2:\nsys:x:3:\nadm:x:4:\ntty:x:5:\ndisk:x:6:\nlp:x:7:\nmail:x:8:\nnews:x:9:\nuucp:x:10:\nman:x:12:\nproxy:x:13:\nkmem:x:15:\ndialout:x:20:\nfax:x:21:\nvoice:x:22:\ncdrom:x:24:\nfloppy:x:25:\ntape:x:26:\nsudo:x:27:grcops\naudio:x:29:\ndip:x:30:\nwww-data:x:33:\nbackup:x:34:\noperator:x:37:\nlist:x:38:\nirc:x:39:\nsrc:x:40:\nshadow:x:42:\nutmp:x:43:\nvideo:x:44:\nsasl:x:45:\nplugdev:x:46:\nstaff:x:50:\ngames:x:60:\nusers:x:100:\nnogroup:x:65534:\nsystemd-journal:x:999:\nsystemd-network:x:998:\nmessagebus:x:101:\n_ssh:x:102:\ngrcops:x:1001:\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/hostname",
+        "content": "web-01\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/ssh/sshd_config",
+        "content": "# web-01 baseline sshd_config - managed snapshot recorded by GRC ops during host provisioning ..\n# This is the sshd server system-wide configuration file.  See\n# sshd_config(5) for more information.\n\n# The strategy used for options in the default sshd_config shipped with\n# OpenSSH is to specify options with their default value where\n# possible, but leave them commented.  Uncommented options override the\n# default value.\n\nInclude /etc/ssh/sshd_config.d/*.conf\n\n#Port 22\n#AddressFamily any\n#ListenAddress 0.0.0.0\n#ListenAddress ::\n\n#HostKey /etc/ssh/ssh_host_rsa_key\n#HostKey /etc/ssh/ssh_host_ecdsa_key\n#HostKey /etc/ssh/ssh_host_ed25519_key\n\n# Ciphers and keying\n#RekeyLimit default none\n\n# Logging\n#SyslogFacility AUTH\n#LogLevel INFO\n\n# Authentication:\n\n#LoginGraceTime 2m\n#PermitRootLogin prohibit-password\n#StrictModes yes\n#MaxAuthTries 6\n#MaxSessions 10\n\n#PubkeyAuthentication yes\n\n# Expect .ssh/authorized_keys2 to be disregarded by default in future.\n#AuthorizedKeysFile\t.ssh/authorized_keys .ssh/authorized_keys2\n\n#AuthorizedPrincipalsFile none\n\n#AuthorizedKeysCommand none\n#AuthorizedKeysCommandUser nobody\n\n# For this to work you will also need host keys in /etc/ssh/ssh_known_hosts\n#HostbasedAuthentication no\n# Change to yes if you don't trust ~/.ssh/known_hosts for\n# HostbasedAuthentication\n#IgnoreUserKnownHosts no\n# Don't read the user's ~/.rhosts and ~/.shosts files\n#IgnoreRhosts yes\n\n# To disable tunneled clear text passwords, change to no here!\n#PasswordAuthentication yes\n#PermitEmptyPasswords no\n\n# Change to yes to enable challenge-response passwords (beware issues with\n# some PAM modules and threads)\nKbdInteractiveAuthentication no\n\n# Kerberos options\n#KerberosAuthentication no\n#KerberosOrLocalPasswd yes\n#KerberosTicketCleanup yes\n#KerberosGetAFSToken no\n\n# GSSAPI options\n#GSSAPIAuthentication no\n#GSSAPICleanupCredentials yes\n#GSSAPIStrictAcceptorCheck yes\n#GSSAPIKeyExchange no\n\n# Set this to 'yes' to enable PAM authentication, account processing,\n# and session processing. If this is enabled, PAM authentication will\n# be allowed through the KbdInteractiveAuthentication and\n# PasswordAuthentication.  Depending on your PAM configuration,\n# PAM authentication via KbdInteractiveAuthentication may bypass\n# the setting of \"PermitRootLogin prohibit-password\".\n# If you just want the PAM account and session checks to run without\n# PAM authentication, then enable this but set PasswordAuthentication\n# and KbdInteractiveAuthentication to 'no'.\nUsePAM yes\n\n#AllowAgentForwarding yes\n#AllowTcpForwarding yes\n#GatewayPorts no\nX11Forwarding yes\n#X11DisplayOffset 10\n#X11UseLocalhost yes\n#PermitTTY yes\nPrintMotd no\n#PrintLastLog yes\n#TCPKeepAlive yes\n#PermitUserEnvironment no\n#Compression delayed\n#ClientAliveInterval 0\n#ClientAliveCountMax 3\n#UseDNS no\n#PidFile /run/sshd.pid\n#MaxStartups 10:30:100\n#PermitTunnel no\n#ChrootDirectory none\n#VersionAddendum none\n\n# no default banner path\n#Banner none\n\n# Allow client to pass locale environment variables\nAcceptEnv LANG LC_*\n\n# override default of no subsystems\nSubsystem\tsftp\t/usr/lib/openssh/sftp-server\n\n# Example of overriding settings on a per-user basis\n#Match User anoncvs\n#\tX11Forwarding no\n#\tAllowTcpForwarding no\n#\tPermitTTY no\n#\tForceCommand cvs server\n",
+        "mode": 416,
+        "owner": "root",
+        "mtimeMs": 1779872520000
+      },
+      {
+        "path": "/usr/lib/systemd/system/ssh.service",
+        "content": "[Unit]\nDescription=OpenBSD Secure Shell server\nDocumentation=man:sshd(8) man:sshd_config(5)\nAfter=network.target auditd.service\nConditionPathExists=!/etc/ssh/sshd_not_to_be_run\n\n[Service]\nEnvironmentFile=-/etc/default/ssh\nExecStartPre=/usr/sbin/sshd -t\nExecStart=/usr/sbin/sshd -D $SSHD_OPTS\nExecReload=/usr/sbin/sshd -t\nExecReload=/bin/kill -HUP $MAINPID\nKillMode=process\nRestart=on-failure\nRestartPreventExitStatus=255\nType=notify\nRuntimeDirectory=sshd\nRuntimeDirectoryMode=0755\n\n[Install]\nWantedBy=multi-user.target\nAlias=sshd.service\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/systemd/system",
+        "dir": true,
+        "owner": "root"
+      },
+      {
+        "path": "/var/lib/grc-sim/apt-installed.txt",
+        "content": "adduser/now 3.137ubuntu1 all [installed,local]\napt/now 2.8.3 arm64 [installed,local]\nbase-files/now 13ubuntu10.4 arm64 [installed,local]\nbase-passwd/now 3.6.3build1 arm64 [installed,local]\nbash/now 5.2.21-2ubuntu4 arm64 [installed,local]\nbsdutils/now 1:2.39.3-9ubuntu6.5 arm64 [installed,local]\ncoreutils/now 9.4-3ubuntu6.2 arm64 [installed,local]\ndash/now 0.5.12-6ubuntu5 arm64 [installed,local]\ndbus-bin/now 1.14.10-4ubuntu4.1 arm64 [installed,local]\ndbus-daemon/now 1.14.10-4ubuntu4.1 arm64 [installed,local]\ndbus-session-bus-common/now 1.14.10-4ubuntu4.1 all [installed,local]\ndbus-system-bus-common/now 1.14.10-4ubuntu4.1 all [installed,local]\ndbus/now 1.14.10-4ubuntu4.1 arm64 [installed,local]\ndebconf/now 1.5.86ubuntu1 all [installed,local]\ndebianutils/now 5.17build1 arm64 [installed,local]\ndiffutils/now 1:3.10-1build1 arm64 [installed,local]\ndpkg/now 1.22.6ubuntu6.6 arm64 [installed,local]\ne2fsprogs/now 1.47.0-2.4~exp1ubuntu4.1 arm64 [installed,local]\nfindutils/now 4.9.0-5build1 arm64 [installed,local]\ngcc-14-base/now 14.2.0-4ubuntu2~24.04.1 arm64 [installed,local]\ngpgv/now 2.4.4-2ubuntu17.4 arm64 [installed,local]\ngrep/now 3.11-4build1 arm64 [installed,local]\ngzip/now 1.12-1ubuntu3.1 arm64 [installed,local]\nhostname/now 3.23+nmu2ubuntu2 arm64 [installed,local]\ninit-system-helpers/now 1.66ubuntu1 all [installed,local]\nlibacl1/now 2.3.2-1build1.1 arm64 [installed,local]\nlibapparmor1/now 4.0.1really4.0.1-0ubuntu0.24.04.7 arm64 [installed,local]\nlibapt-pkg6.0t64/now 2.8.3 arm64 [installed,local]\nlibargon2-1/now 0~20190702+dfsg-4build1 arm64 [installed,local]\nlibassuan0/now 2.5.6-1build1 arm64 [installed,local]\nlibattr1/now 1:2.5.2-1build1.1 arm64 [installed,local]\nlibaudit-common/now 1:3.1.2-2.1build1.1 all [installed,local]\nlibaudit1/now 1:3.1.2-2.1build1.1 arm64 [installed,local]\nlibblkid1/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nlibbsd0/now 0.12.1-1build1.1 arm64 [installed,local]\nlibbz2-1.0/now 1.0.8-5.1build0.1 arm64 [installed,local]\nlibc-bin/now 2.39-0ubuntu8.7 arm64 [installed,local]\nlibc6/now 2.39-0ubuntu8.7 arm64 [installed,local]\nlibcap-ng0/now 0.8.4-2build2 arm64 [installed,local]\nlibcap2/now 1:2.66-5ubuntu2.4 arm64 [installed,local]\nlibcbor0.10/now 0.10.2-1.2ubuntu2 arm64 [installed,local]\nlibcom-err2/now 1.47.0-2.4~exp1ubuntu4.1 arm64 [installed,local]\nlibcrypt1/now 1:4.4.36-4build1 arm64 [installed,local]\nlibcryptsetup12/now 2:2.7.0-1ubuntu4.2 arm64 [installed,local]\nlibdb5.3t64/now 5.3.28+dfsg2-7 arm64 [installed,local]\nlibdbus-1-3/now 1.14.10-4ubuntu4.1 arm64 [installed,local]\nlibdebconfclient0/now 0.271ubuntu3 arm64 [installed,local]\nlibdevmapper1.02.1/now 2:1.02.185-3ubuntu3.2 arm64 [installed,local]\nlibedit2/now 3.1-20230828-1build1 arm64 [installed,local]\nlibexpat1/now 2.6.1-2ubuntu0.4 arm64 [installed,local]\nlibext2fs2t64/now 1.47.0-2.4~exp1ubuntu4.1 arm64 [installed,local]\nlibfaketime/now 0.9.10-2.1 arm64 [installed,local]\nlibfdisk1/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nlibffi8/now 3.4.6-1build1 arm64 [installed,local]\nlibfido2-1/now 1.14.0-1build3 arm64 [installed,local]\nlibgcc-s1/now 14.2.0-4ubuntu2~24.04.1 arm64 [installed,local]\nlibgcrypt20/now 1.10.3-2build1 arm64 [installed,local]\nlibgmp10/now 2:6.3.0+dfsg-2ubuntu6.1 arm64 [installed,local]\nlibgnutls30t64/now 3.8.3-1.1ubuntu3.5 arm64 [installed,local]\nlibgpg-error0/now 1.47-3build2.1 arm64 [installed,local]\nlibgssapi-krb5-2/now 1.20.1-6ubuntu2.6 arm64 [installed,local]\nlibhogweed6t64/now 3.9.1-2.2build1.1 arm64 [installed,local]\nlibidn2-0/now 2.3.7-2build1.1 arm64 [installed,local]\nlibjson-c5/now 0.17-1build1 arm64 [installed,local]\nlibk5crypto3/now 1.20.1-6ubuntu2.6 arm64 [installed,local]\nlibkeyutils1/now 1.6.3-3build1 arm64 [installed,local]\nlibkmod2/now 31+20240202-2ubuntu7.2 arm64 [installed,local]\nlibkrb5-3/now 1.20.1-6ubuntu2.6 arm64 [installed,local]\nlibkrb5support0/now 1.20.1-6ubuntu2.6 arm64 [installed,local]\nliblz4-1/now 1.9.4-1build1.1 arm64 [installed,local]\nliblzma5/now 5.6.1+really5.4.5-1ubuntu0.2 arm64 [installed,local]\nlibmd0/now 1.1.0-2build1.1 arm64 [installed,local]\nlibmount1/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nlibncursesw6/now 6.4+20240113-1ubuntu2 arm64 [installed,local]\nlibnettle8t64/now 3.9.1-2.2build1.1 arm64 [installed,local]\nlibnpth0t64/now 1.6-3.1build1 arm64 [installed,local]\nlibp11-kit0/now 0.25.3-4ubuntu2.1 arm64 [installed,local]\nlibpam-modules-bin/now 1.5.3-5ubuntu5.5 arm64 [installed,local]\nlibpam-modules/now 1.5.3-5ubuntu5.5 arm64 [installed,local]\nlibpam-runtime/now 1.5.3-5ubuntu5.5 all [installed,local]\nlibpam0g/now 1.5.3-5ubuntu5.5 arm64 [installed,local]\nlibpcre2-8-0/now 10.42-4ubuntu2.1 arm64 [installed,local]\nlibproc2-0/now 2:4.0.4-4ubuntu3.2 arm64 [installed,local]\nlibseccomp2/now 2.5.5-1ubuntu3.1 arm64 [installed,local]\nlibselinux1/now 3.5-2ubuntu2.1 arm64 [installed,local]\nlibsemanage-common/now 3.5-1build5 all [installed,local]\nlibsemanage2/now 3.5-1build5 arm64 [installed,local]\nlibsepol2/now 3.5-2build1 arm64 [installed,local]\nlibsmartcols1/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nlibss2/now 1.47.0-2.4~exp1ubuntu4.1 arm64 [installed,local]\nlibssl3t64/now 3.0.13-0ubuntu3.9 arm64 [installed,local]\nlibstdc++6/now 14.2.0-4ubuntu2~24.04.1 arm64 [installed,local]\nlibsystemd-shared/now 255.4-1ubuntu8.16 arm64 [installed,local]\nlibsystemd0/now 255.4-1ubuntu8.16 arm64 [installed,local]\nlibtasn1-6/now 4.19.0-3ubuntu0.24.04.2 arm64 [installed,local]\nlibtinfo6/now 6.4+20240113-1ubuntu2 arm64 [installed,local]\nlibudev1/now 255.4-1ubuntu8.16 arm64 [installed,local]\nlibunistring5/now 1.1-2build1.1 arm64 [installed,local]\nlibuuid1/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nlibwrap0/now 7.6.q-33 arm64 [installed,local]\nlibxxhash0/now 0.8.2-2build1 arm64 [installed,local]\nlibzstd1/now 1.5.5+dfsg2-2build1.1 arm64 [installed,local]\nlogin/now 1:4.13+dfsg1-4ubuntu3.2 arm64 [installed,local]\nlogsave/now 1.47.0-2.4~exp1ubuntu4.1 arm64 [installed,local]\nmawk/now 1.3.4.20240123-1build1 arm64 [installed,local]\nmount/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nncurses-base/now 6.4+20240113-1ubuntu2 all [installed,local]\nncurses-bin/now 6.4+20240113-1ubuntu2 arm64 [installed,local]\nopenssh-client/now 1:9.6p1-3ubuntu13.16 arm64 [installed,local]\nopenssh-server/now 1:9.6p1-3ubuntu13.16 arm64 [installed,local]\nopenssh-sftp-server/now 1:9.6p1-3ubuntu13.16 arm64 [installed,local]\npasswd/now 1:4.13+dfsg1-4ubuntu3.2 arm64 [installed,local]\nperl-base/now 5.38.2-3.2ubuntu0.2 arm64 [installed,local]\nprocps/now 2:4.0.4-4ubuntu3.2 arm64 [installed,local]\nsed/now 4.9-2ubuntu0.24.04.1 arm64 [installed,local]\nsensible-utils/now 0.0.22 all [installed,local]\nsudo/now 1.9.15p5-3ubuntu5.24.04.2 arm64 [installed,local]\nsystemd-dev/now 255.4-1ubuntu8.16 all [installed,local]\nsystemd-sysv/now 255.4-1ubuntu8.16 arm64 [installed,local]\nsystemd/now 255.4-1ubuntu8.16 arm64 [installed,local]\nsysvinit-utils/now 3.08-6ubuntu3 arm64 [installed,local]\ntar/now 1.35+dfsg-3build1 arm64 [installed,local]\nubuntu-keyring/now 2023.11.28.1 all [installed,local]\nucf/now 3.0043+nmu1 all [installed,local]\nunminimize/now 0.2.1 arm64 [installed,local]\nutil-linux/now 2.39.3-9ubuntu6.5 arm64 [installed,local]\nzlib1g/now 1:1.3.dfsg-3.1ubuntu2.1 arm64 [installed,local]\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/var/log",
+        "dir": true,
+        "owner": "root"
+      },
+      {
+        "path": "/home/grcops/.ssh",
+        "dir": true,
+        "mode": 448,
+        "owner": "grcops",
+        "mtimeMs": 1779872700000
+      },
+      {
+        "path": "/home/grcops/.ssh/id_ed25519",
+        "content": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACCJfCX6WPCp851ismnf8/3uXEGe+Ykv8D8JJsHJlarZNgAAAJje66cz3uun\nMwAAAAtzc2gtZWQyNTUxOQAAACCJfCX6WPCp851ismnf8/3uXEGe+Ykv8D8JJsHJlarZNg\nAAAEAy53C/mqrArGi8ww9tqZ6wsRE593QRr6AlXivmcRPVKIl8JfpY8KnznWKyad/z/e5c\nQZ75iS/wPwkmwcmVqtk2AAAAE2dyY29wc0B3ZWItMDEgYWRtaW4BAg==\n-----END OPENSSH PRIVATE KEY-----\n",
+        "mode": 384,
+        "owner": "grcops",
+        "mtimeMs": 1779872700000
+      },
+      {
+        "path": "/home/grcops/.ssh/id_ed25519.pub",
+        "content": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIl8JfpY8KnznWKyad/z/e5cQZ75iS/wPwkmwcmVqtk2 grcops@web-01 admin\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872700000
+      },
+      {
+        "path": "/home/grcops/.ssh/authorized_keys",
+        "content": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIl8JfpY8KnznWKyad/z/e5cQZ75iS/wPwkmwcmVqtk2 grcops@web-01 admin\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872700000
+      },
+      {
+        "path": "/home/grcops/evidence-collector_1.0.0_all.deb",
+        "content": "!<arch>\ndebian-binary   1780304400  0     0     100644  4         `\n2.0\n# grc-sim placeholder: evidence-collector_1.0.0_all.deb (992 bytes, content stands in\n# for the real ar/gzip archive baked into the capture image — apt reads the catalog,\n# not these bytes; ls/cksum size canon = 992).\n###########################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/skel/.bashrc",
+        "content": "# ~/.bashrc: executed by bash(1) for non-login shells.\n# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)\n# for examples\n\n# If not running interactively, don't do anything\ncase $- in\n    *i*) ;;\n      *) return;;\nesac\n\n# don't put duplicate lines or lines starting with space in the history.\n# See bash(1) for more options\nHISTCONTROL=ignoreboth\n\n# append to the history file, don't overwrite it\nshopt -s histappend\n\n# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)\nHISTSIZE=1000\nHISTFILESIZE=2000\n\n# check the window size after each command and, if necessary,\n# update the values of LINES and COLUMNS.\nshopt -s checkwinsize\n\n# If set, the pattern \"**\" used in a pathname expansion context will\n# match all files and zero or more directories and subdirectories.\n#shopt -s globstar\n\n# make less more friendly for non-text input files, see lesspipe(1)\n[ -x /usr/bin/lesspipe ] && eval \"$(SHELL=/bin/sh lesspipe)\"\n\n# set variable identifying the chroot you work in (used in the prompt below)\nif [ -z \"${debian_chroot:-}\" ] && [ -r /etc/debian_chroot ]; then\n    debian_chroot=$(cat /etc/debian_chroot)\nfi\n\n# set a fancy prompt (non-color, unless we know we \"want\" color)\ncase \"$TERM\" in\n    xterm-color|*-256color) color_prompt=yes;;\nesac\n\n# uncomment for a colored prompt, if the terminal has the capability; turned\n# off by default to not distract the user: the focus in a terminal window\n# should be on the output of commands, not on the prompt\n#force_color_prompt=yes\n\nif [ -n \"$force_color_prompt\" ]; then\n    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then\n\t# We have color support; assume it's compliant with Ecma-48\n\t# (ISO/IEC-6429). (Lack of such support is extremely rare, and such\n\t# a case would tend to support setf rather than setaf.)\n\tcolor_prompt=yes\n    else\n\tcolor_prompt=\n    fi\nfi\n\nif [ \"$color_prompt\" = yes ]; then\n    PS1='${debian_chroot:+($debian_chroot)}\\[\\033[01;32m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '\nelse\n    PS1='${debian_chroot:+($debian_chroot)}\\u@\\h:\\w\\$ '\nfi\nunset color_prompt force_color_prompt\n\n# If this is an xterm set the title to user@host:dir\ncase \"$TERM\" in\nxterm*|rxvt*)\n    PS1=\"\\[\\e]0;${debian_chroot:+($debian_chroot)}\\u@\\h: \\w\\a\\]$PS1\"\n    ;;\n*)\n    ;;\nesac\n\n# enable color support of ls and also add handy aliases\nif [ -x /usr/bin/dircolors ]; then\n    test -r ~/.dircolors && eval \"$(dircolors -b ~/.dircolors)\" || eval \"$(dircolors -b)\"\n    alias ls='ls --color=auto'\n    #alias dir='dir --color=auto'\n    #alias vdir='vdir --color=auto'\n\n    alias grep='grep --color=auto'\n    alias fgrep='fgrep --color=auto'\n    alias egrep='egrep --color=auto'\nfi\n\n# colored GCC warnings and errors\n#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'\n\n# some more ls aliases\nalias ll='ls -alF'\nalias la='ls -A'\nalias l='ls -CF'\n\n# Add an \"alert\" alias for long running commands.  Use like so:\n#   sleep 10; alert\nalias alert='notify-send --urgency=low -i \"$([ $? = 0 ] && echo terminal || echo error)\" \"$(history|tail -n1|sed -e '\\''s/^\\s*[0-9]\\+\\s*//;s/[;&|]\\s*alert$//'\\'')\"'\n\n# Alias definitions.\n# You may want to put all your additions into a separate file like\n# ~/.bash_aliases, instead of adding them here directly.\n# See /usr/share/doc/bash-doc/examples in the bash-doc package.\n\nif [ -f ~/.bash_aliases ]; then\n    . ~/.bash_aliases\nfi\n\n# enable programmable completion features (you don't need to enable\n# this, if it's already enabled in /etc/bash.bashrc and /etc/profile\n# sources /etc/bash.bashrc).\nif ! shopt -oq posix; then\n  if [ -f /usr/share/bash-completion/bash_completion ]; then\n    . /usr/share/bash-completion/bash_completion\n  elif [ -f /etc/bash_completion ]; then\n    . /etc/bash_completion\n  fi\nfi\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/home/grcops/.bashrc",
+        "content": "# ~/.bashrc: executed by bash(1) for non-login shells.\n# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)\n# for examples\n\n# If not running interactively, don't do anything\ncase $- in\n    *i*) ;;\n      *) return;;\nesac\n\n# don't put duplicate lines or lines starting with space in the history.\n# See bash(1) for more options\nHISTCONTROL=ignoreboth\n\n# append to the history file, don't overwrite it\nshopt -s histappend\n\n# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)\nHISTSIZE=1000\nHISTFILESIZE=2000\n\n# check the window size after each command and, if necessary,\n# update the values of LINES and COLUMNS.\nshopt -s checkwinsize\n\n# If set, the pattern \"**\" used in a pathname expansion context will\n# match all files and zero or more directories and subdirectories.\n#shopt -s globstar\n\n# make less more friendly for non-text input files, see lesspipe(1)\n[ -x /usr/bin/lesspipe ] && eval \"$(SHELL=/bin/sh lesspipe)\"\n\n# set variable identifying the chroot you work in (used in the prompt below)\nif [ -z \"${debian_chroot:-}\" ] && [ -r /etc/debian_chroot ]; then\n    debian_chroot=$(cat /etc/debian_chroot)\nfi\n\n# set a fancy prompt (non-color, unless we know we \"want\" color)\ncase \"$TERM\" in\n    xterm-color|*-256color) color_prompt=yes;;\nesac\n\n# uncomment for a colored prompt, if the terminal has the capability; turned\n# off by default to not distract the user: the focus in a terminal window\n# should be on the output of commands, not on the prompt\n#force_color_prompt=yes\n\nif [ -n \"$force_color_prompt\" ]; then\n    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then\n\t# We have color support; assume it's compliant with Ecma-48\n\t# (ISO/IEC-6429). (Lack of such support is extremely rare, and such\n\t# a case would tend to support setf rather than setaf.)\n\tcolor_prompt=yes\n    else\n\tcolor_prompt=\n    fi\nfi\n\nif [ \"$color_prompt\" = yes ]; then\n    PS1='${debian_chroot:+($debian_chroot)}\\[\\033[01;32m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '\nelse\n    PS1='${debian_chroot:+($debian_chroot)}\\u@\\h:\\w\\$ '\nfi\nunset color_prompt force_color_prompt\n\n# If this is an xterm set the title to user@host:dir\ncase \"$TERM\" in\nxterm*|rxvt*)\n    PS1=\"\\[\\e]0;${debian_chroot:+($debian_chroot)}\\u@\\h: \\w\\a\\]$PS1\"\n    ;;\n*)\n    ;;\nesac\n\n# enable color support of ls and also add handy aliases\nif [ -x /usr/bin/dircolors ]; then\n    test -r ~/.dircolors && eval \"$(dircolors -b ~/.dircolors)\" || eval \"$(dircolors -b)\"\n    alias ls='ls --color=auto'\n    #alias dir='dir --color=auto'\n    #alias vdir='vdir --color=auto'\n\n    alias grep='grep --color=auto'\n    alias fgrep='fgrep --color=auto'\n    alias egrep='egrep --color=auto'\nfi\n\n# colored GCC warnings and errors\n#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'\n\n# some more ls aliases\nalias ll='ls -alF'\nalias la='ls -A'\nalias l='ls -CF'\n\n# Add an \"alert\" alias for long running commands.  Use like so:\n#   sleep 10; alert\nalias alert='notify-send --urgency=low -i \"$([ $? = 0 ] && echo terminal || echo error)\" \"$(history|tail -n1|sed -e '\\''s/^\\s*[0-9]\\+\\s*//;s/[;&|]\\s*alert$//'\\'')\"'\n\n# Alias definitions.\n# You may want to put all your additions into a separate file like\n# ~/.bash_aliases, instead of adding them here directly.\n# See /usr/share/doc/bash-doc/examples in the bash-doc package.\n\nif [ -f ~/.bash_aliases ]; then\n    . ~/.bash_aliases\nfi\n\n# enable programmable completion features (you don't need to enable\n# this, if it's already enabled in /etc/bash.bashrc and /etc/profile\n# sources /etc/bash.bashrc).\nif ! shopt -oq posix; then\n  if [ -f /usr/share/bash-completion/bash_completion ]; then\n    . /usr/share/bash-completion/bash_completion\n  elif [ -f /etc/bash_completion ]; then\n    . /etc/bash_completion\n  fi\nfi\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/skel/.profile",
+        "content": "# ~/.profile: executed by the command interpreter for login shells.\n# This file is not read by bash(1), if ~/.bash_profile or ~/.bash_login\n# exists.\n# see /usr/share/doc/bash/examples/startup-files for examples.\n# the files are located in the bash-doc package.\n\n# the default umask is set in /etc/profile; for setting the umask\n# for ssh logins, install and configure the libpam-umask package.\n#umask 022\n\n# if running bash\nif [ -n \"$BASH_VERSION\" ]; then\n    # include .bashrc if it exists\n    if [ -f \"$HOME/.bashrc\" ]; then\n\t. \"$HOME/.bashrc\"\n    fi\nfi\n\n# set PATH so it includes user's private bin if it exists\nif [ -d \"$HOME/bin\" ] ; then\n    PATH=\"$HOME/bin:$PATH\"\nfi\n\n# set PATH so it includes user's private bin if it exists\nif [ -d \"$HOME/.local/bin\" ] ; then\n    PATH=\"$HOME/.local/bin:$PATH\"\nfi\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/home/grcops/.profile",
+        "content": "# ~/.profile: executed by the command interpreter for login shells.\n# This file is not read by bash(1), if ~/.bash_profile or ~/.bash_login\n# exists.\n# see /usr/share/doc/bash/examples/startup-files for examples.\n# the files are located in the bash-doc package.\n\n# the default umask is set in /etc/profile; for setting the umask\n# for ssh logins, install and configure the libpam-umask package.\n#umask 022\n\n# if running bash\nif [ -n \"$BASH_VERSION\" ]; then\n    # include .bashrc if it exists\n    if [ -f \"$HOME/.bashrc\" ]; then\n\t. \"$HOME/.bashrc\"\n    fi\nfi\n\n# set PATH so it includes user's private bin if it exists\nif [ -d \"$HOME/bin\" ] ; then\n    PATH=\"$HOME/bin:$PATH\"\nfi\n\n# set PATH so it includes user's private bin if it exists\nif [ -d \"$HOME/.local/bin\" ] ; then\n    PATH=\"$HOME/.local/bin:$PATH\"\nfi\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/etc/skel/.bash_logout",
+        "content": "# ~/.bash_logout: executed by bash(1) when login shell exits.\n\n# when leaving the console clear the screen to increase privacy\n\nif [ \"$SHLVL\" = 1 ]; then\n    [ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q\nfi\n",
+        "mode": 420,
+        "owner": "root",
+        "mtimeMs": 1779872400000
+      },
+      {
+        "path": "/home/grcops/.bash_logout",
+        "content": "# ~/.bash_logout: executed by bash(1) when login shell exits.\n\n# when leaving the console clear the screen to increase privacy\n\nif [ \"$SHLVL\" = 1 ]; then\n    [ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q\nfi\n",
+        "mode": 420,
+        "owner": "grcops",
+        "mtimeMs": 1779872400000
+      }
+    ],
+    "tools": {
+      "lab-setup": "#!/usr/bin/env bash\n# Lab provisioning tool (module 02 §6 setup). The fixture bytes are canon-locked to\n# modules/02-linux-system-fundamentals/labs/setup.sh — a CI drift check asserts equality.\nset -euo pipefail\ncase \"${1:-}\" in\n  02)\n    DEST=\"$HOME/lab02-fixtures\"\n    mkdir -p \"$DEST\"\n    cat > \"$DEST/sshd_config\" <<'CFG'\n# Managed sshd_config — host web-01 (evidence snapshot)\nPort 22\n#PasswordAuthentication yes        ← decoy: commented, MUST be ignored\nPermitRootLogin no\nPubkeyAuthentication yes\nPasswordAuthentication no\nChallengeResponseAuthentication no\nUsePAM yes\nCFG\n    cat > \"$DEST/id-grcops.txt\" <<'IDOUT'\nuid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)\nIDOUT\n    cat > \"$DEST/id-intern.txt\" <<'IDOUT'\nuid=1002(intern) gid=1002(intern) groups=1002(intern)\nIDOUT\n    echo \"lab02 fixtures written to $DEST/ (sshd_config, id-grcops.txt, id-intern.txt)\"\n    ;;\n  *)\n    echo \"usage: lab-setup <module-number>\" >&2\n    exit 1\n    ;;\nesac\n"
+    }
+  },
+  "expectations": {
+    "t1:0": "uid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)",
+    "t2:0": "uid=1002(intern) gid=1002(intern) groups=1002(intern)",
+    "t5:0": "PasswordAuthentication no",
+    "t5:2": "PermitRootLogin no"
+  },
+  "epoch": "2026-05-27T09:45:00Z",
+  "adminLab": {
+    "password": "labpass"
+  },
+  "host": "web-01"
+}

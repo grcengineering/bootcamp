@@ -1,0 +1,1 @@
+(placeholder — replace this line with the validator's complete FAILING verdict, copied from the Run validator output: summary line, FAIL lines, and the exit line)

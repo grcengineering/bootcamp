@@ -1,0 +1,5 @@
+{"anti_for": "t2", "reason": "near-miss — alert-only monitoring: the learner jumps straight to inducing drift without first building the month of passing evidence, so the proof-of-the-negative task can never pass (no 30-day green window exists and the latest verdict is rc=1)"}
+{"input": "ccm-tick 1"}
+{"input": "inject-drift"}
+{"input": "ccm-tick 1"}
+{"input": "ccm-tick 7"}

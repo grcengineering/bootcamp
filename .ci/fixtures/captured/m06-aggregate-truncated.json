@@ -1,0 +1,35 @@
+{
+  "id": "m06-aggregate-truncated",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [],
+  "cmd": "aggregate-mfa fixtures/users-page-1.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the completeness guard fails LOUD on a single-page pull — same stderr line and exit 1 as the real tool",
+  "stdout": "",
+  "stderr": "ERROR: incomplete pull: aggregated 5 users but API reported total=8 (missing pages? truncated pagination?)\n",
+  "exit": 1,
+  "stderr_interactive": "ERROR: incomplete pull: aggregated 5 users but API reported total=8 (missing pages? truncated pagination?)\n",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:00:09.055Z",
+    "captured_with": "capture.ts v1"
+  }
+}

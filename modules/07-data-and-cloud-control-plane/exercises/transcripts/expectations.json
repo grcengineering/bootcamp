@@ -1,0 +1,6 @@
+{
+  "_provenance": "t2:0 and t4:3 are the docker captures' post-read bytes (m07-evidence-verdict-file post: cat encryption-verdict.json; m07-access-violations-file post: cat access-violations.json — .ci/fixtures/captured/, pinned Ubuntu container); t5:0 is the real sql.js (SQLite) engine's list-mode output for the reference §5.3 rate query against the evidence table seeded from the learner's own fixtures/evidence.csv (engine-pinned: JS number rendering prints 50 where the sqlite3 CLI prints 50.0 — manifest entry m07-sql-fail-rate). All three are regenerated and asserted equal by replaying transcripts/golden.jsonl through the engines in web/tests/exercise-replay-07.test.ts (root ISA ISC-60).",
+  "t2:0": "  { \"resourceId\": \"audit-logs\",  \"control\": \"encryption\", \"status\": \"PASS\" },",
+  "t4:3": "  { \"eventTime\": \"2026-05-20T02:14:00Z\", \"eventName\": \"AttachUserPolicy\", \"actor\": \"contractor-7\", \"policy\": \"AdministratorAccess\" },",
+  "t5:0": "control|failing|total|fail_pct\naccess|1|2|50\nencryption|1|3|33.3"
+}

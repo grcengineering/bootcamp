@@ -56,6 +56,9 @@ meta:
       cols: 80
 
 seeds:
+  m00:
+    home: seeds/m00/home          # ~/lab00: conforming exemplar (canon-locked to modules/00 labs/setup.sh), counterexample, editable template
+    path_bin: seeds/m00/bin       # evaluate-analysis (module 00 rubric check — logic from labs/happy-path.sh evaluate_analysis())
   m01:
     home: seeds/m01/home          # copied to /home/analyst (ownership analyst:analyst)
     path_bin: seeds/m01/bin       # installed to /usr/local/bin (mode 0755)
@@ -65,6 +68,9 @@ seeds:
     system: seeds/m02/system      # /etc passwd+group+skel+hostname, scenario sshd_config (3243 B), ssh.service unit, apt-installed.txt
     apply: seeds/m02/apply-seed.sh  # root overlay applied in the booted container before each session
     epoch: "2026-05-27T09:45:00Z" # module 02 scenario clock — canon May 27 mtimes render in ls -l recent format
+  m03:
+    home: seeds/m03/home          # ~/labs/setup.sh — byte-identical copy of modules/03-macos-fundamentals/labs/setup.sh (the module's committed fixture canon; drift caught by the m03-lab-setup capture replay)
+    path_bin: seeds/m03/bin       # simulated macOS endpoint queries (profiles, system_profiler) — output canon-locked to the labs/setup.sh fixture strings (authored entries m03-profiles-status / m03-system-profiler-profiles); plus honest-boundary stubs (launchctl, security) for §4.5/§4.6-taught commands whose host-specific replies the fixture canon doesn't pin (exit 64, never a false `command not found` — ISC-120)
   m04:                            # PowerShell sim (module 04): typed object stores, not a home-dir copy
     object_store: seeds/m04/win-lab04.json
     object_store_noncompliant: seeds/m04/win-lab04-noncompliant.json
@@ -72,9 +78,86 @@ seeds:
       WIN-LAB04 subsystem stores (BitLocker, Defender, registry, Security log, local groups);
       gpresultReportFile fields name the authored RSoP fixtures alongside; loaders strip the
       report file trailing newline when seeding gpresultReport.
+  m05:
+    home: seeds/m05/home          # ~/lab05/labs/setup.sh — byte-identical to modules/05-programming-and-git/labs/setup.sh
+    path_bin: seeds/m05/bin       # no PATH tools — the lab's script lives in ~/lab05/labs
   m06:
     home: seeds/m06/home          # ~/lab06/: byte-identical copies of modules/06-api-fundamentals/labs/*
-    path_bin: seeds/m06/bin       # no PATH tools — the lab's scripts live in ~/lab06
+    path_bin: seeds/m06/bin       # aggregate-mfa — the lab box's bash+awk PATH port of labs/aggregate-mfa.ts
+                                  # (no bun on the box; report bytes byte-locked to the real tool — see m06 entries)
+  m07:
+    home: seeds/m07/home          # ~/lab07/labs/: byte-identical copies of modules/07-data-and-cloud-control-plane/labs/*
+    path_bin: seeds/m07/bin       # no PATH tools — the lab drives `bash labs/setup.sh` directly
+  m07s:
+    home: seeds/m07s/home         # m07 + the reference control-evidence.sh (capture-only solution seed for the
+    path_bin: seeds/m07s/bin      # script-determinism entries; NEVER used as an exercise seed — it holds the answer)
+  m08:
+    home: seeds/m08/home          # ~/lab08/: byte-identical copies of modules/08-iac-and-scanning-in-ci/labs/fixtures/*
+                                  # (exactly the state `bash labs/setup.sh ./lab08` stages) + the exercise's CI-workspace
+                                  # working files: scan-under-gate.json (seeded as the non-compliant scan — the scan
+                                  # step's output for the change under review; byte-equal to checkov-noncompliant.json),
+                                  # findings-worksheet.md, and two capture placeholders (gate-block-record.txt,
+                                  # evidence-storage-controls.txt). Builder workspace surface — no PATH tools.
+  m09:
+    home: seeds/m09/home          # ~/labs/: byte-identical copies of modules/09-policy-as-code/labs/{setup.sh,fixtures/*}
+    path_bin: seeds/m09/bin       # no PATH tools — the learner drives `bash labs/setup.sh ./lab09` directly
+  m09s:
+    home: seeds/m09s/home         # m09 + the taught-subset solution scripts my-check.sh / my-gate.sh (capture-only
+    path_bin: seeds/m09s/bin      # solution seed for the authored-script entries; NEVER used as an exercise seed —
+                                  # it holds the answers). The committed fixtures' reference check.sh /
+                                  # run-policy-gate.sh use awk printf/gsub + bash function syntax outside the sim's
+                                  # taught subset (honest boundary, exit 64, declared in the exercise intro) — the
+                                  # exercise has the learner AUTHOR the same verdict and gate from taught constructs;
+                                  # these solutions are that authored flow's ground-truth canon.
+  m10:
+    home: seeds/m10/home          # work/: byte-identical to `bash labs/setup.sh ./work` output (spine-families.txt —
+                                  # the 20 NIST 800-53 family abbreviations; crosswalk.csv — header + 4 seed rows incl.
+                                  # the planted PCI4,6.3.2 orphan; diffed against a real setup.sh run) + the exercise's
+                                  # working files: two capture placeholders (validation-before.txt, validation-after.txt —
+                                  # §6 tasks 4/5's redirect targets) and the README.md template (§6 task 7's deliverable).
+                                  # Builder workspace surface — no PATH tools.
+  m11:
+    home: seeds/m11/home          # work/: byte-identical copies of modules/11-threat-informed-grc/labs/fixtures/*
+                                  # + labs/validate-coverage.ts (exactly the state `bash setup.sh ./work` stages;
+                                  # diffed against builder-captures.json m11 seed) + the exercise's working files:
+                                  # map-reading.md, removal-recommendation.md, interview-notes.md,
+                                  # redesigned-control-flow.md, and two capture placeholders (validation-before.txt,
+                                  # validation-after.txt — §6 tasks 2/5's `> file 2>&1` targets). Builder workspace
+                                  # surface — no PATH tools.
+  m12:
+    home: seeds/m12/home          # ~/lab12/: byte-identical copies of modules/12-oscal-compliance-as-code/labs/fixtures/*
+                                  # (exactly the state `bash labs/setup.sh ./lab12` stages: acme-catalog/profile/component,
+                                  # the broken catalog, validate-oscal.ts source) + the exercise's CI-workspace working
+                                  # files: catalog-under-validation.json (the validate step's fixed catalog slot, seeded
+                                  # byte-equal to acme-catalog.json — the m08 scan-under-gate.json pattern),
+                                  # oscal-worksheet.md, and three capture placeholders (oscal-validation-pass.txt,
+                                  # oscal-broken-record.txt, oscal-dangling-record.txt). Builder workspace surface —
+                                  # no PATH tools.
+  m13:
+    home: seeds/m13/home          # exactly the state `bash labs/setup.sh ./ccm-lab` leaves from $HOME with the
+                                  # committed lab fixtures alongside: ccm-lab/ccm-check.sh (the generated check
+                                  # library — byte-identical to setup.sh's heredoc output AND to builder-captures.json
+                                  # m13.library; canon-locked by the m13-lab-setup capture's diff post), ccm-lab/evidence/
+                                  # (empty store), labs/setup.sh (byte-identical module copy), and labs/fixtures/
+                                  # state-{compliant,drifted,drifted-pretty,empty}.json (byte-identical module copies,
+                                  # diffed against builder-captures.json m13.fixtures by exercise-replay-13.test.ts).
+                                  # Builder ccm surface (scheduler over the ported library) — no PATH tools.
+  m14:
+    home: seeds/m14/home          # ~/lab14/: risk-input.json byte-identical to modules/14 labs/setup.sh output
+                                  # (== labs/fixtures/risk-input.json, the committed FAIR fixture), expected_loss.ts
+                                  # as a byte-identical source copy (the §6 "read its logic" step; verdicts come from
+                                  # the ported calculator, byte-accepted vs real `bun` runs in
+                                  # web/tests/fixtures/builder-captures.json m14 + the live real-tool cross-run in
+                                  # web/tests/exercise-replay-14.test.ts), decision-memo.md template and the
+                                  # scoring-table.tsv header skeleton (learner-filled, happy-path.sh byte format).
+                                  # Builder workspace surface — no PATH tools.
+  m15:
+    home: seeds/m15/home          # capstone-manifest-incomplete.yaml — byte-identical copy of
+                                  # modules/15-capstone-ship-one-control/labs/fixtures/* (the committed negative
+                                  # fixture; diffed by exercise-replay-15.test.ts). The starter capstone repo itself
+                                  # is seeded by the builder engine's capstone-seed.ts, drift-guarded byte-for-byte
+                                  # against a real `bash labs/setup.sh` run via builder-captures.json m15.seed
+                                  # (tests/builders-validators.test.ts). Builder capstone surface — no PATH tools.
 
 # Reusable hole definitions for booted structured captures (module 02 family): `find` is the
 # capture-time scrub regex (matches in captured streams are replaced with {{name}}), `pattern`
@@ -100,6 +183,46 @@ hole_defs:
   - &h_lsdate { name: ls_date, find: "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}", pattern: "[A-Z][a-z]{2} [ 0-3][0-9] [0-9]{2}:[0-9]{2}", source: "capture mtime — sim renders sim-clock mtimes" }
 
 entries:
+  # ---- module 00 — exercise lab-00 rubric check (the only executable surface the
+  # ---- conceptual lab simulates: labs/happy-path.sh evaluate_analysis(), run REAL
+  # ---- against the committed seed documents; the web builder port is additionally
+  # ---- byte-accepted against web/tests/fixtures/builder-captures.json m00) ----
+  - id: m00-evaluate-exemplar
+    module: "00"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m00
+    cwd: /home/analyst
+    cmd: "evaluate-analysis lab00/legacy-vs-engineered-laptop-encryption.md"
+    post: ["echo $?"]
+    notes: >
+      The module-00 rubric check ACCEPTS the conforming laptop-encryption exemplar
+      (canon-locked to labs/setup.sh): silent, exit 0. Grounds exercise lab-00 t7's
+      pass verdict.
+  - id: m00-evaluate-nonconforming
+    module: "00"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m00
+    cwd: /home/analyst
+    cmd: "evaluate-analysis lab00/non-conforming.md"
+    post: ["echo $?"]
+    notes: >
+      The legacy-only counterexample (labs/happy-path.sh BAD heredoc) is REJECTED with
+      one two-space-indented line per missing element, exit 1 — the discrimination
+      assertion the module's own CI makes.
+  - id: m00-evaluate-template
+    module: "00"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m00
+    cwd: /home/analyst
+    cmd: "evaluate-analysis lab00/legacy-vs-engineered-my-control.md"
+    post: ["echo $?"]
+    notes: >
+      The untouched learner template (headings only) is REJECTED with the full missing
+      list — grounds exercise lab-00 t1 (watch the check discriminate before writing).
+
   # ---- module 01 — §5.1 orientation (prose canon transcripts) ----
   - id: m01-pwd-home
     module: "01"
@@ -400,6 +523,149 @@ entries:
     cwd: /tmp
     cmd: "fdesetup status"
     notes: captures the real "FileVault is On." line shape; the sim's scenario parameterizes On/Off using module 03's committed fixture strings
+
+  # ---- module 03 — §6 lab surface (exercise lab-03) ----
+  # The lab's evidence-handling coreutils, pinned on the real macOS contract host
+  # (byte-stable invocations — BSD/GNU identical for these forms), plus the lab's own
+  # setup.sh executed for real in the pinned Linux container (the engine runs the SAME
+  # seeded script bytes), plus the two MDM queries whose canon is the module's committed
+  # fixtures (authored-with-citation — a live capture cannot produce the scenario device).
+  - id: m03-lab-setup
+    module: "03"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m03
+    cwd: /home/analyst
+    cmd: "bash labs/setup.sh ./lab03"
+    post:
+      - "cat lab03/samples/fdesetup-status.txt"
+      - "cat lab03/samples/profiles-status.txt"
+      - "cat lab03/samples/system_profiler-profiles.txt"
+      - "wc -c lab03/samples/profiles-status-unknown.txt"
+    notes: >
+      setup.sh is the module's own committed lab asset (seeded byte-identical); the echo
+      line and all seven samples/ fixtures are the script's real output. The posts pin the
+      canon strings the MDM seed tools and the authored entries must agree with, and the
+      empty could-not-run gap fixture (0 bytes).
+  - id: m03-tee-evidence
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    pre: ["mkdir -p /tmp/grcb-m03/evidence"]
+    cmd: "printf 'FileVault is On.\\n' | tee /tmp/grcb-m03/evidence/filevault.txt"
+    notes: §5.1 capture-the-raw-reply shape — tee passes stdout through unchanged while writing the evidence file
+  - id: m03-grep-eqi-quiet
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "printf 'FileVault is On.\\n' | grep -Eqi -- 'FileVault is On'"
+    notes: the evaluator's known-good match probe (§4.8) — quiet, verdict in the exit code only
+  - id: m03-grep-verdict-unknown
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    pre:
+      - "mkdir -p /tmp/grcb-m03"
+      - "printf 'CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: PASS | RAW: FileVault is On.\\nCONTROL: Profile query (sample gap) | SUBSYSTEM: MDM/profiles | VERDICT: UNKNOWN | RAW: <query returned nothing>\\n' > /tmp/grcb-m03/packet.txt"
+    cmd: "grep 'VERDICT: UNKNOWN' /tmp/grcb-m03/packet.txt"
+    notes: §6 task 7 — surfacing the gap line from the packet
+  - id: m03-tr-strip-space
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    cmd: "printf ' error:  not\\tpermitted ' | tr -d '[:space:]'"
+    notes: >
+      the evaluator's emptiness probe (§4.8) — tr -d '[:space:]' collapses whitespace-only
+      raw output to nothing so test -z can flag a check that did not run (macos capture
+      has no post support, so the probe with visible remainder is the cmd itself)
+  - id: m03-diff-identical
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    pre:
+      - "mkdir -p /tmp/grcb-m03"
+      - "printf 'CONTROL: a | VERDICT: PASS\\n' > /tmp/grcb-m03/p1.txt"
+      - "printf 'CONTROL: a | VERDICT: PASS\\n' > /tmp/grcb-m03/p2.txt"
+    cmd: "diff /tmp/grcb-m03/p1.txt /tmp/grcb-m03/p2.txt"
+    notes: §6 task 6 determinism check — identical packets, silent diff, exit 0
+  - id: m03-diff-divergent
+    module: "03"
+    source: macos-host
+    match: byte-exact
+    cwd: /tmp
+    pre:
+      - "mkdir -p /tmp/grcb-m03"
+      - "printf 'CONTROL: a | VERDICT: PASS\\nCONTROL: b | VERDICT: PASS\\n' > /tmp/grcb-m03/q1.txt"
+      - "printf 'CONTROL: a | VERDICT: PASS\\nCONTROL: b | VERDICT: FAIL\\n' > /tmp/grcb-m03/q2.txt"
+    cmd: "diff /tmp/grcb-m03/q1.txt /tmp/grcb-m03/q2.txt"
+    notes: the non-deterministic counter-case — a drifted verdict surfaces as a normal-format hunk, exit 1
+  - id: m03-profiles-status
+    module: "03"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "profiles status -type enrollment"
+    citation: >
+      modules/03-macos-fundamentals/labs/setup.sh (samples/profiles-status.txt) — the module's
+      committed canon for the enrolled scenario Mac, asserted by labs/happy-path.sh and pinned
+      real by the m03-lab-setup capture's post. Module §4.7 marks real output "representative";
+      an unmanaged host truthfully answers "MDM enrollment: No", so a live capture cannot
+      produce the scenario device. Sim ships it as seed PATH tool seeds/m03/bin/profiles.
+  - id: m03-system-profiler-profiles
+    module: "03"
+    source: authored
+    match: authored-with-citation
+    cwd: /tmp
+    cmd: "system_profiler SPConfigurationProfileDataType"
+    citation: >
+      modules/03-macos-fundamentals/labs/setup.sh (samples/system_profiler-profiles.txt) — the
+      module's committed canon for the scenario Mac's ScreenLock Policy payload, asserted by
+      labs/happy-path.sh and pinned real by the m03-lab-setup capture's post. Real output is
+      richer and host-specific (module §4.7: "representative and abbreviated"). Sim ships it as
+      seed PATH tool seeds/m03/bin/system_profiler.
+
+  # ---- module 05 — §6 lab shell surface (docker-linux-userland; exercise lab-05) ----
+  # The non-git commands the module-05 exercise teaches: the lab's own setup.sh executed
+  # for real (the engine runs the SAME seeded script bytes), plus inspection of the
+  # generated evidence fixtures including the deliberately malformed lt-05.json.
+  - id: m05-lab-setup
+    module: "05"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m05
+    cwd: /home/analyst/lab05
+    cmd: "bash labs/setup.sh evidence/"
+    post:
+      - "cat evidence/lt-01.json"
+      - "cat evidence/lt-05.json"
+    notes: >
+      setup.sh is the module's own committed lab asset (seeded byte-identical); the echo
+      line and all five fixture files are the script's real output, not authored strings.
+  - id: m05-ls-evidence
+    module: "05"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m05
+    cwd: /home/analyst/lab05
+    pre: ["bash labs/setup.sh evidence/"]
+    cmd: "ls -C -w80 evidence"
+    tty_equiv: "ls evidence"
+  - id: m05-cat-lt05
+    module: "05"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m05
+    cwd: /home/analyst/lab05
+    pre: ["bash labs/setup.sh evidence/"]
+    cmd: "cat evidence/lt-05.json"
+    notes: >
+      the malformed evidence record (§6 task 3's input) — truncated JSON, newline-terminated;
+      reading it IS the exercise's honest stand-in for observing what json.loads will reject.
 
   # ---- module 05 — git porcelain (REAL local-git captures; ground truth for the
   #      isomorphic-git engine, web ISA ISC-66; source wasm-engine = the git-engine suite
@@ -1244,6 +1510,17 @@ entries:
     cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1"
     sim_equiv: { cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1", dialogue: [] }
     notes: resolving the EFFECTIVE directive on the real hardened config (sudo for the 0640 file)
+  - id: m02-effective-permitrootlogin
+    module: "02"
+    source: docker-linux-booted
+    match: byte-exact
+    seed: m02
+    cwd: /home/grcops
+    pre_root: ["printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' >> /etc/ssh/sshd_config"]
+    pre: ["echo labpass | sudo -S true"]
+    cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PermitRootLogin' | tail -1"
+    sim_equiv: { cmd: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PermitRootLogin' | tail -1", dialogue: [] }
+    notes: twin of m02-effective-directive-etc for §6 task 5's second directive — the lab-02 golden transcript's evidence file is pinned to this capture
 
   # -- follow-up negative/edge captures --
   - id: m02-usermod-nonroot
@@ -1309,3 +1586,1122 @@ entries:
     cmd: "lab-setup 02"
     post: ["cat lab02-fixtures/id-grcops.txt"]
     notes: canon-locked to modules/02-linux-system-fundamentals/labs/setup.sh fixture bytes
+
+  # ---- module 07 — §6 lab surface (docker-linux-userland; exercise lab-07) -------------
+  # The lab's evaluation pipelines (grep/awk over the three setup.sh fixtures) are captured
+  # real. NOTE — declared sim boundary: labs/happy-path.sh (the repo's CI proof, green under
+  # .ci/lab-repro.sh on a real machine) uses bash functions, trap and awk match()/RSTART —
+  # constructs outside the engine's taught subset; running it in the sim yields the honest
+  # boundary message, so it has NO fixture entry here and the exercise routes it to the
+  # real-machine path (web ISA ISC-120 honesty class).
+  - id: m07-lab-setup
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    cmd: "bash labs/setup.sh"
+  - id: m07-lab-setup-ls
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "ls -C -w80 fixtures"
+    tty_equiv: "ls fixtures"
+  - id: m07-posture-read
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "cat fixtures/posture-findings.json"
+  - id: m07-audit-read
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "cat fixtures/audit-events.json"
+  - id: m07-evidence-read
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "cat fixtures/evidence.csv"
+  - id: m07-posture-grep
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json"
+  - id: m07-evidence-verdict-file
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json > encryption-verdict.json"
+    post: ["cat encryption-verdict.json"]
+  - id: m07-access-filter
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):'"
+  - id: m07-access-violations-file
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' > access-violations.json"
+    post: ["cat access-violations.json", "grep -c AttachUserPolicy access-violations.json"]
+  - id: m07-violation-count
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l"
+  - id: m07-violation-count-echo
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "echo \"access violations: $(grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l)\""
+  - id: m07-awk-verdict
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "awk '/\"resourceId\": \"audit-logs\"/ && /\"status\": \"PASS\"/ { print \"encryption: PASS\" } /\"resourceId\": \"audit-logs\"/ && /\"status\": \"FAIL\"/ { print \"encryption: FAIL\" }' fixtures/posture-findings.json"
+  - id: m07-awk-handcount-enc
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "awk -F, '$1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"
+  - id: m07-awk-handcount-acc
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "awk -F, '$1 == \"access\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"
+  - id: m07-awk-rows-enc
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "awk -F, '$1 == \"encryption\" { t++ } $1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print \"encryption FAIL rows: \" f \" of \" t }' fixtures/evidence.csv"
+  - id: m07-awk-rows-acc
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh"]
+    cmd: "awk -F, '$1 == \"access\" { t++ } $1 == \"access\" && $2 == \"FAIL\" { f++ } END { print \"access FAIL rows: \" f \" of \" t }' fixtures/evidence.csv"
+  - id: m07-script-run
+    module: "07"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m07s
+    cwd: /home/analyst/lab07
+    pre: ["bash labs/setup.sh", "chmod +x control-evidence.sh"]
+    cmd: "./control-evidence.sh"
+    post: ["./control-evidence.sh"]
+    notes: >
+      §5.4 determinism canon — cmd and post run the same reference script twice; the
+      fixture records both stdouts byte-identical (the evaluation is a pure function of
+      the committed fixtures). Seed m07s carries the reference solution and is capture-only.
+
+  # ---- module 07 — §4.5/§5.3 SQL risk metric (real SQLite via sql.js; web ISA ISC-69;
+  #      source wasm-engine = tests/engines-sql.test.ts owns replay against the seeded
+  #      evidence table — list-mode rendering declared in src/engines/sql) ----
+  - id: m07-sql-fail-count
+    module: "07"
+    source: wasm-engine
+    match: engine-pinned
+    cwd: ~/lab07
+    cmd: "SELECT COUNT(*) AS failing FROM evidence WHERE control = 'encryption' AND status = 'FAIL';"
+  - id: m07-sql-fail-rate
+    module: "07"
+    source: wasm-engine
+    match: engine-pinned
+    cwd: ~/lab07
+    cmd: "SELECT control, SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) AS failing, COUNT(*) AS total, ROUND(100.0 * SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) / COUNT(*), 1) AS fail_pct FROM evidence GROUP BY control;"
+    notes: >
+      engine-pinned — sql.js (real SQLite) returns 50 for ROUND(...,1)=50.0 through JS
+      number rendering where the sqlite3 CLI prints 50.0; the exercise's generated
+      expectation pins the engine's real output, and the module's §5.3 table is labeled
+      representative (fidelity decision per DESIGN-INPUTS §4 / inventory fidelity_notes).
+
+  # ---- module 08 — gate decision logic (REAL bash runs of the committed
+  #      labs/fixtures/gate.sh are the ground truth; the in-browser sim is the ported
+  #      builder validator, web ISA ISC-81/137; source wasm-engine = an engine suite owns
+  #      replay, per the m05 git-engine precedent — tests/builders-validators.test.ts
+  #      byte-diffs stdout/stderr/exit against web/tests/fixtures/builder-captures.json m08
+  #      (captured by web/scripts/capture-builder-fixtures.ts, GATE_FAKE_TIME=ci). The sim
+  #      shell does not execute gate.sh; the Lab Player's builder surface runs the port.) ----
+  - id: m08-gate-noncompliant-high
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-noncompliant.json lab08/control-map.csv HIGH"
+    notes: builder-captures.json m08 case noncompliant-HIGH — FAIL, exit 1, blocking_at_or_above_HIGH 2 (SC-28, AC-3)
+  - id: m08-gate-compliant-high
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-compliant.json lab08/control-map.csv HIGH"
+    notes: builder-captures.json m08 case compliant-HIGH — PASS, exit 0, evidence record emitted (§6 task 4's captured artifact)
+  - id: m08-gate-noncompliant-medium
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-noncompliant.json lab08/control-map.csv MEDIUM"
+    notes: builder-captures.json m08 case noncompliant-MEDIUM — FAIL, exit 1, all 3 findings block (§6 task 5 floor lowering; real-machine path in the exercise)
+  - id: m08-gate-default-floor
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-noncompliant.json lab08/control-map.csv"
+    notes: builder-captures.json m08 case noncompliant-default-floor — floor defaults to HIGH
+  - id: m08-gate-usage-error
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh"
+    notes: builder-captures.json m08 case usage-no-args — usage line on stderr, exit 2
+  - id: m08-gate-missing-result
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh nope.json lab08/control-map.csv"
+    notes: builder-captures.json m08 case missing-result-file — ERROR line, exit 2
+  - id: m08-gate-missing-map
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-noncompliant.json nope.csv"
+    notes: builder-captures.json m08 case missing-map-file — ERROR line, exit 2
+  - id: m08-gate-unknown-floor
+    module: "08"
+    source: wasm-engine
+    match: byte-exact
+    seed: m08
+    cwd: ~/lab08
+    cmd: "bash lab08/gate.sh lab08/checkov-noncompliant.json lab08/control-map.csv BANANA"
+    notes: builder-captures.json m08 case unknown-floor — ERROR unknown severity floor, exit 2
+
+  # ---- module 10 — crosswalk validator verdicts (REAL `bun validate-crosswalk.ts` runs of
+  #      the committed labs/validate-crosswalk.ts are the ground truth; the in-browser sim is
+  #      the ported builder validator, web ISA ISC-82/137; source wasm-engine per the m08
+  #      precedent — tests/builders-validators.test.ts byte-diffs stdout/stderr/exit against
+  #      web/tests/fixtures/builder-captures.json m10 (captured by
+  #      web/scripts/capture-builder-fixtures.ts). The exercise (lab-10, builder workspace)
+  #      runs the port via the Run-validator button against the learner's CURRENT crosswalk;
+  #      one-arg invocation resolves the families file to dirname(csv)/spine-families.txt —
+  #      proven equivalent by the default-families-path case. ----
+  - id: m10-crosswalk-seed-orphan
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk.csv work/spine-families.txt"
+    notes: >
+      builder-captures.json m10 case seed-orphan-FAIL — the planted orphan caught: summary
+      to stdout, FAIL block naming 'PCI4 6.3.2 (relationship=orphan)' + 'exit: 1' to stderr,
+      exit 1. Grounds exercise lab-10 t4 (fail first, capture the verdict). The replay suite
+      additionally byte-checks the untouched-seed run through the exercise's own validator
+      binding (exercise-replay-10.test.ts).
+  - id: m10-crosswalk-resolved-pass
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-resolved.csv work/spine-families.txt"
+    notes: >
+      builder-captures.json m10 case resolved-PASS — orphan resolved to CM-8,broader
+      (labs/happy-path.sh's canonical fix): summary + PASS line, exit 0. Grounds exercise
+      lab-10 t5; the exercise's 7-row PASS expectation (transcripts/expectations.json t5:2)
+      was verified against a real bun run of the committed validator (2026-06-12).
+  - id: m10-crosswalk-default-families
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-resolved.csv"
+    notes: builder-captures.json m10 case default-families-path — families path defaults to dirname(csv)/spine-families.txt; output byte-identical to the two-arg form (the exercise's §6-canon one-arg invocation rides this)
+  - id: m10-crosswalk-unknown-family
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-bad.csv work/spine-families.txt"
+    notes: builder-captures.json m10 case unknown-family-FAIL — a row mapping to ZZ-1 is rejected (family 'ZZ' not in spine), exit 1 (labs/happy-path.sh negative test 3)
+  - id: m10-crosswalk-bad-relationship
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-badrel.csv work/spine-families.txt"
+    notes: builder-captures.json m10 case bad-relationship-FAIL — relationship 'sorta' rejected (allowed exact|broader|narrower|partial), exit 1; the vocabulary gate that forces the deliberate honesty call (§4.7)
+  - id: m10-crosswalk-no-data-rows
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-empty.csv work/spine-families.txt"
+    notes: builder-captures.json m10 case no-data-rows — header-only crosswalk rejected, exit 1
+  - id: m10-crosswalk-bad-header
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts work/crosswalk-badheader.csv work/spine-families.txt"
+    notes: builder-captures.json m10 case bad-header — wrong header named verbatim, exit 1
+  - id: m10-crosswalk-usage
+    module: "10"
+    source: wasm-engine
+    match: byte-exact
+    seed: m10
+    cwd: ~
+    cmd: "bun validate-crosswalk.ts"
+    notes: builder-captures.json m10 case usage — usage line on stderr, exit 1
+
+  # ---- module 12 — OSCAL validator verdicts (REAL `bun validate-oscal.ts` runs of the
+  #      committed labs/fixtures/validate-oscal.ts are the ground truth; the in-browser sim
+  #      is the ported builder validator src/engines/builders/validate-oscal.ts, web ISA
+  #      ISC-84/137; source wasm-engine per the m08 gate precedent —
+  #      tests/builders-validators.test.ts byte-diffs stdout/stderr/exit against
+  #      web/tests/fixtures/builder-captures.json m12 (captured by
+  #      web/scripts/capture-builder-fixtures.ts). The exercise (lab-12, builder workspace)
+  #      runs the port via the Run-validator button with the catalog read from the fixed
+  #      slot lab12/catalog-under-validation.json; the slot carries the same bytes as the
+  #      argv-named catalogs below and no verdict line embeds an argv path, so the byte
+  #      contract is identical (proven by exercise-replay-12.test.ts asserting the
+  #      exercise's captured records equal these cases' stdout). FAIL diagnostics go to
+  #      stdout (the original's console.log), usage errors to stderr; exit 0/1/2.
+  #      Fidelity decisions encoded from inventory fidelity_notes: the broken-catalog
+  #      consumer line is ONE line (module §5.4 prose wraps it — the capture wins); the
+  #      committed fixtures carry metadata.last-modified that §5.1's prose omits (fixture
+  #      wins); href forms '#<policy-id>' and '#policy-<policy-id>' both resolve. ----
+  - id: m12-oscal-valid-pass
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile.json lab12/acme-component.json"
+    notes: >
+      builder-captures.json m12 case valid-PASS — exit 0; §5.4/§6 task 4's clean run. The
+      'PASS:' line, 'ac-2 -> policy "ac-2-account-management"' link line, and
+      'policy-linked: 1' are labs/happy-path.sh's load-bearing grep targets and survive the
+      port verbatim. Grounds exercise lab-12 t4 (oscal-validation-pass.txt deliverable).
+  - id: m12-oscal-broken-catalog
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts lab12/acme-catalog-broken.json lab12/acme-profile.json lab12/acme-component.json"
+    notes: >
+      builder-captures.json m12 case broken-catalog-FAIL — control id removed, exit 1; the
+      missing field AND the downstream consumer (an auditor's tool, a FedRAMP pipeline)
+      named on ONE line (module §5.4 shows it wrapped — the real validator's single line is
+      canon). Grounds exercise lab-12 t5 (§6 task 5).
+  - id: m12-oscal-dangling-profile
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts lab12/acme-catalog.json lab12/acme-profile-dangling.json lab12/acme-component.json"
+    notes: >
+      builder-captures.json m12 case dangling-profile-FAIL — profile includes ac-9 the
+      catalog does not define (happy-path.sh assertion 5's sed edit; the exercise has the
+      learner make the same edit by hand), exit 1; the Module-10 crosswalk-orphan line is
+      canon. Grounds exercise lab-12 t6 (§6 task 6).
+  - id: m12-oscal-usage-no-args
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts"
+    notes: builder-captures.json m12 case usage-no-args — usage line on stderr, exit 2
+  - id: m12-oscal-file-not-found
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts lab12/nope.json lab12/acme-profile.json lab12/acme-component.json"
+    notes: builder-captures.json m12 case file-not-found — ERROR + usage on stderr, exit 2
+  - id: m12-oscal-not-json
+    module: "12"
+    source: wasm-engine
+    match: byte-exact
+    seed: m12
+    cwd: ~
+    cmd: "bun lab12/validate-oscal.ts lab12/not-json.json lab12/acme-profile.json lab12/acme-component.json"
+    notes: builder-captures.json m12 case not-json — unparseable JSON named on stderr, exit 2
+
+  # ---- module 06 — §6 lab surface (exercise lab-06, engine: api) ----
+  # Two honesty classes. (A) docker-linux-userland: the lab's own setup.sh executed for
+  # real in the pinned container, the fixture-inspection coreutils, and aggregate-mfa —
+  # the box's bash+awk PATH port of labs/aggregate-mfa.ts (no bun in the pinned image:
+  # m01-cmd-not-found-class negative space). The port's report bytes / completeness
+  # guard / exit codes are byte-locked to the real `bun aggregate-mfa.ts` output
+  # (verified by diffing m06-aggregate-both stdout against the real tool's run,
+  # 2026-06-12). (B) authored: curl against the wholly fictional acme.example vendor —
+  # no real host exists to capture, so every response byte is authored once in
+  # web/src/engines/api/acme.ts (page bodies are the EXACT committed lab fixture bytes;
+  # error bodies follow the module-documented { "error", "message" } shape) and locked
+  # by the web suite's api-lab tests.
+  # (no m06-setup-regen entry: the seed home IS the byte-identical output of labs/setup.sh —
+  # committed copies are canon; the engine declines `bash setup.sh` (${1:-$(...)} under set -u
+  # is outside its simulated surface), so the exercise provisions by seed, stated honestly.)
+  - id: m06-cat-page1
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "cat fixtures/users-page-1.json"
+  - id: m06-grep-truthfield
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "grep -n mfa_enabled fixtures/users-page-1.json"
+  - id: m06-grep-cursor
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "grep -n next_cursor fixtures/users-page-1.json"
+  - id: m06-count-page1
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "grep -c '\"mfa_enabled\": false' fixtures/users-page-1.json"
+    notes: the confidently-wrong page-1-only number (2 of 4) — §5.4's silent-incompleteness trap, made countable
+  - id: m06-count-combined
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "cat fixtures/users-page-1.json fixtures/users-page-2.json | grep -c '\"mfa_enabled\": false'"
+  - id: m06-aggregate-both
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json"
+    post: ["echo $?"]
+    notes: >
+      stdout byte-locked to `bun aggregate-mfa.ts fixtures/users-page-1.json
+      fixtures/users-page-2.json` (real-tool run diffed at authoring time); exit 3 =
+      control FAIL, distinct from tooling error per the module's exit-code discipline.
+  - id: m06-aggregate-truncated
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "aggregate-mfa fixtures/users-page-1.json"
+    post: ["echo $?"]
+    notes: the completeness guard fails LOUD on a single-page pull — same stderr line and exit 1 as the real tool
+  - id: m06-aggregate-usage
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "aggregate-mfa"
+  - id: m06-aggregate-missing
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    cmd: "aggregate-mfa fixtures/nope.json"
+  - id: m06-aggregate-allpass
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    pre:
+      - "echo '{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ], \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }' > fixtures/users-allpass.json"
+    cmd: "aggregate-mfa fixtures/users-allpass.json"
+    post: ["echo $?"]
+    notes: the §6 task-6 all-pass scenario (mirrors labs/happy-path.sh Assertion 3) — exit 0 = control PASS
+  - id: m06-report-diff
+    module: "06"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m06
+    cwd: /home/analyst/lab06
+    pre:
+      - "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json"
+      - "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json"
+    cmd: "diff report-run-1.json report-run-2.json"
+    post: ["echo $?"]
+    notes: §6 task 8's run-twice check — byte-identical reports because collected_at is pinned (reproducible evidence)
+  - id: m06-curl-unauth-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -i https://acme.example/api/v2/users"
+    citation: >
+      acme.example is wholly fictional (module 06 §5 canon) — no real host exists to
+      capture. Response authored in web/src/engines/api/acme.ts: 401 + the
+      module-documented error shape { "error", "message" } (§5.1); real curl without
+      -f prints the error body and exits 0 (man curl, EXIT CODES) — the status line
+      is the verdict the learner must read (§4.2).
+  - id: m06-curl-oauth-token
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=…&scope=users:read' https://acme.example/oauth/token"
+    citation: >
+      OAuth2 client-credentials token response fields (access_token, token_type,
+      expires_in, scope) per RFC 6749 §4.4/§5.1; expires_in 3600 + scope users:read
+      are module 06 §5.1/§5.2 canon. Tokens are deterministic (seeded LCG in
+      web/src/engines/api/router.ts) so transcripts replay byte-stable.
+  - id: m06-curl-users-page1
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -s -H 'Authorization: Bearer <token>' https://acme.example/api/v2/users"
+    citation: >
+      Response body = the EXACT bytes of the committed lab fixture
+      modules/06-api-fundamentals/labs/fixtures/users-page-1.json (the byte-fidelity
+      target per the module-03 stance: committed fixtures are canon); served by
+      web/src/engines/api/acme.ts which a web test byte-diffs against the fixture.
+  - id: m06-curl-users-page2
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -s -H 'Authorization: Bearer <token>' 'https://acme.example/api/v2/users?cursor=eyJwYWdlIjoyfQ=='"
+    citation: >
+      Response body = the EXACT bytes of the committed lab fixture
+      modules/06-api-fundamentals/labs/fixtures/users-page-2.json (next_cursor null —
+      the §4.4 stop signal); cursor value visible in the page-1 fixture bytes.
+  - id: m06-curl-users-403
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -i -H 'Authorization: Bearer <devices-scoped token>' https://acme.example/api/v2/users"
+    citation: >
+      403 insufficient_scope for an authenticated token lacking users:read — the
+      §4.2/§4.3 authn-vs-authz distinction ("403 on GET /users almost always means
+      your token authenticated fine but lacks the scope"); body authored to the
+      module-documented { "error", "message" } shape in web/src/engines/api/acme.ts.
+  - id: m06-curl-devices
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -s -H 'Authorization: Bearer <devices-scoped token>' https://acme.example/api/v2/devices"
+    citation: >
+      Authored devices collection (web ISA ISC-74 users/devices surface) carrying the
+      curriculum's laptop-encryption claim thread (disk_encrypted field); single page,
+      next_cursor null; authored in web/src/engines/api/acme.ts — original data, same
+      record style as the committed users fixtures.
+  - id: m06-curl-rate-limit-429
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl -i https://acme.example/api/v2/users   # any request past the documented window"
+    citation: >
+      Rate limit 600 requests/minute with 429 + Retry-After seconds is module 06
+      §4.5/§5.1 documented canon (no real vendor to capture); body authored to the
+      { "error", "message" } shape; sliding-window behavior implemented in
+      web/src/engines/api/router.ts on the sim clock. Not reachable by hand-typing
+      in the exercise (600/min) — taught via docs + reflection, never invented output.
+  - id: m06-curl-noresolve
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cwd: /home/analyst/lab06
+    cmd: "curl https://anything-else.example/"
+    citation: >
+      The lab box has no real network; only the attached fictional vendor resolves.
+      "curl: (6) Could not resolve host" + exit 6 authored from curl's documented
+      behavior (man curl, EXIT CODES: 6 = could not resolve host).
+
+  # ---- module 09 — policy-as-code lab (exercise lab-09, web ISA Wave 2). The lab is
+  #      deliberately engine-agnostic (bash + coreutils + awk only — module §6 note), so the
+  #      whole §6 core flow executes REAL in the shell sim: setup, the learner-authored
+  #      verdict-function and CI gate, evidence records, exit codes, tamper drill. The
+  #      committed reference check.sh / run-policy-gate.sh use awk printf/gsub + bash
+  #      function syntax outside the sim's taught subset — running them in the sim yields
+  #      the honest boundary message (exit 64), declared in the exercise intro; the
+  #      m09s-seeded entries below capture the AUTHORED taught-subset flow real instead.
+  #      Cedar/OPA engines are optional per the module ("the lab is engine-agnostic");
+  #      §5.2/§5.3 prose divergences resolved fixture-first per inventory fidelity_notes. ----
+  - id: m09-lab-setup
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    cmd: "bash labs/setup.sh ./lab09"
+    post: ["echo $?"]
+    notes: >
+      setup.sh is the module's own committed lab asset (seeded byte-identical; drift vs
+      modules/09-policy-as-code/labs/ caught by this capture's replay); the echo line and
+      every staged fixture byte are the script's real output, not authored strings.
+  - id: m09-ls-lab09
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09"]
+    cmd: "ls -C -w80 lab09"
+    tty_equiv: "ls lab09"
+  - id: m09-cat-violation
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "cat access-violation.csv"
+    notes: >
+      row 4 carol grantRole legacy-admin is the forbidden change the whole lab judges.
+  - id: m09-cat-clean
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "cat access-clean.csv"
+    notes: >
+      row 3 dave revokeRole legacy-admin is the deliberate trap row: a verdict that fires
+      on the role alone (ignoring the action column) wrongly denies the CLEAN export —
+      the module's §4.3 "subtly, silently wrong" lesson, exercised by anti-role-only.
+  - id: m09-cat-cedar-ref
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "cat policy.cedar"
+  - id: m09-cat-rego-ref
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "cat policy.rego"
+  - id: m09-cat-rotted
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "cat rotted-policy.txt"
+    notes: >
+      the §6 task-6 policy-rot drill fixture (VR-3) — read in the exercise's t9 reflection.
+  - id: m09-awk-deny-violation
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "awk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' access-violation.csv"
+    notes: >
+      the taught-subset verdict one-liner (both columns ANDed) — the heart of the
+      learner-authored my-check.sh; DENY line bytes match the module's §5.2 canon.
+  - id: m09-awk-deny-clean
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "awk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' access-clean.csv"
+    notes: >
+      empty output on the clean export — dave's REVOKE of legacy-admin is not a violation.
+  - id: m09-grep-count-violation
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "grep -c ',grantRole,legacy-admin$' access-violation.csv"
+    post: ["echo $?"]
+  - id: m09-grep-count-clean
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cd lab09"]
+    cmd: "grep -c ',grantRole,legacy-admin$' access-clean.csv"
+    post: ["echo $?"]
+    notes: >
+      grep -c prints 0 AND exits 1 when nothing matches — the count is data, the exit
+      code is the verdict channel; the learner's script must branch on the count.
+  - id: m09-tr-stamp
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09
+    cwd: /home/analyst
+    cmd: "echo \"2026-05-28T17:04:00Z\" | tr -d 'TZ:-'"
+    notes: >
+      the record-filename timestamp digits (evidence-store/<control>-<run>-<digits>.json) —
+      same digits the reference gate derives via tr -dc 0-9 (inventory fidelity_notes).
+  - id: m09-mycheck-violation
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh"]
+    cmd: "./my-check.sh access-violation.csv"
+    post: ["echo $?"]
+    notes: >
+      the authored verdict-function on the violating export: one DENY line (row 4 carol),
+      RESULT decision=deny violations=1, exit 1 — decision = policy(input) made real.
+  - id: m09-mycheck-clean
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh"]
+    cmd: "./my-check.sh access-clean.csv"
+    post: ["echo $?"]
+    notes: >
+      exit 0 with zero DENY lines on the clean export — including dave's legacy-admin
+      REVOKE row (the verdict checks BOTH action and role).
+  - id: m09-mycheck-usage
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh"]
+    cmd: "./my-check.sh"
+    post: ["echo $?"]
+    notes: >
+      usage line to stderr + exit 2 — usage errors are a third verdict, distinct from
+      pass(0)/fail(1), mirroring the committed reference check.sh contract.
+  - id: m09-mycheck-redirect
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh"]
+    cmd: "./my-check.sh access-violation.csv > check-violation.out"
+    post: ["echo $?", "cat check-violation.out"]
+    notes: >
+      grounds the exercise's t4 generated expectation (check-violation.out bytes).
+  - id: m09-mygate-violation
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh"]
+    cmd: "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"
+    post: ["echo $?", "cat evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"]
+    notes: >
+      the CI gate blocking the bad change: EVAL/DENY/EVIDENCE/GATE lines, exit 1, and a
+      passed:false record with all 8 §4.6 fields — proof as a by-product of judging.
+      GATE result line follows the committed-fixture canon (violations=1), not the §5.2
+      prose variant "(1 violation)" — fixture-first per inventory fidelity_notes gap 1.
+      input_ref is the input filename as typed (the record SHAPE is the contract; the
+      reference's cksum-derived 8-hex ref is outside the taught subset — fidelity_notes
+      gap 2 resolved per "compute its own stable ref" guidance).
+  - id: m09-mygate-clean
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre: ["bash labs/setup.sh ./lab09", "cp my-check.sh lab09/my-check.sh", "cp my-gate.sh lab09/my-gate.sh", "cd lab09", "chmod +x my-check.sh my-gate.sh", "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"]
+    cmd: "GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 ./my-gate.sh access-clean.csv evidence-store"
+    post: ["echo $?", "cat evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json", "ls -C -w80 evidence-store"]
+    notes: >
+      the passing run after the failing one: exit 0, passed:true record — the §5.3
+      before/after audit trail produced by the gate, not by the learner. The ls post
+      pins the two-record store listing.
+  - id: m09-tamper-revoke-flip
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre:
+      - "bash labs/setup.sh ./lab09"
+      - "cp my-check.sh lab09/my-check.sh"
+      - "cp my-gate.sh lab09/my-gate.sh"
+      - "cd lab09"
+      - "chmod +x my-check.sh my-gate.sh"
+      - "grep -v ',grantRole,legacy-admin$' access-violation.csv > access-tampered.csv"
+      - "echo '4,carol,revokeRole,legacy-admin' >> access-tampered.csv"
+    cmd: "GATE_FAKE_TIME=2026-05-28T18:00:00Z CI_RUN_ID=ci-tamper ./my-gate.sh access-tampered.csv evidence-store"
+    post: ["echo $?", "cat access-tampered.csv", "cat evidence-store/AC-6-legacy-admin-ci-tamper-20260528180000.json"]
+    notes: >
+      happy-path.sh assertion 5 rebuilt from taught tools (the sim ships no sed in this
+      engine build): turning the forbidden GRANT into a REVOKE flips the gate FAIL→PASS,
+      proving the verdict bites on the action column, not incidental text.
+  - id: m09-inject-grant-flip
+    module: "09"
+    source: docker-linux-userland
+    match: byte-exact
+    seed: m09s
+    cwd: /home/analyst
+    pre:
+      - "bash labs/setup.sh ./lab09"
+      - "cp my-check.sh lab09/my-check.sh"
+      - "cp my-gate.sh lab09/my-gate.sh"
+      - "cd lab09"
+      - "chmod +x my-check.sh my-gate.sh"
+      - "cp access-clean.csv access-injected.csv"
+      - "echo '5,frank,grantRole,legacy-admin' >> access-injected.csv"
+    cmd: "GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject ./my-gate.sh access-injected.csv evidence-store"
+    post: ["echo $?", "cat evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json"]
+    notes: >
+      the inverse tamper proof: injecting a forbidden grant into the clean export flips
+      PASS→FAIL — the assertion is not vacuously green on every input.
+
+  # ---- module 11 — coverage-map evaluation logic (REAL `bun` runs of the committed
+  #      labs/validate-coverage.ts are the ground truth; the in-browser sim is the ported
+  #      builder validator, web ISA ISC-83/137; source wasm-engine = an engine suite owns
+  #      replay, per the m05 git-engine / m08 gate precedent —
+  #      tests/builders-validators.test.ts byte-diffs stdout/stderr/exit against
+  #      web/tests/fixtures/builder-captures.json m11 (captured by
+  #      web/scripts/capture-builder-fixtures.ts from the committed fixture bytes), and
+  #      tests/exercise-replay-11.test.ts additionally byte-diffs the exercise golden's
+  #      earned FAIL→PASS pair against the same captures. The Lab Player's builder
+  #      surface runs the port; `bun` itself is not on any simulated box.) ----
+  - id: m11-validate-seed-two-defects
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+    notes: >
+      builder-captures.json m11 case seed-two-defects-FAIL — exit 1 naming BOTH defects:
+      coverage gap T-1486 (prioritized threat, empty control_id row) and zero-threat
+      control CTRL-DLP-AGENT-04 (in scope, on no map line). Summary line on stdout; FAIL
+      blocks + 'exit: 1' on stderr (the lab's capture step needs 2>&1). Grounds exercise
+      lab-11 t2's earned failure.
+  - id: m11-validate-resolved-pass
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+    notes: >
+      builder-captures.json m11 case resolved-PASS — the same invocation against the
+      resolved state (gap row mapped to CTRL-BACKUP-RESTORE-05,detects; the killed
+      CTRL-DLP-AGENT-04 removed from scope; BACKUP-RESTORE-05 added): exit 0,
+      'threats covered: 5/5', PASS line. Grounds exercise lab-11 t5's earned pass —
+      the validator always evaluates CURRENT workspace state, so fail-then-pass is
+      genuine, never scripted.
+  - id: m11-validate-default-paths
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map.csv"
+    notes: >
+      builder-captures.json m11 case default-paths — the optional list-file arguments
+      default to prioritized-threats.txt / controls-in-scope.txt beside the CSV, byte-
+      identical verdict to the explicit form.
+  - id: m11-validate-bad-mitigation
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map-bad.csv work/prioritized-threats.txt work/controls-resolved.txt"
+    notes: >
+      builder-captures.json m11 case bad-mitigation-FAIL — a row claiming mitigation
+      'eliminates-totally' is rejected (allowed: prevents|detects|partial), exit 1: the
+      §4.3 label-honesty floor, mechanically enforced.
+  - id: m11-validate-unknown-threat
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map-unknown.csv work/prioritized-threats.txt work/controls-resolved.txt"
+    notes: >
+      builder-captures.json m11 case unknown-threat-FAIL — a line mapping a control to a
+      non-prioritized threat (T-9999) fails: phantom mappings could hide a zero-threat
+      control behind noise (§4.4).
+  - id: m11-validate-no-data-rows
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map-empty.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+    notes: builder-captures.json m11 case no-data-rows — header-only map rejected, exit 1.
+  - id: m11-validate-bad-header
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map-badheader.csv work/prioritized-threats.txt work/controls-in-scope.txt"
+    notes: >
+      builder-captures.json m11 case bad-header — header must be exactly
+      'threat_id,threat_name,control_id,mitigation', exit 1.
+  - id: m11-validate-usage
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts"
+    notes: builder-captures.json m11 case usage — no-args usage line on stderr, exit 1.
+  - id: m11-validate-threats-file-missing
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map.csv work/nope.txt work/controls-in-scope.txt"
+    notes: builder-captures.json m11 case threats-file-missing — named FAIL on stderr, exit 1.
+  - id: m11-validate-controls-file-missing
+    module: "11"
+    source: wasm-engine
+    match: byte-exact
+    seed: m11
+    cwd: ~
+    cmd: "bun validate-coverage.ts work/coverage-map.csv work/prioritized-threats.txt work/nope.txt"
+    notes: builder-captures.json m11 case controls-file-missing — named FAIL on stderr, exit 1.
+
+  # ---- module 13 — the CCM loop (REAL `bash` runs of the generated ccm-check.sh are the
+  #      ground truth — modules/13 labs/setup.sh writes the library; the in-browser surface
+  #      is the ported builder library src/engines/builders/ccm-check.ts driven by the
+  #      CcmScheduler (declared time compression, web ISA ISC-85/132/137);
+  #      tests/builders-validators.test.ts byte-diffs normalize_buckets / evaluate_control /
+  #      emit_evidence stdout/stderr/exit + evidence-store bytes against
+  #      web/tests/fixtures/builder-captures.json m13 (captured by
+  #      web/scripts/capture-builder-fixtures.ts real bash runs). The docker entries below
+  #      additionally pin the §6 terminal command surface (source + evaluate_control +
+  #      emit_evidence + evidence-store reads) in the pinned Ubuntu userland container —
+  #      no bun on that box, so they exercise the library's pure-awk fallback branch and
+  #      prove the two-parser same-output contract the library claims. The exercise
+  #      (lab-13, builder ccm surface) verifies via the scheduler's validator runs;
+  #      exercise-replay-13.test.ts cross-checks its ledger rows and alert bytes against
+  #      builder-captures m13 AND these captures. ----
+  - id: m13-lab-setup
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    cmd: "bash labs/setup.sh ./ccm-lab-fresh"
+    post:
+      - "ls ccm-lab-fresh"
+      - "diff ccm-lab-fresh/ccm-check.sh ccm-lab/ccm-check.sh"
+      - "echo $?"
+    notes: >
+      setup.sh is the module's own committed lab asset (seeded byte-identical); it prints
+      the target dir and generates the check library + empty evidence store. The diff post
+      canon-locks the m13 seed's pre-generated ccm-lab/ccm-check.sh to what setup.sh
+      actually writes (exit 0, no output) — seed drift fails the capture replay.
+  - id: m13-evaluate-compliant
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    pre: ["source ccm-lab/ccm-check.sh"]
+    cmd: "evaluate_control labs/fixtures/state-compliant.json"
+    post: ["echo $?"]
+    notes: >
+      §5.1/§6 task 2 canon: PASS line, exit 0. Runs the library's pure-awk fallback (no bun
+      on the box) — must byte-match builder-captures.json m13 evalCases (bun branch), the
+      two-parser same-output contract.
+  - id: m13-evaluate-drifted
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    pre: ["source ccm-lab/ccm-check.sh"]
+    cmd: "evaluate_control labs/fixtures/state-drifted.json"
+    post: ["echo $?"]
+    notes: "§5.3/§6 task 4 canon: FAIL line + NONCOMPLIANT acme-public-website, exit 1."
+  - id: m13-evaluate-drifted-pretty
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    pre: ["source ccm-lab/ccm-check.sh"]
+    cmd: "evaluate_control labs/fixtures/state-drifted-pretty.json"
+    post: ["echo $?"]
+    notes: >
+      The fail-open regression guard (§6 setup): the SAME drift expressed as pretty-printed
+      multi-line JSON — the shape real cloud exports emit — must still be CAUGHT (exit 1),
+      never parsed to zero buckets and silently passed.
+  - id: m13-evaluate-empty
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    pre: ["source ccm-lab/ccm-check.sh"]
+    cmd: "evaluate_control labs/fixtures/state-empty.json"
+    post: ["echo $?"]
+    notes: >
+      Fail closed (§6 setup, exercise lab-13 t7): zero resources evaluated → ERROR complaint
+      on stderr, FAIL reason=no-resources-evaluated on stdout, exit 2 — a monitor must
+      refuse to emit a green verdict it cannot justify.
+  - id: m13-emit-sequence
+    module: "13"
+    source: docker-linux-userland
+    sim_suite: builder   # sim surface is the ported builder library, not the shell engine (see entry-block note)
+    match: byte-exact
+    seed: m13
+    cwd: /home/analyst
+    pre:
+      - "source ccm-lab/ccm-check.sh"
+      - "emit_evidence labs/fixtures/state-compliant.json ccm-lab/evidence"
+    cmd: "emit_evidence labs/fixtures/state-drifted.json ccm-lab/evidence"
+    post:
+      - "echo $?"
+      - "ls ccm-lab/evidence"
+      - "cat ccm-lab/evidence/run-20260520090000.evidence"
+      - "cat ccm-lab/evidence/alert-run-20260521090000.txt"
+      - "cat ccm-lab/evidence/ledger.log"
+      - "tail -1 ccm-lab/evidence/ledger.log"
+      - "grep rc=1 ccm-lab/evidence/ledger.log"
+    notes: >
+      §5.2/§5.3/§6 tasks 3-5 canon, one compliant + one drifted run: emit_evidence is
+      silent on stdout and returns the check's exit code; the store then holds exactly two
+      run-*.evidence records (run ids derived from each snapshot's captured_at digits), a
+      two-row append-only ledger, and ONE alert file — fired only by the drifted run,
+      naming drifted_resource=acme-public-website. The cat/tail/grep posts pin the §6
+      evidence-store reads (record fields, ledger rows, latest-row dashboard query).
+
+  # ---- module 15 — capstone coverage validator (REAL bash runs of the setup.sh-generated
+  #      validate-capstone.sh are the ground truth; the in-browser sim is the ported builder
+  #      validator, web ISA ISC-87/137; source wasm-engine = an engine suite owns replay, per
+  #      the m08 gate precedent — tests/builders-validators.test.ts byte-diffs stdout/stderr/
+  #      exit against web/tests/fixtures/builder-captures.json m15, captured by
+  #      web/scripts/capture-builder-fixtures.ts from a real `bash labs/setup.sh` lab dir.
+  #      The sim shell does not execute validate-capstone.sh; the Lab Player's capstone
+  #      surface runs the port.) ----
+  - id: m15-validate-complete
+    module: "15"
+    source: wasm-engine
+    match: byte-exact
+    seed: m15
+    cwd: ~/capstone-lab
+    cmd: "./validate-capstone.sh capstone-manifest.yaml"
+    notes: >
+      builder-captures.json m15 case complete-PASS — seven aligned stage rows ok
+      (printf '  %-11s ok  -> %s'; two-line before/after check, NOT module.md §5.2's
+      abbreviated one-liner — inventory fidelity caveat 1) + PASS verdict line, exit 0
+      (§6 tasks 2/7; exercise lab-15 t2/t5).
+  - id: m15-validate-incomplete
+    module: "15"
+    source: wasm-engine
+    match: byte-exact
+    seed: m15
+    cwd: ~/capstone-lab
+    cmd: "./validate-capstone.sh capstone-manifest-incomplete.yaml"
+    notes: >
+      builder-captures.json m15 case incomplete-FAIL — the committed negative fixture:
+      MONITOR MISSING (no artifact mapped) + before/after MISSING, FAIL verdict, exit 1
+      (exercise lab-15 t3 induces exactly this shape in the manifest editor).
+  - id: m15-validate-missing-manifest
+    module: "15"
+    source: wasm-engine
+    match: byte-exact
+    seed: m15
+    cwd: ~/capstone-lab
+    cmd: "./validate-capstone.sh nope.yaml"
+    notes: >
+      builder-captures.json m15 case manifest-not-found — "FAIL: manifest not found:
+      nope.yaml", exit 2. Exit-code semantics 0/1/2 are load-bearing (inventory module 15;
+      happy-path.sh asserts the complete/incomplete pair plus verdict reproducibility).

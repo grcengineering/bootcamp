@@ -1,0 +1,5 @@
+{"anti_for": "t5", "reason": "fabricated effective-directive evidence — the bytes are right but no resolution pipeline ever ran (provenance catches what content equality cannot)"}
+{"input": "mkdir evidence"}
+{"input": "sudo grep PasswordAuthentication /etc/ssh/sshd_config\nlabpass"}
+{"input": "echo 'PasswordAuthentication no' > evidence/effective-passwordauth.txt"}
+{"input": "echo 'PermitRootLogin no' > evidence/effective-permitrootlogin.txt"}

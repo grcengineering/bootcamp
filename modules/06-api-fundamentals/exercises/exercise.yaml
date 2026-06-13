@@ -1,0 +1,475 @@
+id: lab-06
+module: 06-api-fundamentals
+title: Evidence from behind an endpoint
+owner: Justin Pagano
+volatility: B
+review_due: 2026-11-28
+engine: api
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m06
+  home: /home/analyst
+  files:
+    - path: ~/lab06/vendor-docs.md
+      from: assets/vendor-docs.md
+  path_tools: [aggregate-mfa]
+
+intro: |
+  The truth of the control "every workforce user has MFA enabled" no longer sits in a
+  file you can ls — it sits behind a vendor's API. Your job: walk up to the counter,
+  prove who you are, pull EVERY page of the answer, compute the metric, and keep
+  evidence an auditor can re-run. This terminal is the lab's Linux box with one
+  addition: curl is wired to the (fictional) vendor acme.example — its responses are
+  the lab's committed fixture bytes and its documented error shapes, never invented.
+  The vendor's API documentation is on the box as ~/lab06/vendor-docs.md. Two honest
+  boundaries: bun and git are not installed here (exactly as the pinned lab container
+  lacks them), so the module's aggregator runs as its PATH port `aggregate-mfa` —
+  byte-locked to the real `bun aggregate-mfa.ts` output — and the §6 Git step happens
+  on your real machine. The lab folder arrives exactly as `bash labs/setup.sh` writes it.
+
+walkthrough_first_input: pwd
+
+tasks:
+  - id: t1
+    type: action
+    objective: [2]
+    instruction: |
+      LOCATE starts with the docs, not with code. Move into the lab (`cd lab06`),
+      look around (`ls`, `ls fixtures`), and read the vendor's API reference
+      (`cat vendor-docs.md`). Find the five answers §4.7 says you need: auth rung,
+      endpoint + truth field, pagination + stop signal, rate limit, error shape.
+    verify:
+      - check: cwd_is
+        path: ~/lab06
+      - check: history_contains
+        regex: "^cat vendor-docs\\.md$"
+      - check: history_contains
+        regex: "^ls( |$)"
+    hints:
+      - nudge: "Reading an unfamiliar vendor's docs and answering five questions fast IS the durable skill — the code is mechanics."
+      - concept: "§4.7 — reading vendor API docs is the actual skill"
+      - reveal: "cd lab06, then: ls · ls fixtures · cat vendor-docs.md"
+    explain: |
+      You now know everything the pull needs before writing a line of it: OAuth2
+      client-credentials at /oauth/token, GET /api/v2/users with `mfa_enabled` as the
+      truth field, cursor pagination stopping at null, 600 req/min, and the
+      {error, message} error shape. That five-line understanding IS the LOCATE stage.
+
+  - id: t2
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Knock on the counter with no credentials and read the verdict BEFORE the payload:
+      `curl -i acme.example/api/v2/users > unauth-response.txt`, then `cat` the file.
+      The status line is the clerk's answer; the body explains it.
+    verify:
+      - check: file_content_matches
+        path: ~/lab06/unauth-response.txt
+        regex: "^HTTP/1\\.1 401 Unauthorized"
+      - check: file_content_matches
+        path: ~/lab06/unauth-response.txt
+        regex: "\"error\": \"unauthorized\""
+      - check: artifact_produced_by
+        path: ~/lab06/unauth-response.txt
+        required_commands: [curl]
+      - check: history_contains
+        regex: "cat unauth-response\\.txt"
+    hints:
+      - nudge: "`-i` makes curl print the status line and headers above the body — the verdict before the payload. `>` keeps what came back as evidence."
+      - concept: "§4.2 — status codes are the verdict; read them before the payload"
+      - reveal: "curl -i acme.example/api/v2/users > unauth-response.txt, then: cat unauth-response.txt"
+    explain: |
+      401 means "who are you?" — an authentication problem. The script that parses
+      this body as if it were users would happily report zero users without MFA.
+      Reading the status first is the single cheapest bug-prevention habit in
+      evidence collection.
+
+  - id: t3
+    type: action
+    objective: [3]
+    instruction: |
+      Climb the right rung: exchange the lab's client credentials (they're in
+      vendor-docs.md) for a short-lived bearer token, requesting ONLY the scope this
+      control needs (`users:read`). Save the response as `token.json` and `cat` it —
+      you'll need the access_token for every call that follows.
+    verify:
+      - check: file_content_matches
+        path: ~/lab06/token.json
+        regex: "\"access_token\": \"tok_"
+      - check: file_content_matches
+        path: ~/lab06/token.json
+        regex: "\"expires_in\": 3600"
+      - check: artifact_produced_by
+        path: ~/lab06/token.json
+        required_commands: [curl]
+      - check: history_contains
+        regex: "grant_type=client_credentials"
+      - check: history_contains
+        regex: "scope=users:read"
+      - check: history_contains
+        regex: "cat token\\.json"
+    hints:
+      - nudge: "POST the form fields grant_type, client_id, client_secret, and scope to the token endpoint. curl's `-d` sends a form body (and makes the request a POST)."
+      - concept: "§4.3 — the authentication ladder: client-credentials trades a storable secret for an ephemeral token"
+      - reveal: "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=users:read' acme.example/oauth/token > token.json, then: cat token.json"
+    explain: |
+      The secret in your config is now exchangeable, and the thing riding on every
+      request dies in an hour. You also asked for the narrowest scope the control
+      allows — a leaked users:read token cannot delete users. That narrowing is a
+      control in its own right.
+
+  - id: t4
+    type: action
+    objective: [4]
+    instruction: |
+      Pull EVERY page. Call `GET /api/v2/users` with your bearer token and save page 1
+      as `pulled-page-1.json`. Find `pagination.next_cursor` in it, follow the cursor
+      (`?cursor=...`) to page 2, save it as `pulled-page-2.json`, and confirm the
+      cursor came back null — that is the API saying "no more".
+    verify:
+      - check: api_pull_complete
+        collection: "/api/v2/users"
+        cursors: ["", "eyJwYWdlIjoyfQ=="]
+      - check: file_content_equals
+        path: ~/lab06/pulled-page-1.json
+        from: generated
+      - check: file_content_equals
+        path: ~/lab06/pulled-page-2.json
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/pulled-page-2.json
+        required_commands: [curl]
+    hints:
+      - nudge: "Send the token as `-H 'Authorization: Bearer <your access_token>'`. Page 1's pagination block carries the cursor for page 2; quote the URL when it has a `?` in it."
+      - concept: "§4.4 — loop until the API says stop: a null cursor, not your patience, ends the pull"
+      - reveal: "curl -s -H 'Authorization: Bearer <access_token from token.json>' acme.example/api/v2/users > pulled-page-1.json, then grep next_cursor pulled-page-1.json, then: curl -s -H 'Authorization: Bearer <same token>' 'acme.example/api/v2/users?cursor=eyJwYWdlIjoyfQ==' > pulled-page-2.json"
+    explain: |
+      One logical question took two authenticated requests, and only the null cursor
+      told you that you were done. Both pages advertise total: 8 — you accumulated
+      5 + 3. The pull is provably complete, which is exactly what the aggregator will
+      check mechanically in a moment.
+
+  - id: t5
+    type: action
+    objective: [3, 4]
+    instruction: |
+      Prove 401 and 403 are different facts. Request a SECOND token scoped only
+      `devices:read` (save it as `devices-token.json`), aim it at `/api/v2/users` with
+      `-i`, and keep the refusal as `scope-error.txt`. Then point the same token at the
+      endpoint it IS scoped for — `/api/v2/devices`, saved as `devices.json` — and
+      count the unencrypted laptops into `unencrypted-count.txt`
+      (the records carry a `disk_encrypted` field).
+    verify:
+      - check: file_content_matches
+        path: ~/lab06/scope-error.txt
+        regex: "^HTTP/1\\.1 403 Forbidden"
+      - check: file_content_matches
+        path: ~/lab06/scope-error.txt
+        regex: "insufficient_scope"
+      - check: api_pull_complete
+        collection: "/api/v2/devices"
+        cursors: [""]
+      - check: file_content_equals
+        path: ~/lab06/devices.json
+        from: generated
+      - check: file_content_equals
+        path: ~/lab06/unencrypted-count.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/unencrypted-count.txt
+        required_commands: [grep]
+    hints:
+      - nudge: "Same token request as t3 with `scope=devices:read`. The 403 means: authenticated fine, not allowed THIS question. Count with `grep -c '\"disk_encrypted\": false' devices.json`."
+      - concept: "§4.2/§4.3 — 401 is authentication, 403 is authorization; least-privilege scopes make the difference visible"
+      - reveal: "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=devices:read' acme.example/oauth/token > devices-token.json · curl -i -H 'Authorization: Bearer <access_token from devices-token.json>' acme.example/api/v2/users > scope-error.txt · curl -s -H 'Authorization: Bearer <same token>' acme.example/api/v2/devices > devices.json · grep -c '\"disk_encrypted\": false' devices.json > unencrypted-count.txt"
+    explain: |
+      The devices token authenticated perfectly and was still refused the users
+      question — that is authorization, not authentication, and your evidence files
+      now show both refusals side by side. And notice what the devices pull just
+      computed: one laptop with disk_encrypted false. The same claim you checked on a
+      single machine in earlier modules ("this laptop's disk is encrypted") just
+      became a fleet-wide API question.
+
+  - id: t6
+    type: action
+    objective: [2]
+    instruction: |
+      Now the offline half — the bundled fixtures are byte-identical to what you just
+      pulled. Open `fixtures/users-page-1.json` and identify the field that holds the
+      control's truth and the field that says whether more pages exist: grep for each
+      (`mfa_enabled`, `next_cursor`) so the locations are in your history.
+    verify:
+      - check: history_contains
+        regex: "cat fixtures/users-page-1\\.json"
+      - check: history_contains
+        regex: "grep .*mfa_enabled.* fixtures/users-page-1\\.json"
+      - check: history_contains
+        regex: "grep .*next_cursor"
+    hints:
+      - nudge: "One boolean per user record answers the control claim; one field in the pagination block answers \"did I get everyone?\"."
+      - concept: "§5.1 — LOCATE: the endpoint and field that hold the claim's truth"
+      - reveal: "cat fixtures/users-page-1.json, then: grep -n mfa_enabled fixtures/users-page-1.json · grep -n next_cursor fixtures/users-page-1.json"
+    explain: |
+      `mfa_enabled` decides the claim "every workforce user has MFA enabled";
+      `pagination.next_cursor` (non-null!) warns that page 1 is not the whole truth.
+      Mapping claim → field before computing anything is what keeps the rest honest.
+
+  - id: t7
+    type: action
+    objective: [4]
+    instruction: |
+      Feel the silent-incompleteness trap. Count users without MFA from page 1 alone
+      into `page1-count.txt`, then recompute over BOTH pages combined into
+      `combined-count.txt` (compose `cat` and `grep -c` with a pipe). Compare the two
+      numbers — the API told you in advance they would differ.
+    verify:
+      - check: file_content_equals
+        path: ~/lab06/page1-count.txt
+        from: generated
+      - check: file_content_equals
+        path: ~/lab06/combined-count.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/combined-count.txt
+        min_pipes: 1
+        required_commands: [grep]
+    hints:
+      - nudge: "`grep -c '\"mfa_enabled\": false'` counts matching records. For the combined number, `cat` both pages into one stream first."
+      - concept: "§4.4 — a pull that stops early doesn't error; it under-reports, confidently"
+      - reveal: "grep -c '\"mfa_enabled\": false' fixtures/users-page-1.json > page1-count.txt, then: cat fixtures/users-page-1.json fixtures/users-page-2.json | grep -c '\"mfa_enabled\": false' > combined-count.txt"
+    explain: |
+      Page 1 alone said 2; the complete dataset says 4. No error, no warning — just a
+      wrong number that looks right. The only advance notice was pagination metadata:
+      next_cursor was non-null and total was 8 when you'd only seen 5 records.
+
+  - id: t8
+    type: action
+    objective: [4, 2]
+    instruction: |
+      Run the lab's aggregator over BOTH pages and keep the audit-ready record:
+      `aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json`,
+      then read it. Confirm `total_users` matches the total the pages advertise, and
+      find the line that explains why the report carries TWO no-MFA numbers — grep the
+      report for `u_004` and for `active_users_without_mfa`.
+    verify:
+      - check: file_content_equals
+        path: ~/lab06/mfa-report.json
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/mfa-report.json
+        required_commands: [aggregate-mfa]
+      - check: history_contains
+        regex: "cat mfa-report\\.json"
+      - check: history_contains
+        regex: "grep .*u_004.* mfa-report\\.json"
+    hints:
+      - nudge: "The aggregator takes every page as an argument — give it both. On your own machine this is `bun aggregate-mfa.ts …`; this box runs its byte-locked PATH port."
+      - concept: "§5.3 — aggregate across pages, THEN compute; the report surfaces both numbers and lets the control definition decide"
+      - reveal: "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json, then: cat mfa-report.json · grep -n u_004 mfa-report.json · grep -n active_users_without_mfa mfa-report.json"
+    explain: |
+      total_users is 8 — it matches the advertised total, so the completeness check
+      passed and this number is trustworthy. The report says users_without_mfa: 4 but
+      active_users_without_mfa: 3, because u_004 (dave) is suspended. A good evidence
+      record shows both and hides neither.
+
+  - id: t9
+    type: action
+    objective: [4]
+    instruction: |
+      Prove the tool refuses to lie. Run the aggregator over ONLY page 1, capturing its
+      complaint into `incomplete-error.txt` (stderr — remember `2>`), then keep the
+      exit code as evidence: `echo $? > truncated-exit.txt`. Read the complaint.
+    verify:
+      - check: file_content_matches
+        path: ~/lab06/incomplete-error.txt
+        regex: "incomplete pull: aggregated 5 users but API reported total=8"
+      - check: file_content_equals
+        path: ~/lab06/truncated-exit.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/incomplete-error.txt
+        required_commands: [aggregate-mfa]
+      - check: history_contains
+        regex: "echo .*\\$\\?.*> *truncated-exit\\.txt"
+    hints:
+      - nudge: "stdout and stderr are different channels: `2>` captures the complaint. `$?` still holds the exit code on the very next line you type."
+      - concept: "§5.4 — the failure that LOOKS like success, and the completeness check that refuses it"
+      - reveal: "aggregate-mfa fixtures/users-page-1.json 2> incomplete-error.txt, then: echo $? > truncated-exit.txt · cat incomplete-error.txt"
+    explain: |
+      Five records, total=8 → the tool refused to emit a report at all and exited 1.
+      Failing loud beats emitting a smaller number, because a wrong-but-plausible
+      metric would sail through review and become the control's official truth.
+
+  - id: t10
+    type: action
+    objective: [5, 6]
+    instruction: |
+      Map the exit codes — the machine-readable verdict. Re-run the full two-page
+      aggregation and keep its code (`echo $? > exit-fail.txt`). Then build a tiny
+      all-pass page as `fixtures/users-allpass.json` (one user, `mfa_enabled` true,
+      total 1, null cursor — same shape as the lab pages), run the aggregator on it as
+      `allpass-report.json`, and keep that code as `exit-pass.txt`. You already hold
+      the tooling-error code in `truncated-exit.txt`. Three different numbers, three
+      different meanings.
+    verify:
+      - check: file_content_equals
+        path: ~/lab06/exit-fail.txt
+        from: generated
+      - check: file_content_equals
+        path: ~/lab06/exit-pass.txt
+        from: generated
+      - check: file_content_matches
+        path: ~/lab06/allpass-report.json
+        regex: "\"control_result\": \"PASS\""
+      - check: artifact_produced_by
+        path: ~/lab06/allpass-report.json
+        required_commands: [aggregate-mfa]
+      - check: history_contains
+        regex: "echo .*\\$\\?.*> *exit-fail\\.txt"
+      - check: history_contains
+        regex: "echo .*\\$\\?.*> *exit-pass\\.txt"
+    hints:
+      - nudge: "A control FAIL is not a broken tool: a monitoring system must react differently to \"the control failed\" vs \"the check itself broke\". One page with every user compliant makes the PASS path observable."
+      - concept: "§5.4 — exit-code discipline: 0 control PASS, 3 control FAIL, 1 tooling error"
+      - reveal: "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json · echo $? > exit-fail.txt · echo '{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ], \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }' > fixtures/users-allpass.json · aggregate-mfa fixtures/users-allpass.json > allpass-report.json · echo $? > exit-pass.txt"
+    explain: |
+      0 = control PASS, 3 = control FAIL, 1 = tooling error. FAIL and broken-tool MUST
+      be different codes: a scheduler alerting on "control failed" when the truth is
+      "the pull broke" pages the wrong team and buries the real defect — module 13
+      builds its monitoring loop directly on this distinction.
+
+  - id: t11
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Write the LOCATE plan — the §4.7 five-question docs summary for this vendor —
+      as `LOCATE-plan.md` next to the fixtures (nano works here, or compose it with a
+      heredoc). Cover: auth rung + how a token is obtained; endpoint + truth field;
+      pagination shape + stop signal; rate limit; error shape.
+    verify:
+      - check: file_exists
+        path: ~/lab06/LOCATE-plan.md
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "client[-_ ]credentials"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "/oauth/token"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "users:read"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "/api/v2/users"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "mfa_enabled"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "next_cursor"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "600"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "Retry-After"
+      - check: file_content_matches
+        path: ~/lab06/LOCATE-plan.md
+        regex: "[Ee]rror.*[Mm]essage"
+    hints:
+      - nudge: "Everything you need is in vendor-docs.md and in what you just did — five short lines answer it. §5.1 is the worked example of exactly this plan."
+      - concept: "§4.7/§5.1 — the five-question plan IS the LOCATE stage; the rest is mechanics"
+      - reveal: "nano LOCATE-plan.md (or cat > LOCATE-plan.md << 'EOF' … EOF) with one line each — auth: OAuth2 client-credentials at /oauth/token, scope users:read; truth: GET /api/v2/users, field mfa_enabled; pagination: cursor, stop at next_cursor null, total advertised; rate limit: 600 req/min, 429 carries Retry-After; errors: { \"error\": \"...\", \"message\": \"...\" }"
+    explain: |
+      That plan is transferable: a GRC engineer who can produce it from cold docs can
+      pull evidence from a vendor they had never seen an hour earlier. It is also the
+      document a reviewer audits when they ask "why do you trust this pull?"
+
+  - id: t12
+    type: action
+    objective: [6]
+    instruction: |
+      Make the evidence provably reproducible. Run the full aggregation twice, into
+      `report-run-1.json` and `report-run-2.json`, then `diff` the two and record the
+      verdict: if diff is silent, write `identical` into `repro-verdict.txt` (chain
+      it: `diff … && echo identical > repro-verdict.txt`).
+    verify:
+      - check: file_content_equals
+        path: ~/lab06/repro-verdict.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab06/repro-verdict.txt
+        required_commands: [diff]
+      - check: file_content_equals
+        path: ~/lab06/report-run-1.json
+        from: generated
+      - check: history_contains
+        regex: "diff report-run-1\\.json report-run-2\\.json"
+    hints:
+      - nudge: "`diff a b` prints nothing and exits 0 when the files are byte-identical; `&&` runs the next command only on that success."
+      - concept: "§5.3/§6 task 8 — identical evidence on re-run is what makes a pull schedulable; the report pins collected_at for exactly this reason"
+      - reveal: "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json · aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json · diff report-run-1.json report-run-2.json && echo identical > repro-verdict.txt"
+    explain: |
+      Byte-identical reports on re-run — the property that turns a one-off pull into a
+      schedulable control check. On your real machine the §6 step finishes this:
+      `git init`, commit the fixtures, the aggregator, LOCATE-plan.md, and a README —
+      then the evidence has history as well as reproducibility.
+
+  - id: t13
+    type: reflection
+    objective: [1]
+    instruction: |
+      Explain, to a non-technical colleague, what just happened at the counter — using
+      §3's service-counter model and tracing ONE of your requests end to end: the verb
+      and address you asked at, how you proved who you were, what the three-digit
+      verdict meant, and what shape the answer came back in. Include why your 401 and
+      your 403 were different sentences in that conversation.
+    hints:
+      - nudge: "The §3 model: a deliberate, narrow counter in front of an interior you never touch — verb, address, credential, verdict, JSON answer."
+      - concept: "§3 — The Mental Model"
+
+  - id: t14
+    type: reflection
+    objective: [2]
+    instruction: |
+      Your report shows users_without_mfa: 4 and active_users_without_mfa: 3 — the gap
+      is u_004, who is suspended. Citing the control claim ("every workforce user has
+      MFA enabled"), decide which number you would put in front of an auditor and
+      defend it in 2–3 sentences. There is a defensible case for each — what matters
+      is that the scoping decision is explicit, not silent.
+    hints:
+      - nudge: "Is a suspended account a \"workforce user\"? The report deliberately refuses to decide that for you."
+      - concept: "§5.3 — the report surfaces both numbers and lets the control definition decide"
+
+  - id: t15
+    type: reflection
+    objective: [4, 5]
+    instruction: |
+      Two failure modes, one sentence each. First: why is failing LOUD on an incomplete
+      pull (what you saw in the truncated run) better GRC behavior than emitting a
+      smaller, plausible number? Second: the vendor docs cap you at 600 requests/minute
+      and answer excess with 429 + Retry-After — describe what your pull script should
+      DO when that arrives mid-pagination, and what silently dropping the page would do
+      to your evidence.
+    hints:
+      - nudge: "Both failure modes end the same way if mishandled: a complete-looking report that is quietly missing records."
+      - concept: "§4.5 — rate limits and pagination collide: the same pull that needs every page needs to wait politely to finish at all"
+
+  - id: t16
+    type: reflection
+    objective: [6]
+    instruction: |
+      In one or two sentences, connect "the report is byte-identical on re-run" and
+      "the whole thing lives in Git" to continuous, audit-ready assurance. (On a real
+      machine, finish §6 task 8 for real: git init, commit the fixtures, the
+      aggregator, LOCATE-plan.md, and a short README stating the control and how to
+      re-run — this box honestly has no git.)
+    hints:
+      - nudge: "An auditor's two favorite questions: \"can you produce this again?\" and \"what did it say last quarter?\" — which property answers which?"
+      - concept: "§6 task 8 — version-controlled, reproducible evidence is the bridge to module 13's continuous monitoring"
+
+completion:
+  evidence_pack: true

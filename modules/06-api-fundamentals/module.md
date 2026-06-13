@@ -172,6 +172,8 @@ With the cursor ignored, you'd aggregate 5 users, find 2 without MFA, and confid
 
 **Scenario.** You are asked to produce audit-ready evidence for the control *"every workforce user has MFA enabled,"* pulled from a paginated SaaS user-list API, and to make it re-runnable and provably complete.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 06 → Interactive lab): the same simulated terminal, with `curl` wired to the simulated vendor `acme.example` — you perform §5.2's authenticated, paginated call sequence for real (401 → token → cursor → null), and the aggregator's report, completeness guard, and exit codes are CI-verified against a real Linux machine.
+
 **Setup.** From the module's `labs/` directory, run `bash setup.sh` to (re)generate the two-page fixture (`fixtures/users-page-1.json`, `fixtures/users-page-2.json`). These simulate a real cursor-paginated API response: page 1 carries a non-null `next_cursor`, page 2 carries `next_cursor: null`, and both advertise the same `total`.
 
 **Tasks.**

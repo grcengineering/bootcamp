@@ -1,0 +1,302 @@
+{
+  "spec": {
+    "id": "lab-13",
+    "module": "13-continuous-controls-monitoring",
+    "title": "The control that checks itself",
+    "owner": "Justin Pagano",
+    "volatility": "A",
+    "review_due": "2027-05-28",
+    "engine": "builder",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m13",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You own one control: every S3 bucket has all four public-access-block flags enabled.\nThis surface is the §6 lab's five-part loop already wired to a scheduler — the thing\nthe real lab's optional task 8 needs a cloud account for. Every scheduled run executes\nthis module's own check library (`ccm-check.sh`, the exact code `labs/setup.sh`\ngenerates), ported and CI-verified byte-for-byte against real `bash` runs — the\nverdicts, evidence records, ledger rows, and alert files are earned from your current\nsimulated cloud state, never scripted. Honesty notes: one tick = 24 hours of schedule\n(a declared time compression, so a month of monitoring fits in a sitting), and the\ndashboard tile you watch is a query over the append-only ledger, recomputed every run.\nOn a real machine, §6 walks the same loop by hand: `source ./ccm-lab/ccm-check.sh`,\nthen `evaluate_control` and `emit_evidence` against the committed state fixtures.\nOne more thread to notice: this loop is claim-agnostic. Swap part one for module 00's\nlaptop-encryption claim and part two for the check you scripted in module 01, and\nnothing else changes — this module is where that check stops being a thing you run\nand becomes a thing that runs.\n",
+    "builder": {
+      "surface": "ccm",
+      "validator_args": [],
+      "ccm": {
+        "state_file": "labs/fixtures/state-compliant.json",
+        "start": "2026-05-20T09:00:00Z",
+        "drift_bucket": "acme-public-website",
+        "interval_hours_options": [
+          24
+        ]
+      }
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          2,
+          3
+        ],
+        "instruction": "Run the first scheduled check against the seeded compliant snapshot: press\n**Run next scheduled check** once. Read the run line it prints —\n`2026-05-20T09:00:00Z run-20260520090000 rc=0` — and notice which part of it is\nfor you and which is for the machine. `rc` is the check's exit code: zero means\nthe control holds, and it is the only part of the output the rest of the loop\nbranches on.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "^2026-05-20T09:00:00Z run-20260520090000 rc=0$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ccm:tick x1$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One button. The scheduler captures the current state, evaluates the claim against it, and reports a verdict — the same capture-then-evaluate split you'd drive by hand with `evaluate_control`."
+          },
+          {
+            "concept": "§4.3 — the verdict: a PASS/FAIL line for humans, an exit code for machines"
+          },
+          {
+            "reveal": "Press “Run next scheduled check”. The run line reads `2026-05-20T09:00:00Z run-20260520090000 rc=0` — exit code 0, the control holds."
+          }
+        ],
+        "explain": "That `rc=0` is module 01's `$?` wearing its production clothes. No human read any\noutput to produce the green tile — the scheduler branched on the exit code, wrote\nthe evidence record, appended the ledger row, and stayed silent. The exit code is\nthe hinge the entire loop turns on.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          3,
+          4
+        ],
+        "instruction": "A monitor that only speaks when something breaks can never prove that nothing\ndid. Build that proof: press **Advance 30 days**. Each of those thirty scheduled\nruns evaluated the real state, emitted a dated evidence record, and appended one\nledger row — and fired no alert. Watch the dashboard tile fill with an unbroken\ngreen strip: that strip is the proof of the negative a point-in-time audit\nstructurally cannot produce.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "rc=0$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ccm:tick x30$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Time is the declared compression control here: one gesture is a month of schedule, and every tick in it is a genuine run of the check — not a painted-on green square."
+          },
+          {
+            "concept": "§4.4 — evidence on every run: proving the negative"
+          },
+          {
+            "reveal": "Press “Advance 30 days”. The latest run line still ends `rc=0`, no alert appears, and the tile's trend strip is solid green for the window."
+          }
+        ],
+        "explain": "Thirty deliberately boring records are most of CCM's value. When an auditor asks\n\"show me the control held the entire period,\" the green rows are the answer — an\nalert-only system that stays silent when healthy throws that proof away. Append-only\nmatters for the same reason: evidence you could rewrite proves nothing.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3,
+          5
+        ],
+        "instruction": "Mid-quarter, someone flips all four public-access-block flags off on\n`acme-public-website` to debug a static site — and forgets to restore them. Be\nthat someone: press **Inject drift (acme-public-website)**, then\n**Run next scheduled check**. The same check, unchanged, now answers `rc=1` —\nand this run, unlike every green one before it, leaves an alert file behind,\nnamed by the run that caught it.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "rc=1 alert=ccm-lab/evidence/alert-run-[0-9]+\\.txt$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ccm:tick x1$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Two presses: change reality first, then let the schedule discover it. The alert exists only because a scheduled run returned non-zero — silence is reserved for health."
+          },
+          {
+            "concept": "§4.7 — the drift alert: silence means healthy, noise means act"
+          },
+          {
+            "reveal": "Press “Inject drift (acme-public-website)”, then “Run next scheduled check”: the run line ends `rc=1 alert=ccm-lab/evidence/alert-run-<digits>.txt`."
+          }
+        ],
+        "explain": "The alert file this run wrote carries exactly what §5.3 shows: the control id, the\ncaptured_at timestamp, and `drifted_resource=acme-public-website` — what broke,\nwhere, and when, with no console spelunking. The annual-audit version of this story\nis an assessor finding the public bucket eleven months later; the loop's version is\na notification the morning after the change.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          2,
+          3
+        ],
+        "instruction": "Leave the drift exactly as it is and press **Advance a week**. Seven more\nscheduled runs against the same drifted state: seven identical FAIL verdicts,\nseven red intervals on the tile, and not one flap. The point of this week is what\ndoes NOT change — a check that could answer differently against unchanged state\nwould turn the entire history store into noise.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "rc=1 alert=ccm-lab/evidence/alert-run-[0-9]+\\.txt$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ccm:tick x7$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Don't remediate yet. Determinism is a property you can only observe by re-running against held-still state — same snapshot in, same verdict out, every time."
+          },
+          {
+            "concept": "§4.2 — capture vs evaluation: deterministic, testable verdicts"
+          },
+          {
+            "reveal": "Press “Advance a week” with the drift still in place: the latest run line still ends `rc=1 alert=…` and the tile shows an unbroken run of red after the green month."
+          }
+        ],
+        "explain": "Same captured state, same verdict — seven times. That determinism is what makes the\nledger trustworthy: a red row means reality drifted, never \"the check was moody\ntoday.\" When you cannot distinguish drift from flake, you do not have a monitor;\nyou have a random-number generator with a dashboard.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "Close the loop the way a responder would: press **Remediate**, then\n**Run next scheduled check**. The very next run returns `rc=0` and goes silent\nagain. Now read the dashboard tile as evidence: the current verdict is green, but\nthe trailing strip still shows the red gap — \"green now\" and \"green the whole\nwindow\" are different claims, and the strip is what tells them apart.\n",
+        "verify": [
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "rc=0$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ccm:tick x1$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Reality changed back, so the next scheduled verdict follows it — the check evaluates state, not history. The red interval stays on the tile because the ledger is append-only."
+          },
+          {
+            "concept": "§4.6 — the dashboard tile: current state + 30-day history as a query"
+          },
+          {
+            "reveal": "Press “Remediate”, then “Run next scheduled check”: the run line ends `rc=0`, no new alert fires, and the tile shows a green current verdict above a strip that still contains the red week."
+          }
+        ],
+        "explain": "The tile is not a status somebody updates — it is a query over the append-only\nledger, recomputed from the records. That is why the red week cannot be quietly\nerased, and why this table is admissible when the §7 assessment (or a real audit)\nasks for it. A bare status light would have shown only \"green now\" and hidden the\ndrift entirely.\n"
+      },
+      {
+        "id": "t6",
+        "type": "reflection",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "In 4–6 sentences: state this lab's control as a binary claim — name the population,\nthe four observable flags by name, and the pass condition — then trace it through\nthe five loop parts exactly as you just drove them (check, evidence emission,\nhistory store, dashboard tile, drift alert). Close with one sentence for the\ncolleague who believes an annual audit means they are compliant: snapshot versus\nmonitor, no jargon. Then name what you would change to monitor module 00's\nlaptop-encryption claim instead — and notice how little it is.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "If your claim sentence can't be answered true-or-false by reading bucket flags, it isn't monitorable yet. And the loop swap question has a one-line answer: only part one (the claim) and the capture change."
+          },
+          {
+            "concept": "§3 — The Mental Model: stop treating a control check as an event"
+          }
+        ]
+      },
+      {
+        "id": "t7",
+        "type": "reflection",
+        "objective": [
+          5,
+          3
+        ],
+        "instruction": "The diagnosis, in writing: from the loop's own output alone — the failing run\nline, the alert filename, and the tile — name the control, the drifted resource,\nand the exact moment compliance was lost. Then the hardening question from this\nlab's fixtures: `state-empty.json` evaluates zero resources and the check answers\n`rc=2`, refusing to pass. Explain in two sentences why a monitor that green-lights\nan empty snapshot is worse than no monitor at all.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The run id is the captured_at timestamp with the punctuation stripped — the moment is in the filename. For the empty case: what does a green verdict claim, and what did the check actually look at?"
+          },
+          {
+            "concept": "§4.1 + §6 setup — fail closed: never report a green verdict you cannot justify"
+          }
+        ]
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          6
+        ],
+        "instruction": "The build-vs-buy memo, 5–7 sentences: for each of the five loop parts (control\nclaim, check/evaluation, evidence emission, history store + dashboard, drift\nalert) plus the scheduler, state whether you would own or rent it and why. Close\nby naming one vendor claim you would refuse to treat as evidence, and what you\nwould ask instead.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "A useful default: own what encodes YOUR policy and YOUR evidence definitions; rent the undifferentiated heavy lifting. 'Category leader' and growth percentages are marketing — which of the five stages does the tool actually perform?"
+          },
+          {
+            "concept": "§4.8 — the schedule, and build-vs-buy as a stage-by-stage decision"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/ccm-lab",
+        "dir": true
+      },
+      {
+        "path": "~/ccm-lab/ccm-check.sh",
+        "content": "#!/usr/bin/env bash\n# Module 13 control-check library. Offline by construction: no network, no cloud SDK, no jq.\n# JSON parsing uses `bun` when it is on PATH (a real parser, robust to any formatting) and falls\n# back to pure bash + coreutils + awk on a bare machine — same output contract either way.\n#\n# CONTROL: CC6.1-s3-public-access-block\n#   Claim: \"every S3 bucket has all four public-access-block settings enabled.\"\n#\n# The check reads a captured state snapshot (JSON) and returns a verdict a machine can act on:\n#   stdout    = a single PASS/FAIL line, then one \"NONCOMPLIANT <name>\" line per drifted bucket\n#   exit code = 0 when the control PASSES, 1 when it FAILS (drift), 2 when it could evaluate ZERO\n#               resources and therefore FAILS CLOSED (refuses to report a green verdict it cannot\n#               justify). That exit code is the hinge that turns a check into automation — no human\n#               has to read the output, and a non-zero is never silently treated as healthy.\n#\n# Design note: this library never calls `set -e`. It is sourced by callers that may or may not\n# run under errexit, so it preserves the caller's shell options and signals only through return\n# codes. (An earlier version forced `set -e` and leaked it into the caller — fixed.)\n\n# normalize_buckets <state-json-file>\n# Flattens a captured-state snapshot to ONE LINE PER BUCKET — the form the evaluator judges.\n# Each emitted line is: \"<name>\\t<block_public_acls>\\t<block_public_policy>\\t<ignore_public_acls>\\t<restrict_public_buckets>\"\n# with each flag rendered as the literal \"true\" or \"false\".\n#\n# This MUST work on PRETTY-PRINTED JSON. Real `aws ... --output json`, `jq .`, and AWS Config\n# exports are multi-line — the bucket name and its flags land on DIFFERENT physical lines. An\n# earlier version matched a bucket only when \"name\" AND \"restrict_public_buckets\" appeared on the\n# SAME line, so every pretty-printed snapshot parsed to zero buckets and silently PASSED a public\n# bucket. Fixed: we normalise first (parse the whole document), then evaluate the normalised rows.\n#\n# Two parsers, same output contract, both OFFLINE (no network, no cloud SDK):\n#   1) bun, if present — a real JSON parser, robust to any whitespace, key order, or nesting.\n#   2) a pure-awk fallback for a bare machine — walks the \"buckets\" array brace-by-brace, so a\n#      bucket object spread across many lines is collapsed into one normalised row.\nnormalize_buckets() {\n  local state=\"$1\"\n  if command -v bun >/dev/null 2>&1; then\n    bun -e '\n      const fs = require(\"fs\");\n      const doc = JSON.parse(fs.readFileSync(process.argv[1], \"utf8\"));\n      const buckets = Array.isArray(doc.buckets) ? doc.buckets : [];\n      const flag = (b, k) => (b[k] === true ? \"true\" : \"false\");\n      for (const b of buckets) {\n        const name = typeof b.name === \"string\" ? b.name : \"\";\n        process.stdout.write([name,\n          flag(b, \"block_public_acls\"), flag(b, \"block_public_policy\"),\n          flag(b, \"ignore_public_acls\"), flag(b, \"restrict_public_buckets\")].join(\"\\t\") + \"\\n\");\n      }\n    ' \"$state\"\n    return 0\n  fi\n  # Pure-awk fallback for a bare machine (bash + coreutils + awk, no bun). Read the WHOLE document\n  # as one record (RS=\"\"), then walk only the \"buckets\" array brace-by-brace, collapsing each\n  # {...} object — however it is wrapped across lines — into one normalised row. A bucket is\n  # recognised by its \"name\" key, NEVER by the accident of which keys share a physical line.\n  awk 'BEGIN { RS = \"\\0\" }\n    # val(buf,key): the literal value of \"key\" in object text buf — \"true\"/\"false\" for booleans,\n    # the unquoted string for string values, or \"\" when the key is absent.\n    function val(buf, key,   re, m) {\n      re = \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\"\n      if (match(buf, re \"true\"))  return \"true\"\n      if (match(buf, re \"false\")) return \"false\"\n      if (match(buf, \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\\"\")) {\n        m = substr(buf, RSTART + RLENGTH); sub(/\".*$/, \"\", m); return m\n      }\n      return \"\"\n    }\n    function emit(buf,   nm) {\n      nm = val(buf, \"name\")\n      if (nm == \"\") return            # not a bucket object (no name) — skip\n      printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", nm,\n        (val(buf,\"block_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"block_public_policy\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"ignore_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"restrict_public_buckets\")==\"true\"?\"true\":\"false\")\n    }\n    {\n      doc = $0\n      # Locate the \"buckets\" array and scan only from there, so a stray bracket elsewhere in the\n      # document cannot be mistaken for the bucket list.\n      if (!match(doc, /\"buckets\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\[/)) exit 0\n      i = RSTART + RLENGTH        # first char inside the [ ... ] array\n      depth = 0; obj = \"\"; inobj = 0\n      n = length(doc)\n      for (; i <= n; i++) {\n        c = substr(doc, i, 1)\n        if (depth == 0 && c == \"]\") break       # end of the buckets array\n        if (c == \"{\") { depth++; if (depth == 1) { obj = \"\"; inobj = 1; continue } }\n        if (c == \"}\") { depth--; if (depth == 0) { emit(obj); inobj = 0; continue } }\n        if (inobj) obj = obj c\n      }\n    }\n  ' \"$state\"\n}\n\n# evaluate_control <state-json-file>\n# Emits a machine-readable verdict on stdout. Returns 0 (pass) / 1 (fail/drift) / 2 (no resources).\n# Deterministic: the same snapshot always yields the same verdict.\n#\n# FAIL CLOSED: if the snapshot parses to ZERO buckets (empty list, wrong shape, unparseable),\n# this does NOT emit a green verdict — it refuses to pass and returns non-zero. A monitor that\n# silently passes when it evaluated nothing is worse than no monitor: it manufactures evidence\n# of compliance from the absence of data.\nevaluate_control() {\n  local state=\"$1\"\n  # Normalise to one row per bucket FIRST, then judge the rows. A bucket is COMPLIANT only when\n  # all four public-access-block flags are true; otherwise it is NONCOMPLIANT (drift).\n  # rows: \"<name>\\t<acls>\\t<policy>\\t<ignore>\\t<restrict>\"\n  local rows total noncompliant\n  rows=\"$(normalize_buckets \"$state\")\"\n  total=\"$(printf '%s' \"$rows\" | grep -c . || true)\"\n\n  # Refuse to pass on an empty evaluation — fail closed.\n  if [ \"$total\" -eq 0 ]; then\n    echo \"ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\" >&2\n    echo \"FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\"\n    return 2\n  fi\n\n  # A row is NONCOMPLIANT unless every one of its four flags is exactly \"true\".\n  noncompliant=\"$(printf '%s\\n' \"$rows\" | awk -F'\\t' '\n    NF>=5 && !($2==\"true\" && $3==\"true\" && $4==\"true\" && $5==\"true\") { print $1 }\n  ')\"\n\n  if [ -z \"$noncompliant\" ]; then\n    echo \"PASS control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=0\"\n    return 0\n  fi\n  echo \"FAIL control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=$(printf '%s\\n' \"$noncompliant\" | grep -c .)\"\n  printf 'NONCOMPLIANT %s\\n' $noncompliant\n  return 1\n}\n\n# emit_evidence <state-json-file> <evidence-dir>\n# Runs the check, writes a timestamped immutable evidence record, appends one row to the\n# append-only ledger (the 30-day-history substrate a dashboard tile reads), and — only on drift —\n# writes an alert file. Returns the check's exit code so the caller can branch on PASS/FAIL.\nemit_evidence() {\n  local state=\"$1\" evdir=\"$2\"\n  mkdir -p \"$evdir\"\n  local captured run_id verdict_line rc full record\n  captured=\"$(awk -F'\"' '/\"captured_at\"/{print $4; exit}' \"$state\")\"\n  # Fall back to a wall-clock stamp when the snapshot carries no captured_at (e.g. a malformed or\n  # empty state) so the fail-closed record + alert still get a stable, unique filename.\n  [ -n \"$captured\" ] || captured=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n  run_id=\"run-$(printf '%s' \"$captured\" | tr -cd '0-9')\"\n  record=\"$evdir/${run_id}.evidence\"\n\n  # Capture the verdict WITHOUT toggling shell options. `if cmd; then …` neutralises errexit for\n  # this one call, so a FAIL (return 1) does not abort an errexit-enabled caller mid-function.\n  if full=\"$(evaluate_control \"$state\")\"; then rc=0; else rc=$?; fi\n  verdict_line=\"$(printf '%s\\n' \"$full\" | head -1)\"\n\n  # Immutable per-run evidence record — generated by the same code that did the evaluating,\n  # so it cannot drift from what was actually checked.\n  {\n    echo \"control_id=CC6.1-s3-public-access-block\"\n    echo \"captured_at=${captured}\"\n    echo \"verdict=${verdict_line}\"\n    echo \"exit_code=${rc}\"\n    echo \"source_state=$(basename \"$state\")\"\n  } > \"$record\"\n\n  # Append-only ledger: one row per run. This is the history a dashboard tile reads to draw\n  # \"current state + 30-day trend\". Append-only because evidence you can rewrite is not evidence.\n  echo \"${captured} ${run_id} rc=${rc} ${verdict_line}\" >> \"$evdir/ledger.log\"\n\n  # Alert fires ONLY on drift (non-zero exit). A PASS leaves no alert behind — silence is the\n  # signal that the control is holding. A fail-closed \"no resources evaluated\" (rc=2) is also a\n  # drift the responder must see: the monitor could not confirm the control, so it must not be\n  # mistaken for healthy silence.\n  if [ \"$rc\" -ne 0 ]; then\n    {\n      echo \"ALERT control=CC6.1-s3-public-access-block captured_at=${captured}\"\n      echo \"${verdict_line}\"\n      if [ \"$rc\" -eq 2 ]; then\n        echo \"drifted_resource=<none — evaluated 0 resources; snapshot empty, unparsed, or wrong shape>\"\n      else\n        printf '%s\\n' \"$full\" | awk '/^NONCOMPLIANT /{print \"drifted_resource=\" $2}'\n      fi\n    } > \"$evdir/alert-${run_id}.txt\"\n  fi\n  return \"$rc\"\n}\n"
+      },
+      {
+        "path": "~/ccm-lab/evidence",
+        "dir": true
+      },
+      {
+        "path": "~/ccm-lab/evidence/.gitkeep",
+        "content": ""
+      },
+      {
+        "path": "~/labs",
+        "dir": true
+      },
+      {
+        "path": "~/labs/fixtures",
+        "dir": true
+      },
+      {
+        "path": "~/labs/fixtures/state-compliant.json",
+        "content": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-20T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    { \"name\": \"acme-evidence-store\",   \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-audit-logs\",        \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-public-website\",    \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true }\n  ]\n}\n"
+      },
+      {
+        "path": "~/labs/fixtures/state-drifted-pretty.json",
+        "content": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-22T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    {\n      \"name\": \"acme-evidence-store\",\n      \"block_public_acls\": true,\n      \"block_public_policy\": true,\n      \"ignore_public_acls\": true,\n      \"restrict_public_buckets\": true\n    },\n    {\n      \"name\": \"acme-audit-logs\",\n      \"block_public_acls\": true,\n      \"block_public_policy\": true,\n      \"ignore_public_acls\": true,\n      \"restrict_public_buckets\": true\n    },\n    {\n      \"name\": \"acme-public-website\",\n      \"block_public_acls\": false,\n      \"block_public_policy\": false,\n      \"ignore_public_acls\": false,\n      \"restrict_public_buckets\": false\n    }\n  ]\n}\n"
+      },
+      {
+        "path": "~/labs/fixtures/state-drifted.json",
+        "content": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-21T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": [\n    { \"name\": \"acme-evidence-store\",   \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-audit-logs\",        \"block_public_acls\": true,  \"block_public_policy\": true,  \"ignore_public_acls\": true,  \"restrict_public_buckets\": true },\n    { \"name\": \"acme-public-website\",    \"block_public_acls\": false, \"block_public_policy\": false, \"ignore_public_acls\": false, \"restrict_public_buckets\": false }\n  ]\n}\n"
+      },
+      {
+        "path": "~/labs/fixtures/state-empty.json",
+        "content": "{\n  \"control_id\": \"CC6.1-s3-public-access-block\",\n  \"captured_at\": \"2026-05-23T09:00:00Z\",\n  \"source\": \"aws-config-snapshot\",\n  \"buckets\": []\n}\n"
+      },
+      {
+        "path": "~/labs/setup.sh",
+        "content": "#!/usr/bin/env bash\n# Fixture + check-library generator for Module 13 (Continuous Controls Monitoring).\n#\n# Produces, into the target dir (default: ./ccm-lab):\n#   - ccm-check.sh        the control-check function library (vendor-neutral, pure bash + awk)\n#   - evidence/           the versioned evidence store (append-only ledger + per-run records)\n#\n# The committed JSON fixtures (labs/fixtures/state-compliant.json, state-drifted.json) are the\n# \"sample state\" the check runs against — they stand in for an AWS Config snapshot so the CORE\n# EVALUATION LOGIC can be proven offline, with no cloud, no network, no credentials, no Docker.\n# In the real §6 lab these same functions are wired to a scheduler and a live cloud snapshot.\nset -euo pipefail\n\nTARGET=\"${1:-./ccm-lab}\"\nmkdir -p \"$TARGET/evidence\"\n\ncat > \"$TARGET/ccm-check.sh\" <<'CHECK'\n#!/usr/bin/env bash\n# Module 13 control-check library. Offline by construction: no network, no cloud SDK, no jq.\n# JSON parsing uses `bun` when it is on PATH (a real parser, robust to any formatting) and falls\n# back to pure bash + coreutils + awk on a bare machine — same output contract either way.\n#\n# CONTROL: CC6.1-s3-public-access-block\n#   Claim: \"every S3 bucket has all four public-access-block settings enabled.\"\n#\n# The check reads a captured state snapshot (JSON) and returns a verdict a machine can act on:\n#   stdout    = a single PASS/FAIL line, then one \"NONCOMPLIANT <name>\" line per drifted bucket\n#   exit code = 0 when the control PASSES, 1 when it FAILS (drift), 2 when it could evaluate ZERO\n#               resources and therefore FAILS CLOSED (refuses to report a green verdict it cannot\n#               justify). That exit code is the hinge that turns a check into automation — no human\n#               has to read the output, and a non-zero is never silently treated as healthy.\n#\n# Design note: this library never calls `set -e`. It is sourced by callers that may or may not\n# run under errexit, so it preserves the caller's shell options and signals only through return\n# codes. (An earlier version forced `set -e` and leaked it into the caller — fixed.)\n\n# normalize_buckets <state-json-file>\n# Flattens a captured-state snapshot to ONE LINE PER BUCKET — the form the evaluator judges.\n# Each emitted line is: \"<name>\\t<block_public_acls>\\t<block_public_policy>\\t<ignore_public_acls>\\t<restrict_public_buckets>\"\n# with each flag rendered as the literal \"true\" or \"false\".\n#\n# This MUST work on PRETTY-PRINTED JSON. Real `aws ... --output json`, `jq .`, and AWS Config\n# exports are multi-line — the bucket name and its flags land on DIFFERENT physical lines. An\n# earlier version matched a bucket only when \"name\" AND \"restrict_public_buckets\" appeared on the\n# SAME line, so every pretty-printed snapshot parsed to zero buckets and silently PASSED a public\n# bucket. Fixed: we normalise first (parse the whole document), then evaluate the normalised rows.\n#\n# Two parsers, same output contract, both OFFLINE (no network, no cloud SDK):\n#   1) bun, if present — a real JSON parser, robust to any whitespace, key order, or nesting.\n#   2) a pure-awk fallback for a bare machine — walks the \"buckets\" array brace-by-brace, so a\n#      bucket object spread across many lines is collapsed into one normalised row.\nnormalize_buckets() {\n  local state=\"$1\"\n  if command -v bun >/dev/null 2>&1; then\n    bun -e '\n      const fs = require(\"fs\");\n      const doc = JSON.parse(fs.readFileSync(process.argv[1], \"utf8\"));\n      const buckets = Array.isArray(doc.buckets) ? doc.buckets : [];\n      const flag = (b, k) => (b[k] === true ? \"true\" : \"false\");\n      for (const b of buckets) {\n        const name = typeof b.name === \"string\" ? b.name : \"\";\n        process.stdout.write([name,\n          flag(b, \"block_public_acls\"), flag(b, \"block_public_policy\"),\n          flag(b, \"ignore_public_acls\"), flag(b, \"restrict_public_buckets\")].join(\"\\t\") + \"\\n\");\n      }\n    ' \"$state\"\n    return 0\n  fi\n  # Pure-awk fallback for a bare machine (bash + coreutils + awk, no bun). Read the WHOLE document\n  # as one record (RS=\"\"), then walk only the \"buckets\" array brace-by-brace, collapsing each\n  # {...} object — however it is wrapped across lines — into one normalised row. A bucket is\n  # recognised by its \"name\" key, NEVER by the accident of which keys share a physical line.\n  awk 'BEGIN { RS = \"\\0\" }\n    # val(buf,key): the literal value of \"key\" in object text buf — \"true\"/\"false\" for booleans,\n    # the unquoted string for string values, or \"\" when the key is absent.\n    function val(buf, key,   re, m) {\n      re = \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\"\n      if (match(buf, re \"true\"))  return \"true\"\n      if (match(buf, re \"false\")) return \"false\"\n      if (match(buf, \"\\\"\" key \"\\\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\\"\")) {\n        m = substr(buf, RSTART + RLENGTH); sub(/\".*$/, \"\", m); return m\n      }\n      return \"\"\n    }\n    function emit(buf,   nm) {\n      nm = val(buf, \"name\")\n      if (nm == \"\") return            # not a bucket object (no name) — skip\n      printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", nm,\n        (val(buf,\"block_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"block_public_policy\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"ignore_public_acls\")==\"true\"?\"true\":\"false\"),\n        (val(buf,\"restrict_public_buckets\")==\"true\"?\"true\":\"false\")\n    }\n    {\n      doc = $0\n      # Locate the \"buckets\" array and scan only from there, so a stray bracket elsewhere in the\n      # document cannot be mistaken for the bucket list.\n      if (!match(doc, /\"buckets\"[ \\t\\r\\n]*:[ \\t\\r\\n]*\\[/)) exit 0\n      i = RSTART + RLENGTH        # first char inside the [ ... ] array\n      depth = 0; obj = \"\"; inobj = 0\n      n = length(doc)\n      for (; i <= n; i++) {\n        c = substr(doc, i, 1)\n        if (depth == 0 && c == \"]\") break       # end of the buckets array\n        if (c == \"{\") { depth++; if (depth == 1) { obj = \"\"; inobj = 1; continue } }\n        if (c == \"}\") { depth--; if (depth == 0) { emit(obj); inobj = 0; continue } }\n        if (inobj) obj = obj c\n      }\n    }\n  ' \"$state\"\n}\n\n# evaluate_control <state-json-file>\n# Emits a machine-readable verdict on stdout. Returns 0 (pass) / 1 (fail/drift) / 2 (no resources).\n# Deterministic: the same snapshot always yields the same verdict.\n#\n# FAIL CLOSED: if the snapshot parses to ZERO buckets (empty list, wrong shape, unparseable),\n# this does NOT emit a green verdict — it refuses to pass and returns non-zero. A monitor that\n# silently passes when it evaluated nothing is worse than no monitor: it manufactures evidence\n# of compliance from the absence of data.\nevaluate_control() {\n  local state=\"$1\"\n  # Normalise to one row per bucket FIRST, then judge the rows. A bucket is COMPLIANT only when\n  # all four public-access-block flags are true; otherwise it is NONCOMPLIANT (drift).\n  # rows: \"<name>\\t<acls>\\t<policy>\\t<ignore>\\t<restrict>\"\n  local rows total noncompliant\n  rows=\"$(normalize_buckets \"$state\")\"\n  total=\"$(printf '%s' \"$rows\" | grep -c . || true)\"\n\n  # Refuse to pass on an empty evaluation — fail closed.\n  if [ \"$total\" -eq 0 ]; then\n    echo \"ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\" >&2\n    echo \"FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\"\n    return 2\n  fi\n\n  # A row is NONCOMPLIANT unless every one of its four flags is exactly \"true\".\n  noncompliant=\"$(printf '%s\\n' \"$rows\" | awk -F'\\t' '\n    NF>=5 && !($2==\"true\" && $3==\"true\" && $4==\"true\" && $5==\"true\") { print $1 }\n  ')\"\n\n  if [ -z \"$noncompliant\" ]; then\n    echo \"PASS control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=0\"\n    return 0\n  fi\n  echo \"FAIL control=CC6.1-s3-public-access-block evaluated=${total} noncompliant=$(printf '%s\\n' \"$noncompliant\" | grep -c .)\"\n  printf 'NONCOMPLIANT %s\\n' $noncompliant\n  return 1\n}\n\n# emit_evidence <state-json-file> <evidence-dir>\n# Runs the check, writes a timestamped immutable evidence record, appends one row to the\n# append-only ledger (the 30-day-history substrate a dashboard tile reads), and — only on drift —\n# writes an alert file. Returns the check's exit code so the caller can branch on PASS/FAIL.\nemit_evidence() {\n  local state=\"$1\" evdir=\"$2\"\n  mkdir -p \"$evdir\"\n  local captured run_id verdict_line rc full record\n  captured=\"$(awk -F'\"' '/\"captured_at\"/{print $4; exit}' \"$state\")\"\n  # Fall back to a wall-clock stamp when the snapshot carries no captured_at (e.g. a malformed or\n  # empty state) so the fail-closed record + alert still get a stable, unique filename.\n  [ -n \"$captured\" ] || captured=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n  run_id=\"run-$(printf '%s' \"$captured\" | tr -cd '0-9')\"\n  record=\"$evdir/${run_id}.evidence\"\n\n  # Capture the verdict WITHOUT toggling shell options. `if cmd; then …` neutralises errexit for\n  # this one call, so a FAIL (return 1) does not abort an errexit-enabled caller mid-function.\n  if full=\"$(evaluate_control \"$state\")\"; then rc=0; else rc=$?; fi\n  verdict_line=\"$(printf '%s\\n' \"$full\" | head -1)\"\n\n  # Immutable per-run evidence record — generated by the same code that did the evaluating,\n  # so it cannot drift from what was actually checked.\n  {\n    echo \"control_id=CC6.1-s3-public-access-block\"\n    echo \"captured_at=${captured}\"\n    echo \"verdict=${verdict_line}\"\n    echo \"exit_code=${rc}\"\n    echo \"source_state=$(basename \"$state\")\"\n  } > \"$record\"\n\n  # Append-only ledger: one row per run. This is the history a dashboard tile reads to draw\n  # \"current state + 30-day trend\". Append-only because evidence you can rewrite is not evidence.\n  echo \"${captured} ${run_id} rc=${rc} ${verdict_line}\" >> \"$evdir/ledger.log\"\n\n  # Alert fires ONLY on drift (non-zero exit). A PASS leaves no alert behind — silence is the\n  # signal that the control is holding. A fail-closed \"no resources evaluated\" (rc=2) is also a\n  # drift the responder must see: the monitor could not confirm the control, so it must not be\n  # mistaken for healthy silence.\n  if [ \"$rc\" -ne 0 ]; then\n    {\n      echo \"ALERT control=CC6.1-s3-public-access-block captured_at=${captured}\"\n      echo \"${verdict_line}\"\n      if [ \"$rc\" -eq 2 ]; then\n        echo \"drifted_resource=<none — evaluated 0 resources; snapshot empty, unparsed, or wrong shape>\"\n      else\n        printf '%s\\n' \"$full\" | awk '/^NONCOMPLIANT /{print \"drifted_resource=\" $2}'\n      fi\n    } > \"$evdir/alert-${run_id}.txt\"\n  fi\n  return \"$rc\"\n}\nCHECK\nchmod +x \"$TARGET/ccm-check.sh\"\n\n# Print the lab dir so callers (the happy-path smoke test) can capture it.\necho \"$TARGET\"\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z"
+}

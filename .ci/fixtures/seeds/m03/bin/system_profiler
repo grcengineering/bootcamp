@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Simulated configuration-profile enumeration for the module 03 lab box (§4.7).
+# Output is canon-locked to modules/03-macos-fundamentals/labs/setup.sh
+# (samples/system_profiler-profiles.txt) — the module's committed ground truth for
+# the scenario Mac with the ScreenLock Policy payload installed. Real
+# `system_profiler SPConfigurationProfileDataType` output is richer and
+# host-specific (the module prose says "representative and abbreviated"); the
+# committed fixture is the canon the evaluator and CI test against, so the
+# simulator reproduces it byte-exactly (manifest entry m03-system-profiler-profiles).
+# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.
+case "${1:-}" in
+  SPConfigurationProfileDataType)
+    printf '%s\n' 'Configuration Profiles:'
+    printf '%s\n' '    ScreenLock Policy:'
+    printf '%s\n' '        Payloads: com.apple.screensaver (askForPassword=1, idleTime=600)'
+    ;;
+  *)
+    echo "system_profiler: only the SPConfigurationProfileDataType data type is on this lab's simulated surface — run it on a real Mac to explore" >&2
+    exit 64
+    ;;
+esac

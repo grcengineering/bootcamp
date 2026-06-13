@@ -208,6 +208,8 @@ Every line names the control, the subsystem that owns its truth, the three-value
 
 **Scenario.** You've been asked to produce an endpoint compliance-evidence packet for one Mac, built entirely from the CLI, proving five controls — encryption at rest, OS tamper protection, software-execution control, central management, and an enforced screen-lock policy — with each line labeled to the control it evidences and a defensible PASS / FAIL / UNKNOWN verdict for each.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 03 → Interactive lab) against a simulated managed Mac: `fdesetup`/`csrutil`/`spctl` replies are CI-verified against a real macOS machine, and the MDM/profile queries answer with this lab's committed fixture strings — the same canonical bytes `labs/setup.sh` writes and CI tests against.
+
 **Setup.** Run `bash labs/setup.sh ./lab03` to generate the bundled `samples/` directory: committed *sample outputs* of each macOS command (`fdesetup`, `csrutil`, `spctl`, `profiles`, `system_profiler`), including one deliberately empty/erroring sample so you must handle UNKNOWN. These let you build and test your evaluator with no Mac.
 
 **Tasks.**

@@ -196,6 +196,8 @@ A different control: *vendor risk acceptances must be re-justified when the vend
 
 **Scenario.** You own the control *"access changes must never grant the `legacy-admin` role."* You will express it as policy in two languages, gate it in CI so a bad change can't merge, make the gate emit a structured evidence record on every run, and then write the judgment that matters most — whether policy-as-code was even the right tool for this control.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 09 → Interactive lab) in a simulated terminal whose command outputs are CI-verified against a real Linux machine: the check script and CI gate you author there genuinely execute, and the gate's evidence records are the real files your runs write — the same commands on a real box give the same answers.
+
 **Setup.** Run `bash labs/setup.sh ./lab09` to generate the fixtures: a *clean* access export (`access-clean.csv`), a *violating* export with a `legacy-admin` row (`access-violation.csv`), and a starter evidence-store directory.
 
 **Tasks.**

@@ -1,0 +1,30 @@
+{
+  "id": "m09-ls-lab09",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09"
+  ],
+  "cmd": "ls -C -w80 lab09",
+  "tty_equiv": "ls lab09",
+  "citation": null,
+  "notes": null,
+  "stdout": "access-clean.csv      check.sh\t      policy.cedar  rotted-policy.txt\naccess-violation.csv  evidence-store  policy.rego   run-policy-gate.sh\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:36.452Z",
+    "captured_with": "capture.ts v1"
+  }
+}

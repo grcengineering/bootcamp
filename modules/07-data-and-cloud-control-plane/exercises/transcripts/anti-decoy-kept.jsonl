@@ -1,0 +1,6 @@
+{"anti_for": "t4", "reason": "near miss — filtered on the privilege grant alone: the in-hours 14:02 grant stays in the evidence file, so the timing claim was never evaluated and the violation count would read 2"}
+{"input": "cd lab07"}
+{"input": "bash labs/setup.sh"}
+{"input": "cat fixtures/audit-events.json"}
+{"input": "grep AdministratorAccess fixtures/audit-events.json > access-violations.json"}
+{"input": "cat access-violations.json"}

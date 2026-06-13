@@ -1,0 +1,22 @@
+{"input": "cd lab07"}
+{"input": "ls"}
+{"input": "bash labs/setup.sh"}
+{"input": "ls fixtures"}
+{"input": "cat fixtures/posture-findings.json"}
+{"input": "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json"}
+{"input": "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json > encryption-verdict.json"}
+{"input": "cat encryption-verdict.json"}
+{"input": "cat fixtures/audit-events.json"}
+{"input": "grep AttachUserPolicy fixtures/audit-events.json"}
+{"input": "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):'"}
+{"input": "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' > access-violations.json"}
+{"input": "cat access-violations.json"}
+{"input": "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l"}
+{"input": "SELECT COUNT(*) AS failing FROM evidence WHERE control = 'encryption' AND status = 'FAIL';", "pane": "sql"}
+{"input": "SELECT control, SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) AS failing, COUNT(*) AS total, ROUND(100.0 * SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) / COUNT(*), 1) AS fail_pct FROM evidence GROUP BY control;", "pane": "sql"}
+{"input": "awk -F, '$1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"}
+{"input": "awk -F, '$1 == \"access\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"}
+{"input": "cat > control-evidence.sh << 'EOF'\n#!/usr/bin/env bash\nawk '/\"resourceId\": \"audit-logs\"/ && /\"status\": \"PASS\"/ { print \"encryption: PASS\" } /\"resourceId\": \"audit-logs\"/ && /\"status\": \"FAIL\"/ { print \"encryption: FAIL\" }' fixtures/posture-findings.json\necho \"access violations: $(grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l)\"\nawk -F, '$1 == \"encryption\" { t++ } $1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print \"encryption FAIL rows: \" f \" of \" t }' fixtures/evidence.csv\nawk -F, '$1 == \"access\" { t++ } $1 == \"access\" && $2 == \"FAIL\" { f++ } END { print \"access FAIL rows: \" f \" of \" t }' fixtures/evidence.csv\nEOF"}
+{"input": "chmod +x control-evidence.sh"}
+{"input": "./control-evidence.sh"}
+{"input": "./control-evidence.sh"}

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Honest sim boundary (web ISA ISC-120). Module 03 §4.5 teaches `security list-keychains`,
+# so the binary must EXIST on the simulated Mac (a real Mac always has it) — but keychain
+# listings are host-specific and the module's committed fixture canon doesn't pin them,
+# so simulating a reply would be invention. The stub answers with the lab's standard
+# boundary message instead of a false `command not found`.
+# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.
+echo "security: not on this lab's simulated surface (§4.5 teaches the concept) — run it on a real Mac to explore" >&2
+exit 64

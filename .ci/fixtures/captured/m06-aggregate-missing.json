@@ -1,0 +1,28 @@
+{
+  "id": "m06-aggregate-missing",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [],
+  "cmd": "aggregate-mfa fixtures/nope.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "",
+  "stderr": "ERROR: could not read or parse JSON page: fixtures/nope.json\n",
+  "exit": 1,
+  "stderr_interactive": "ERROR: could not read or parse JSON page: fixtures/nope.json\n",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:00:09.777Z",
+    "captured_with": "capture.ts v1"
+  }
+}

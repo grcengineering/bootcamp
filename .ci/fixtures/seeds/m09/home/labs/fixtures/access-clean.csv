@@ -1,0 +1,5 @@
+row,principal,action,resource_role
+1,alice,grantRole,reader
+2,bob,grantRole,editor
+3,dave,revokeRole,legacy-admin
+4,erin,grantRole,viewer

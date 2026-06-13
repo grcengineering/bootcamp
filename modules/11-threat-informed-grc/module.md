@@ -169,6 +169,8 @@ The threat justification did not change — the control still earns its place by
 
 **Scenario.** You inherit a control library that grew by accretion. You will map a committed set of prioritized threats to the controls actually in place, run a validator that surfaces both defects — a threat with no control (coverage gap) and a control mitigating no prioritized threat (zero-threat control) — recommend the zero-threat control for removal or downgrade with evidence, and redesign one surviving control so its evidence becomes a by-product of real work.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 11 → Interactive lab) as a guided coverage-map workspace: the verdict it shows is a port of the committed `validate-coverage.ts`, CI-verified byte-for-byte against real `bun` runs of that script, evaluated against your current files — your map really fails on both defects, then really passes once you resolve them.
+
 **Setup.** From this module's `labs/` directory, run `bash setup.sh ./work` to stage the fixtures: `prioritized-threats.txt` (the team's owned top-threat list, one stable threat ID per line), `coverage-map.csv` (a seed map with honest mitigation labels, containing one deliberate coverage gap and engineered so one in-scope control maps to nothing), `controls-in-scope.txt` (the controls the team runs, so the validator knows which controls *should* appear on the map), and the validator `validate-coverage.ts`.
 
 **Tasks.**

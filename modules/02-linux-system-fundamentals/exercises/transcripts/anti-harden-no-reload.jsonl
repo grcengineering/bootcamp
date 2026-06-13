@@ -1,0 +1,6 @@
+{"anti_for": "t4", "reason": "config edited but the daemon never reloaded — the running sshd still offers password auth: the probe answers (publickey,password), not (publickey)"}
+{"input": "mkdir evidence"}
+{"input": "sudo true\nlabpass"}
+{"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}
+{"input": "ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"}
+{"input": "ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true 2> evidence/ssh-password-refused.txt"}

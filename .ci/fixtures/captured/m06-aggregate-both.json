@@ -1,0 +1,35 @@
+{
+  "id": "m06-aggregate-both",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [],
+  "cmd": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "stdout byte-locked to `bun aggregate-mfa.ts fixtures/users-page-1.json fixtures/users-page-2.json` (real-tool run diffed at authoring time); exit 3 = control FAIL, distinct from tooling error per the module's exit-code discipline.\n",
+  "stdout": "{\n  \"control\": \"MFA enforced for all workforce users\",\n  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\",\n  \"collected_at\": \"2026-05-28T00:00:00Z\",\n  \"pages_aggregated\": 2,\n  \"total_users\": 8,\n  \"users_without_mfa\": 4,\n  \"active_users_without_mfa\": 3,\n  \"offending_users\": [\n    {\n      \"id\": \"u_002\",\n      \"email\": \"bob@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_004\",\n      \"email\": \"dave@acme.example\",\n      \"status\": \"suspended\"\n    },\n    {\n      \"id\": \"u_006\",\n      \"email\": \"frank@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_008\",\n      \"email\": \"heidi@acme.example\",\n      \"status\": \"active\"\n    }\n  ],\n  \"control_result\": \"FAIL\"\n}\n",
+  "stderr": "",
+  "exit": 3,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "3\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:08:52.795Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "m06-cat-page1",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [],
+  "cmd": "cat fixtures/users-page-1.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "{\n  \"data\": [\n    { \"id\": \"u_001\", \"email\": \"alice@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_002\", \"email\": \"bob@acme.example\",   \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_003\", \"email\": \"carol@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_004\", \"email\": \"dave@acme.example\",  \"mfa_enabled\": false, \"status\": \"suspended\" },\n    { \"id\": \"u_005\", \"email\": \"erin@acme.example\",  \"mfa_enabled\": true,  \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": \"eyJwYWdlIjoyfQ==\"\n  }\n}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:00:07.321Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "m09-tr-stamp",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "echo \"2026-05-28T17:04:00Z\" | tr -d 'TZ:-'",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the record-filename timestamp digits (evidence-store/<control>-<run>-<digits>.json) — same digits the reference gate derives via tr -dc 0-9 (inventory fidelity_notes).\n",
+  "stdout": "20260528170400\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:39.396Z",
+    "captured_with": "capture.ts v1"
+  }
+}

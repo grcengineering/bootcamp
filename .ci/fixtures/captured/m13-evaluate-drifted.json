@@ -1,0 +1,37 @@
+{
+  "id": "m13-evaluate-drifted",
+  "module": "13",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m13",
+  "cwd": "/home/analyst",
+  "pre": [
+    "source ccm-lab/ccm-check.sh"
+  ],
+  "cmd": "evaluate_control labs/fixtures/state-drifted.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "§5.3/§6 task 4 canon: FAIL line + NONCOMPLIANT acme-public-website, exit 1.",
+  "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nNONCOMPLIANT acme-public-website\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:23:37.856Z",
+    "captured_with": "capture.ts v1"
+  }
+}

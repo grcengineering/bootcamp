@@ -1,0 +1,13 @@
+{"anti_for": "t5", "reason": "right-looking packet, wrong provenance — a plausible collector script is authored for show but never run; the packet lines are hand-echoed, so ONLY artifact_produced_by can catch it (content, stream separation, and the script's text all pass)"}
+{"input": "bash labs/setup.sh ./lab03"}
+{"input": "cd lab03"}
+{"input": "mkdir evidence"}
+{"input": "cat > collect-endpoint-evidence.sh << 'EOF'\n#!/usr/bin/env bash\n# looks right, was never run\nFV=\"$(fdesetup status)\"\necho \"CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: $(\"$HOME/lab03/evaluate.sh\" \"$FV\" 'FileVault is On' 'FileVault is Off') | RAW: $FV\"\nEOF"}
+{"input": "chmod +x collect-endpoint-evidence.sh"}
+{"input": "echo \"CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: PASS | RAW: FileVault is On.\" > evidence/packet.txt"}
+{"input": "echo \"CONTROL: OS tamper protection (CC6.8) | SUBSYSTEM: SIP | VERDICT: PASS | RAW: System Integrity Protection status: enabled.\" >> evidence/packet.txt"}
+{"input": "echo \"CONTROL: Software execution control (CC6.8) | SUBSYSTEM: Gatekeeper | VERDICT: PASS | RAW: assessments enabled\" >> evidence/packet.txt"}
+{"input": "echo \"CONTROL: Centrally managed (CC1.x) | SUBSYSTEM: MDM | VERDICT: PASS | RAW: MDM enrollment: Yes (User Approved)\" >> evidence/packet.txt"}
+{"input": "echo \"CONTROL: Screen-lock policy enforced (CC6.1) | SUBSYSTEM: MDM/profiles | VERDICT: PASS | RAW: askForPassword=1\" >> evidence/packet.txt"}
+{"input": "echo \"CONTROL: Profile query (sample gap) | SUBSYSTEM: MDM/profiles | VERDICT: UNKNOWN | RAW: <query returned nothing>\" >> evidence/packet.txt"}
+{"input": "echo \"WARN: profile sample query returned nothing\" > collection-errors.log"}

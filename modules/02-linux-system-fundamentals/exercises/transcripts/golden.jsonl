@@ -1,0 +1,27 @@
+{"input": "id grcops"}
+{"input": "mkdir evidence"}
+{"input": "id grcops > evidence/id-grcops.txt"}
+{"input": "sudo useradd -m intern\nlabpass"}
+{"input": "id intern > evidence/id-intern.txt"}
+{"input": "cat evidence/id-intern.txt"}
+{"input": "ls -l .ssh"}
+{"input": "chmod 600 .ssh/authorized_keys"}
+{"input": "ls -l .ssh > evidence/ssh-perms.txt"}
+{"input": "sudo true"}
+{"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}
+{"input": "sudo systemctl reload ssh"}
+{"input": "ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"}
+{"input": "ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true 2> evidence/ssh-password-refused.txt"}
+{"input": "sudo grep PasswordAuthentication /etc/ssh/sshd_config"}
+{"input": "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1 > evidence/effective-passwordauth.txt"}
+{"input": "cat evidence/effective-passwordauth.txt"}
+{"input": "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PermitRootLogin' | tail -1 > evidence/effective-permitrootlogin.txt"}
+{"input": "cat evidence/effective-permitrootlogin.txt"}
+{"input": "sudo apt install -y ./evidence-collector_1.0.0_all.deb"}
+{"input": "sudo systemctl start evidence-collector"}
+{"input": "systemctl status evidence-collector"}
+{"input": "sudo systemctl enable evidence-collector"}
+{"input": "systemctl status evidence-collector > evidence/service-status.txt"}
+{"input": "sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\" > evidence/auth-event.txt"}
+{"input": "cat evidence/auth-event.txt"}
+{"input": "cat > evidence-writeup.md << 'EOF'\n# Evidence writeup — web-01 hardening standard\n\n## Control 1 — administration by a named non-root user with sudo\n- Where it lives: /etc/passwd and /etc/group (the host's own account database)\n- Command: id grcops\n- Evidence: uid=1001(grcops) gid=1001(grcops) groups=1001(grcops),27(sudo)\n- Two-sided: id intern -> uid=1002(intern) gid=1002(intern) groups=1002(intern) (no privileged group)\n- Verdict: PASS\n\n## Control 2 — SSH accepts keys only, no root login\n- Where it lives: /etc/ssh/sshd_config (declaration), resolved the way sshd parses it\n- Command: sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1\n- Evidence: PasswordAuthentication no (and PermitRootLogin no by the same method)\n- Probe: a password-only login answers Permission denied (publickey); key login succeeds\n- Verdict: PASS\n\n## Control 3 — evidence-collector service running and persistent\n- Where it lives: the systemd unit registry (running state) and the journal (record)\n- Command: systemctl status evidence-collector\n- Evidence: Active: active (running), with evidence-collector.service; enabled\n- Witness: Accepted publickey for grcops (sudo journalctl -u ssh)\n- Verdict: PASS\nEOF"}

@@ -1,0 +1,74 @@
+{
+  "id": "m13-emit-sequence",
+  "module": "13",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m13",
+  "cwd": "/home/analyst",
+  "pre": [
+    "source ccm-lab/ccm-check.sh",
+    "emit_evidence labs/fixtures/state-compliant.json ccm-lab/evidence"
+  ],
+  "cmd": "emit_evidence labs/fixtures/state-drifted.json ccm-lab/evidence",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "§5.2/§5.3/§6 tasks 3-5 canon, one compliant + one drifted run: emit_evidence is silent on stdout and returns the check's exit code; the store then holds exactly two run-*.evidence records (run ids derived from each snapshot's captured_at digits), a two-row append-only ledger, and ONE alert file — fired only by the drifted run, naming drifted_resource=acme-public-website. The cat/tail/grep posts pin the §6 evidence-store reads (record fields, ledger rows, latest-row dashboard query).\n",
+  "stdout": "",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "ls ccm-lab/evidence",
+      "stdout": "alert-run-20260521090000.txt\nledger.log\nrun-20260520090000.evidence\nrun-20260521090000.evidence\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat ccm-lab/evidence/run-20260520090000.evidence",
+      "stdout": "control_id=CC6.1-s3-public-access-block\ncaptured_at=2026-05-20T09:00:00Z\nverdict=PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\nexit_code=0\nsource_state=state-compliant.json\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat ccm-lab/evidence/alert-run-20260521090000.txt",
+      "stdout": "ALERT control=CC6.1-s3-public-access-block captured_at=2026-05-21T09:00:00Z\nFAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\ndrifted_resource=acme-public-website\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat ccm-lab/evidence/ledger.log",
+      "stdout": "2026-05-20T09:00:00Z run-20260520090000 rc=0 PASS control=CC6.1-s3-public-access-block evaluated=3 noncompliant=0\n2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "tail -1 ccm-lab/evidence/ledger.log",
+      "stdout": "2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "grep rc=1 ccm-lab/evidence/ledger.log",
+      "stdout": "2026-05-21T09:00:00Z run-20260521090000 rc=1 FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:23:39.773Z",
+    "captured_with": "capture.ts v1"
+  }
+}

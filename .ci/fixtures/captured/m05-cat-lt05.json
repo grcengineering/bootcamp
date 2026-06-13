@@ -1,0 +1,30 @@
+{
+  "id": "m05-cat-lt05",
+  "module": "05",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m05",
+  "cwd": "/home/analyst/lab05",
+  "pre": [
+    "bash labs/setup.sh evidence/"
+  ],
+  "cmd": "cat evidence/lt-05.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the malformed evidence record (§6 task 3's input) — truncated JSON, newline-terminated; reading it IS the exercise's honest stand-in for observing what json.loads will reject.\n",
+  "stdout": "{\"host\": \"lt-05\", \"encrypted\": tr\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:49:03.328Z",
+    "captured_with": "capture.ts v1"
+  }
+}

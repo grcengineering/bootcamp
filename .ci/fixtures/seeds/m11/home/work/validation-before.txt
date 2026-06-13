@@ -1,0 +1,3 @@
+Replace this placeholder with the complete output of your first, failing
+validator run — the summary line, both FAIL blocks, and the final exit line,
+exactly as the output panel shows them.

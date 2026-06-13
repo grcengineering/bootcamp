@@ -22,10 +22,20 @@ interface EditorPanelProps {
   onClose: (wrote: boolean) => void;
 }
 
-/** Resolve a nano argument against the session's cwd (parsed from the prompt — public API only). */
+/** True when the session is the PowerShell lab (prompt is the public contract: `PS <cwd>> `). */
+export function isPsSession(session: LabSession): boolean {
+  return /^PS .*> $/.test(session.prompt());
+}
+
+/** Resolve a nano/notepad argument against the session's cwd (parsed from the prompt — public API only). */
 export function resolveEditorPath(fileArg: string, session: LabSession): string {
-  if (fileArg.startsWith("/") || fileArg.startsWith("~")) return fileArg;
   const p = session.prompt();
+  const ps = p.match(/^PS (.*)> $/);
+  if (ps) {
+    if (/^[A-Za-z]:/.test(fileArg)) return fileArg; // drive-qualified = absolute
+    return `${ps[1].replace(/\\$/, "")}\\${fileArg.replace(/^\.\\/, "")}`;
+  }
+  if (fileArg.startsWith("/") || fileArg.startsWith("~")) return fileArg;
   const m = p.match(/:([^$]*)\$\s*$/) ?? p.match(/ ([^ %]*) %\s*$/);
   const cwd = m ? m[1].trim() : "~";
   return `${cwd === "/" ? "" : cwd}/${fileArg}`;
@@ -38,7 +48,7 @@ function writeViaSession(session: LabSession, path: string, content: string, fil
     writeFileAs?: (path: string, content: string, producedBy: string) => void;
   };
   if (typeof ext.writeFileAs === "function") {
-    ext.writeFileAs(path, content, `nano ${fileArg}`);
+    ext.writeFileAs(path, content, `${isPsSession(session) ? "notepad" : "nano"} ${fileArg}`);
     return true;
   }
   // Contract-only fallback: heredoc through exec/feedStdin (provenance becomes the cat
@@ -118,7 +128,8 @@ export default function EditorPanel({ session, fileArg, onClose }: EditorPanelPr
     >
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[color:var(--hairline)] bg-[color:var(--tint)]">
         <span className="font-mono text-xs text-ink">
-          GNU nano-style editor <span className="text-ink-dim">(simulated)</span> — {fileArg}
+          {isPsSession(session) ? "Notepad-style editor" : "GNU nano-style editor"}{" "}
+          <span className="text-ink-dim">(simulated)</span> — {fileArg}
           {dirty && <span className="text-orange-bright" title="unsaved changes"> *</span>}
         </span>
         <span className="font-mono text-xs text-ink-dim" role="status">{status}</span>

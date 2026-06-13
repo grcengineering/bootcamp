@@ -1,0 +1,27 @@
+{
+  "id": "m03-diff-divergent",
+  "module": "03",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [
+    "mkdir -p /tmp/grcb-m03",
+    "printf 'CONTROL: a | VERDICT: PASS\\nCONTROL: b | VERDICT: PASS\\n' > /tmp/grcb-m03/q1.txt",
+    "printf 'CONTROL: a | VERDICT: PASS\\nCONTROL: b | VERDICT: FAIL\\n' > /tmp/grcb-m03/q2.txt"
+  ],
+  "cmd": "diff /tmp/grcb-m03/q1.txt /tmp/grcb-m03/q2.txt",
+  "citation": null,
+  "notes": "the non-deterministic counter-case — a drifted verdict surfaces as a normal-format hunk, exit 1",
+  "holes": null,
+  "stdout": "2c2\n< CONTROL: b | VERDICT: PASS\n---\n> CONTROL: b | VERDICT: FAIL\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:03:43.316Z",
+    "captured_with": "capture.ts v1"
+  }
+}

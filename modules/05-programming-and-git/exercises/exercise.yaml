@@ -1,0 +1,307 @@
+id: lab-05
+module: 05-programming-and-git
+title: A tested validator under change control
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-01
+engine: git
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m05
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+intro: |
+  You own the laptop-encryption control. A directory of raw evidence records — one JSON
+  file per laptop, plus the inevitable malformed one — needs a tool that judges each
+  record, survives the bad file, and lives in a Git repository whose history is itself
+  change-management evidence. The Git on this box is real: every commit, branch, and
+  merge below is genuine repository state, and the checks verify that state — not the
+  text on your screen. One honest boundary: this box does not execute Python. You will
+  author the validator and its tests here as real, runnable code (the checks read what
+  you wrote), and the module's §6 lab on your own machine is where pytest actually runs
+  it. The pull-request review step has no command-line form anywhere; you will take the
+  solo path §6 allows — self-review, noted — and the merge records the reviewed change.
+
+walkthrough_first_input: pwd
+
+tasks:
+  - id: t1
+    type: action
+    objective: [2, 5]
+    instruction: |
+      Orient, then provision. Find the lab directory and enter it, generate the evidence
+      fixtures with the lab's own script — `bash labs/setup.sh evidence/` — list what it
+      wrote, and read the one file that is going to cause all the trouble:
+      `evidence/lt-05.json`. Look at it closely. What will a JSON parser do with that?
+    verify:
+      - check: file_exists
+        path: ~/lab05/evidence/lt-01.json
+      - check: file_exists
+        path: ~/lab05/evidence/lt-05.json
+      - check: file_content_equals
+        path: ~/lab05/evidence/lt-05.json
+        from: generated
+      - check: history_contains
+        regex: 'cat evidence/lt-05\.json'
+      - check: cwd_is
+        path: ~/lab05
+    hints:
+      - nudge: "`ls` from home shows the lab directory. The setup script is inside it, under `labs/` — and it takes the destination directory as its argument."
+      - concept: "§6 Setup — the lab generates its own fixtures so every learner judges identical evidence"
+      - reveal: "cd lab05, then: bash labs/setup.sh evidence/ · ls evidence · cat evidence/lt-05.json"
+    explain: |
+      Five records, one per laptop — and lt-05.json is truncated mid-value: not valid
+      JSON, exactly the kind of input a real collector emits when something dies halfway.
+      The script's output here is the real thing: the simulator replays the same bytes a
+      real Linux box produces running the same committed script.
+
+  - id: t2
+    type: action
+    objective: [7]
+    instruction: |
+      Make the directory a repository and put a clean starting point on `main`: run
+      `git init`, create an empty `validator.py` (`touch` does it), stage it, and commit
+      it with a message that says what this commit is. From here on, every change to the
+      control's logic is on the record.
+    verify:
+      - check: history_contains
+        regex: '^git init$'
+      - check: file_exists
+        path: ~/lab05/validator.py
+      - check: repo_state_matches
+        branches_include: [main]
+        min_commits: 1
+    hints:
+      - nudge: "Four moves: initialise, create the empty file, stage it, commit it. The commit needs `-m \"a message\"` — there is no editor hand-off in this lab."
+      - concept: "§4.7 — a commit is who/what/when/why, hash-bound and tamper-evident"
+      - reveal: 'git init · touch validator.py · git add validator.py · git commit -m "Start with an empty validator on main"'
+    explain: |
+      That commit is real repository state — the checker read the repo's object store,
+      not your screen. An empty first commit sounds trivial, but it pins the moment the
+      control's logic came under change management: everything after this has an author,
+      a timestamp, and a reason.
+
+  - id: t3
+    type: action
+    objective: [3, 4]
+    instruction: |
+      Write the control's atom. In `validator.py`, define `evaluate(record)`: return
+      `"PASS"` when `record["encrypted"]` is exactly `True`, else `"FAIL"` — a record
+      *missing* the field must FAIL, and so must `"encrypted": "yes"`. Then write three
+      tests in `test_validator.py` — good record passes, unencrypted fails, missing
+      field fails — and commit both files on `main`. (The editor or a heredoc both work;
+      this is real code your own machine's pytest must accept in §6.)
+    verify:
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'def evaluate\(record\)'
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'is True'
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'assert evaluate\(\{[^)\n]*"encrypted": True\}\) == "PASS"'
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'assert evaluate\(\{[^)\n]*"encrypted": False\}\) == "FAIL"'
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'assert evaluate\(\{(?:(?!"encrypted")[^)\n])*\}\) == "FAIL"'
+      - check: repo_state_matches
+        min_commits: 2
+    hints:
+      - nudge: "Truthiness is the trap: `record.get(\"encrypted\")` treats the string \"yes\" as true and a missing field as false-by-accident. The module's form compares against `True` itself."
+      - concept: "§4.4 + §4.6 — a judgment in a function is testable; absence of evidence is not evidence of compliance"
+      - reveal: 'In validator.py: def evaluate(record): return "PASS" if record.get("encrypted") is True else "FAIL" — in test_validator.py, three tests asserting evaluate({"host": "lt-01", "encrypted": True}) == "PASS", evaluate({"host": "lt-02", "encrypted": False}) == "FAIL", evaluate({"host": "lt-03"}) == "FAIL" — then git add both files and git commit'
+    explain: |
+      The `is True` comparison encodes a GRC judgment, not a style preference: missing
+      evidence is not compliance, and neither is a string that merely looks affirmative.
+      The third test is the one beginners skip — it pins the policy that absence fails.
+      These checks read your code's shape; proving its behavior is what running the
+      suite in §6 is for.
+
+  - id: t4
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Scale the judgment. Add `validate_dir(path)` to `validator.py`: loop over every
+      file in the directory, parse each as JSON, call `evaluate`, collect
+      `{file, verdict}` results. Reality check: when this loop hits `lt-05.json`,
+      `json.loads` raises and — unprotected — the whole run dies at file 5 of 5. Wrap
+      the parse in `try`/`except` so a malformed file becomes a recorded
+      `{file, error}` entry and the loop continues to judge the good files.
+    verify:
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'def validate_dir\('
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'for .* in '
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'json\.loads?\('
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'try:'
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'except'
+    hints:
+      - nudge: "The risky line is the parse. Put only that in the `try:`; in the `except`, append `{\"file\": name, \"error\": str(e)}` to an errors list and `continue` the loop."
+      - concept: "§4.5 — an evidence collector that dies on row 3 of 500 silently loses 497 records"
+      - reveal: 'def validate_dir(path): results, errors = [], [] — for name in sorted(os.listdir(path)): try: with open(os.path.join(path, name)) as f: record = json.loads(f.read()) — except (OSError, ValueError) as e: errors.append({"file": name, "error": str(e)}); continue — else append {"file": name, "verdict": evaluate(record)} to results; return {"results": results, "errors": errors}'
+    explain: |
+      Data + decisions + repetition: a loop, a parse, a judgment — and the parse wrapped
+      so one bad file becomes a finding instead of a crash. That `except` clause is the
+      difference between a brittle script and a defensible evidence tool: the report
+      will say *exactly* which inputs could not be judged, and why.
+
+  - id: t5
+    type: action
+    objective: [4, 5]
+    instruction: |
+      Prove the graceful handling — with a test that asserts real behavior. Add
+      `test_malformed_is_recorded...` to `test_validator.py`: run `validate_dir` over
+      `evidence/` and assert BOTH that the malformed file landed in `errors` AND that
+      good files still received verdicts in `results`. A test that merely calls the
+      function and asserts nothing is coverage padding, and it is forbidden.
+    verify:
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'def test_malformed'
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'assert .*\["errors"\]'
+      - check: file_content_matches
+        path: ~/lab05/test_validator.py
+        regex: 'assert .*\["results"\]'
+    hints:
+      - nudge: "Two asserts, two behaviors: one reaches into the report's errors list for lt-05.json, one checks a known-good verdict is still present in results."
+      - concept: "§4.6 — every assertion checks an observable outcome that maps to real behavior"
+      - reveal: 'def test_malformed_is_recorded_and_good_files_still_judged(): report = validate_dir("evidence") — assert any(e["file"] == "lt-05.json" for e in report["errors"]) — assert {"file": "lt-01.json", "verdict": "PASS"} in report["results"]'
+    explain: |
+      This is the assertion that proves the control's resilience — not a line touched
+      for a coverage number. If someone later "simplifies" the try/except away, this
+      test goes red; if an error starts swallowing good files, this test goes red. The
+      checker verified both asserts exist and touch both lists.
+
+  - id: t6
+    type: action
+    objective: [3, 5]
+    instruction: |
+      Make the tool emit its EVIDENCE artifact: add report-writing to `validator.py` so
+      a run writes `report.json` containing both `results` and `errors` — what was
+      judged, and what honestly could not be. Use `json.dumps` and write the file; the
+      report a non-programmer opens next quarter must carry both lists.
+    verify:
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'report\.json'
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'json\.dumps'
+      - check: file_content_matches
+        path: ~/lab05/validator.py
+        regex: 'open\([^)\n]*"w"\)'
+    hints:
+      - nudge: "One small function: take the dict validate_dir returns, json.dumps it, write it to report.json with open(..., \"w\")."
+      - concept: "§5.2 — an honest report shows the verdicts AND the list of what couldn't be evaluated"
+      - reveal: 'def write_report(path, out="report.json"): report = validate_dir(path) — with open(out, "w") as f: f.write(json.dumps(report, indent=2, sort_keys=True) + "\n") — return report'
+    explain: |
+      The judgment stopped being something a human does by eye and became an artifact a
+      machine writes the same way every time. An auditor reading report.json sees four
+      verdicts and one recorded error — the unevaluable file is *in* the evidence, not
+      silently missing from it.
+
+  - id: t7
+    type: action
+    objective: [6, 7]
+    instruction: |
+      Your malformed-handling work (tasks 4–6) is sitting uncommitted — exactly the
+      state change management exists for. Deliver it as a reviewed feature: cut the
+      branch `git switch -c handle-malformed` (your edits ride along), stage and commit
+      both files there with a message that explains WHY, self-review the change (the
+      solo path §6 allows — read your own diff and note it in the message or your
+      head), then `git switch main` and `git merge handle-malformed`.
+    verify:
+      - check: history_contains
+        regex: '^git switch -c '
+      - check: history_contains
+        regex: '^git merge handle-malformed$'
+      - check: repo_state_matches
+        branch: main
+        branches_include: [handle-malformed]
+        min_commits: 3
+        head_subject_matches: '[Mm]alformed'
+    hints:
+      - nudge: "Branch = isolation, commit message = the why field of the change record, merge = the approved change joining the main line. Five commands in all."
+      - concept: "§4.7 — branch → commit → review → merge IS the change-management control, generated as a by-product of working correctly"
+      - reveal: 'git switch -c handle-malformed · git add validator.py test_validator.py · git commit -m "Record malformed evidence files as errors instead of crashing" · git switch main · git merge handle-malformed'
+    explain: |
+      The repository state the checker just verified — feature branch exists, main's
+      tip carries the malformed-handling change, history has the full chain — is the
+      change-management evidence itself. Nobody "collected" it. On a shared remote the
+      review happens on a pull request before the merge; the control elements are the
+      same ones you just produced locally.
+
+  - id: t8
+    type: action
+    objective: [6, 7]
+    instruction: |
+      Read your own audit trail: run `git log --oneline --graph` and read it bottom-up
+      as a change-management record — the clean starting point, the encryption check
+      arriving on main, the malformed-handling change isolated and then joining the
+      main line. Which commit would you show an auditor who asks "who changed the
+      control's logic, and why"?
+    verify:
+      - check: history_contains
+        regex: '^git log --oneline --graph$'
+      - check: repo_state_matches
+        branch: main
+        min_commits: 3
+    hints:
+      - nudge: "It's one command — the same one §5.3 reads aloud. The graph drawing comes from the real commit DAG you built."
+      - concept: "§5.3 — the log IS the evidence: re-runnable, tamper-evident, attributable"
+      - reveal: "git log --oneline --graph"
+    explain: |
+      Those hashes are real content-addressed commit ids from the repository you built —
+      alter any commit and every hash after it changes, which is why this record is
+      tamper-evident. Your history reads linearly because the merge was a fast-forward;
+      on a shared remote with a pull request, the same flow grows the §5.3 merge bubble.
+
+  - id: t9
+    type: reflection
+    objective: [1, 4, 5]
+    instruction: |
+      Two judgments, three or four sentences each, written for a non-programmer
+      colleague. First: why is "missing field → FAIL" the GRC-correct choice — what
+      would the control silently become if absence passed? Second: §5.4's two kinds of
+      red — when this tool runs for real, how do you tell "my logic is wrong" (a
+      failing assertion in pytest) from "the input was malformed and the program
+      correctly said so" (an entry in report.json's errors), and why does confusing
+      them either ship a broken control or chase ghosts?
+    hints:
+      - nudge: "Start from what the evidence CAN'T show: a record with no encrypted field proves nothing — and a control that treats 'nothing' as 'pass' is no longer measuring encryption."
+      - concept: "§5.4 — a failing assertion means fix the code; a recorded error means the code worked and the input was bad"
+
+  - id: t10
+    type: reflection
+    objective: [1, 6]
+    instruction: |
+      Map each Git step you performed onto the change-management control element it
+      satisfies, in your own words (two or three sentences): the branch, the
+      explain-why commit, the review (here: your noted self-review; on a team: a pull
+      request approved by someone who is not the author), and the merge. Then say what
+      a program is — data + decisions + repetition — and where each of the three lives
+      in the validator you just built.
+    hints:
+      - nudge: "Branch = the change can't touch the main line until approved. Commit message = the why field. Review = segregation of duties. Merge = the approved change, recorded forever."
+      - concept: "§3 — Git is not LIKE a change-management control; for your code, it IS one"
+
+completion:
+  evidence_pack: true

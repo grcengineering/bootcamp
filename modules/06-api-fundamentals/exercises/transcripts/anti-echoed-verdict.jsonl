@@ -1,0 +1,5 @@
+{"anti_for": "t12", "reason": "verdict without verification \u2014 'identical' echoed by hand instead of produced by diff; reproducibility was asserted, never tested"}
+{"input": "cd lab06"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json"}
+{"input": "echo identical > repro-verdict.txt"}

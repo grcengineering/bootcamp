@@ -1,0 +1,449 @@
+{
+  "spec": {
+    "id": "lab-03",
+    "module": "03-macos-fundamentals",
+    "title": "One Mac, five controls, three verdicts",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-11-28",
+    "engine": "shell-macos",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m03",
+      "home": "/Users/analyst",
+      "files": [],
+      "path_tools": [
+        "profiles",
+        "system_profiler",
+        "launchctl",
+        "security"
+      ]
+    },
+    "intro": "You've been asked to produce an endpoint compliance-evidence packet for one Mac, built\nentirely from the command line: five controls — encryption at rest, OS tamper protection,\nsoftware-execution control, central management, and an enforced screen-lock policy — each\nline labeled to the control it evidences, each carrying the machine's own raw reply and a\ndefensible PASS / FAIL / UNKNOWN verdict. This terminal is a simulated managed Mac: the\nstatus commands answer with the same canonical strings the lab's committed fixtures hold,\nand one query path is deliberately broken so you must handle the verdict nobody likes to\nwrite down. The discipline that carries the whole lab: a check that did not run is never\na pass — and never a clean fail.\n",
+    "walkthrough_first_input": "pwd",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Get oriented (`pwd`, `ls`), then provision the lab: run `bash labs/setup.sh ./lab03`\nand move into `lab03`. Look at what landed in `samples/` — committed sample replies\nfor every status command this lab teaches, including one deliberately empty file.\nThose bytes are the lab's ground truth; CI tests against the very same files.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^bash labs/setup\\.sh"
+          },
+          {
+            "check": "file_exists",
+            "path": "~/lab03/samples/csrutil-status.txt"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab03/samples/fdesetup-status.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_exists",
+            "path": "~/lab03/samples/profiles-status-unknown.txt"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The setup script takes a destination — §6 Setup names the exact line. `ls samples` shows what it wrote."
+          },
+          {
+            "concept": "§6 Setup — the committed samples are the canonical ground truth the evaluator (and CI) test against"
+          },
+          {
+            "reveal": "bash labs/setup.sh ./lab03, then: cd lab03 · ls samples · cat samples/fdesetup-status.txt"
+          }
+        ],
+        "explain": "Seven small files just became your reference world: known-good replies, one known-bad\nreply (FileVault Off), and one empty file standing in for a query that returns nothing.\nReal evaluation logic gets built against committed fixtures exactly like these — that's\nhow the module's own CI proves the lab works with no Mac attached.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Ask the two foundational subsystems directly. Run `fdesetup status`, then\n`csrutil status`. Before each: name the control whose truth you're asking for and the\nsubsystem that owns it (§3 map). After each: read the reply against the §4 known-good\nstring and state your verdict.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^fdesetup status$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^csrutil status$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Encryption-at-rest truth lives in FileVault (§4.1); OS-tamper-protection truth lives in SIP (§4.2). One canonical status command each."
+          },
+          {
+            "concept": "§3 — name the subsystem that owns the claim first; only then reach for the command that reads it"
+          },
+          {
+            "reveal": "fdesetup status, then: csrutil status"
+          }
+        ],
+        "explain": "`FileVault is On.` is the same laptop-encryption claim you counted across a fleet in\nmodule 01 — here you're standing on the endpoint where that truth physically lives,\nasking the owning subsystem directly. And SIP's `enabled` is the control beneath the\ncontrols: it's why the machine's other answers about itself can be trusted at all.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3,
+          5
+        ],
+        "instruction": "Replies you only looked at are not evidence. Create `evidence/`, then capture four raw\nreplies as kept artifacts using `tee`: FileVault → `evidence/filevault.txt`, Gatekeeper\n(`spctl --status`) → `evidence/gatekeeper.txt`, MDM enrollment\n(`profiles status -type enrollment`) → `evidence/mdm.txt`, and installed profiles\n(`system_profiler SPConfigurationProfileDataType`) → `evidence/profiles.txt`.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab03/evidence/filevault.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab03/evidence/gatekeeper.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab03/evidence/mdm.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab03/evidence/profiles.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab03/evidence/filevault.txt",
+            "required_commands": [
+              "fdesetup",
+              "tee"
+            ]
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab03/evidence/gatekeeper.txt",
+            "required_commands": [
+              "spctl",
+              "tee"
+            ]
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab03/evidence/mdm.txt",
+            "required_commands": [
+              "profiles",
+              "tee"
+            ]
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab03/evidence/profiles.txt",
+            "required_commands": [
+              "system_profiler",
+              "tee"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`tee` is the §5.1 move — the reply still prints to your screen AND lands in the file. The directory has to exist first."
+          },
+          {
+            "concept": "§5.1 — keep the machine's own reply as the artifact, not a screenshot of it"
+          },
+          {
+            "reveal": "mkdir evidence, then: fdesetup status | tee evidence/filevault.txt · spctl --status | tee evidence/gatekeeper.txt · profiles status -type enrollment | tee evidence/mdm.txt · system_profiler SPConfigurationProfileDataType | tee evidence/profiles.txt"
+          }
+        ],
+        "explain": "Four files now hold raw machine replies, each produced by the subsystem that owns the\nclaim — and the checker verified not just the bytes but the provenance: each artifact\nhad to come from its real query piped through `tee`, not from an editor. Re-run any of\nthose lines next quarter and compare byte-for-byte: that's evidence, not a screenshot.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          4,
+          6
+        ],
+        "instruction": "Write the evaluator, `evaluate.sh`. It takes three arguments — a raw reply, a\nknown-good pattern, a known-bad pattern — and prints exactly one word. The §4.8 shape,\nin order: empty (or whitespace-only) reply means the check could not run → `UNKNOWN`,\nasked FIRST; else a known-good match → `PASS`; else a known-bad match → `FAIL`; else\n→ `UNKNOWN`. Spell the conditions with `test` (the spelled-out form of `[` — this lab\nbox's zsh layer chokes on the bare bracket). Make it executable, then prove it on\nthree samples: FileVault On (`PASS`), FileVault Off (`FAIL`), and\n`samples/profiles-status-unknown.txt` — the empty one, which must print `UNKNOWN`,\nnot `FAIL`. The checker also re-runs your script in a clean room against hidden\nvectors, including a garbage reply that matches neither pattern.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab03/evaluate.sh"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab03/evaluate.sh",
+            "args": [
+              "FileVault is On.",
+              "FileVault is On",
+              "FileVault is Off"
+            ],
+            "expect_stdout": "PASS"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab03/evaluate.sh",
+            "args": [
+              "FileVault is Off.",
+              "FileVault is On",
+              "FileVault is Off"
+            ],
+            "expect_stdout": "FAIL"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab03/evaluate.sh",
+            "args": [
+              "",
+              "MDM enrollment: Yes",
+              "MDM enrollment: No"
+            ],
+            "expect_stdout": "UNKNOWN"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab03/evaluate.sh",
+            "args": [
+              "error: not permitted",
+              "FileVault is On",
+              "FileVault is Off"
+            ],
+            "expect_stdout": "UNKNOWN"
+          },
+          {
+            "check": "history_contains",
+            "regex": "evaluate\\.sh.*profiles-status-unknown"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Two questions in order, then a default: known-good → PASS, else known-bad → FAIL, else UNKNOWN. And ask \"is it empty?\" before either — strip whitespace with `tr -d`, test the remainder with `test -z`."
+          },
+          {
+            "concept": "§4.8 / §5.2 — a check that did not run is never a pass and never a clean fail"
+          },
+          {
+            "reveal": "nano evaluate.sh — take the raw reply, good and bad patterns as \"$1\" \"$2\" \"$3\". First condition: test -z on \"$(printf '%s' \"$raw\" | tr -d '[:space:]')\" prints UNKNOWN (the could-not-run gate). Next: printf '%s' \"$raw\" | grep -Eqi -- \"$good\" prints PASS. Next: the same grep against \"$bad\" prints FAIL. The final else prints UNKNOWN. Save, chmod +x evaluate.sh, then run ./evaluate.sh \"$(cat samples/profiles-status-unknown.txt)\" 'MDM enrollment: Yes' 'MDM enrollment: No' — it must say UNKNOWN"
+          }
+        ],
+        "explain": "The order of those questions is the whole §4.8 lesson. An evaluator that asks\n\"known-good, else FAIL\" silently converts a permission error or an unmanaged device\ninto a clean finding — or worse, a clean pass. Yours asked \"did the check even run?\"\nfirst, so the empty reply surfaced as UNKNOWN: a gap a human must investigate, not a\nverdict a machine invented. The clean-room re-run also proved it's deterministic.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Compose the packet. Write `collect-endpoint-evidence.sh`: capture each subsystem's\nreply with command substitution, pass each through `$HOME/lab03/evaluate.sh` with that\ncontrol's known-good/known-bad strings, and echo one labeled line per control in the\n§5.4 shape `CONTROL: … | SUBSYSTEM: … | VERDICT: … | RAW: …`. Include the sixth,\ndeliberately broken query — read `samples/profiles-status-unknown.txt`; when it's\nempty, send a `WARN:` line ending \"returned nothing\" to stderr and let the verdict\nfall out as UNKNOWN. The screen-lock control passes only when BOTH the MDM verdict and\nthe profile-payload verdict pass (§5.3). Two craft rules: multi-line replies get\nreduced to their verdict-bearing line (pipe through `grep`) so every packet line stays\none line; use absolute paths (`$HOME/lab03/…`) — the script can't assume where its\nrunner stands. Make it executable and run it with stdout to `evidence/packet.txt` and\nstderr to `collection-errors.log`.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "^CONTROL: .+\\| *SUBSYSTEM: .+\\| *VERDICT: (PASS|FAIL|UNKNOWN) *\\| *RAW: "
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "FileVault *\\| *VERDICT: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "SIP *\\| *VERDICT: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "Gatekeeper *\\| *VERDICT: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "MDM *\\| *VERDICT: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "MDM/prof[a-z]* *\\| *VERDICT: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "VERDICT: UNKNOWN"
+          },
+          {
+            "check": "stream_separated",
+            "clean_file": "~/lab03/evidence/packet.txt",
+            "error_file": "~/lab03/collection-errors.log",
+            "error_regex": "WARN: .*returned nothing"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab03/evidence/packet.txt",
+            "required_commands": [
+              "./collect-endpoint-evidence.sh"
+            ]
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/collect-endpoint-evidence.sh",
+            "regex": "evaluate\\.sh"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One $( ) per subsystem query, one echo per control — and each line's verdict is itself a $( ) call into your evaluator. stderr is a separate channel: `2>` carries only the complaints."
+          },
+          {
+            "concept": "§5.4 — every packet line names the control, the subsystem that owns its truth, the three-valued verdict, and the raw reply that justifies it"
+          },
+          {
+            "reveal": "nano collect-endpoint-evidence.sh — capture FV=\"$(fdesetup status)\", SIP=\"$(csrutil status)\", GK=\"$(spctl --status)\", MDM=\"$(profiles status -type enrollment | grep 'MDM enrollment')\", PROF=\"$(system_profiler SPConfigurationProfileDataType | grep 'askForPassword')\", GAP=\"$(cat \"$HOME/lab03/samples/profiles-status-unknown.txt\")\". When test -z finds \"$GAP\" empty, echo \"WARN: profile sample query returned nothing\" >&2. Each packet line follows echo \"CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: $(\"$HOME/lab03/evaluate.sh\" \"$FV\" 'FileVault is On' 'FileVault is Off') | RAW: $FV\" — six lines: FileVault, SIP, Gatekeeper, MDM, screen-lock (PASS only when the MDM verdict and the payload verdict are both PASS), and the sample-gap line evaluated from \"$GAP\". Then chmod +x collect-endpoint-evidence.sh and ./collect-endpoint-evidence.sh > evidence/packet.txt 2> collection-errors.log"
+          }
+        ],
+        "explain": "Six labeled lines, five PASS, one UNKNOWN — and the operational complaint went to its\nown log, so the packet stayed clean machine-readable data. The checker verified the\nverdicts against the seeded device state, the stream separation, and the provenance:\nthe packet had to be produced by your collector, not assembled by hand. This artifact\nIS the module: LOCATE the subsystem, QUERY it, evaluate honestly, keep the raw reply.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          6
+        ],
+        "instruction": "Prove the packet is deterministic. Run the collector again into\n`evidence/packet2.txt` (append stderr with `2>>`), then `diff` the two packets and\ninspect `$?` — silence and a zero are your proof. The checker goes further: it\nre-runs your script twice in a clean room with the clock deliberately skewed between\nruns, so determinism has to be a property of YOUR script, not of running it twice\nquickly.\n",
+        "verify": [
+          {
+            "check": "script_reproducible",
+            "path": "~/lab03/collect-endpoint-evidence.sh",
+            "args": []
+          },
+          {
+            "check": "history_contains",
+            "regex": "^diff .*packet"
+          },
+          {
+            "check": "history_contains",
+            "regex": "echo \\$\\?"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`diff a b` says nothing when the files agree — its verdict lives in `$?`."
+          },
+          {
+            "concept": "§4.8 / §5.4 — identical bytes on re-run is what turns a report into a monitorable control"
+          },
+          {
+            "reveal": "./collect-endpoint-evidence.sh > evidence/packet2.txt 2>> collection-errors.log, then: diff evidence/packet.txt evidence/packet2.txt · echo $?"
+          }
+        ],
+        "explain": "Identical evidence, twice — and the clean-room re-run proved it wasn't luck. A packet\nthat re-runs identically can be scheduled, compared, and alerted on; one with a\ntimestamp or a random ordering inside can't. Module 13 will put exactly this property\non a schedule and catch drift with it.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Surface the gap. Pull the UNKNOWN line out of the packet with `grep`. That line is\nnot a flaw in the packet — it's the packet doing its job: telling you exactly which\ncontrol's truth could not be established so a human follows up.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "grep .*UNKNOWN.*packet"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab03/evidence/packet.txt",
+            "regex": "VERDICT: UNKNOWN"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The packet is grep-able by design — that's why the labels are machine-shaped."
+          },
+          {
+            "reveal": "grep 'VERDICT: UNKNOWN' evidence/packet.txt"
+          }
+        ],
+        "explain": "One control's truth could not be established, and your packet says so out loud. Had\nthe evaluator scored it PASS, a real gap would be hidden; had it scored it FAIL, a\nhuman would chase a false finding. UNKNOWN routes the right person to the right\nquestion — that's the difference between an analyst and an auditor.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "The map, from memory (§6 task 1): for each of the five controls — encryption at rest,\nOS tamper protection, software-execution control, central management, enforced\nscreen lock — name the subsystem that owns its truth and the command that reads it.\nThen explain, in 2–3 sentences for an auditor with no Mac background, WHERE the claim\n\"this laptop's disk is encrypted\" physically lives and why the screen-lock control\nneeds two subsystems to answer (§5.3).\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "§3's stack of trust, bottom-up: SIP → FileVault → Gatekeeper → (TCC/Keychain/launchd) → MDM. The screen-lock answer needs enrollment AND the installed payload."
+          },
+          {
+            "concept": "§3 — seven subsystems, seven slices of control-truth; MDM is the claim that the other claims are governed"
+          }
+        ]
+      },
+      {
+        "id": "t9",
+        "type": "reflection",
+        "objective": [
+          4,
+          6
+        ],
+        "instruction": "Two sentences on the UNKNOWN line (§6 task 7): which control's truth couldn't be\nestablished, and why scoring it as PASS or as a clean FAIL would each have been a\ndefect. Then one sentence connecting \"the packet came out byte-identical twice\" to\ncontinuous monitoring (§6 task 6).\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "PASS hides a real gap; FAIL invents a finding. And evidence you can re-run identically is evidence you can schedule."
+          },
+          {
+            "concept": "§4.8 — UNKNOWN is a result you surface, not swallow; §5.4 — re-runnable packets are what continuous assurance is made of"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/labs",
+        "dir": true
+      },
+      {
+        "path": "~/labs/setup.sh",
+        "content": "#!/usr/bin/env bash\n# Module 03 lab fixture generator (original lab asset).\n# Usage: setup.sh [DEST_DIR]   (default ./lab03)\n# Produces a samples/ directory of representative *sample outputs* of the macOS status\n# commands taught in this module. These let a learner (or CI on Linux) build and test the\n# control-EVALUATION logic with NO macOS machine and NO macOS-only binaries. Each file is\n# what the corresponding command prints; one file is deliberately empty to exercise UNKNOWN.\nset -euo pipefail\nDEST=\"${1:-./lab03}\"\nS=\"$DEST/samples\"\nmkdir -p \"$S\"\n\n# FileVault ON  -> encryption-at-rest PASS\nprintf '%s\\n' 'FileVault is On.' > \"$S/fdesetup-status.txt\"\n\n# FileVault OFF -> encryption-at-rest FAIL (the explicit negative fixture)\nprintf '%s\\n' 'FileVault is Off.' > \"$S/fdesetup-status-off.txt\"\n\n# SIP enabled -> OS-tamper-protection PASS\nprintf '%s\\n' 'System Integrity Protection status: enabled.' > \"$S/csrutil-status.txt\"\n\n# Gatekeeper assessments enabled -> software-execution-control PASS\nprintf '%s\\n' 'assessments enabled' > \"$S/spctl-status.txt\"\n\n# MDM enrolled -> centrally-managed PASS\n{\n  printf '%s\\n' 'Enrolled via DEP: Yes'\n  printf '%s\\n' 'MDM enrollment: Yes (User Approved)'\n} > \"$S/profiles-status.txt\"\n\n# Installed configuration profiles incl. a screen-lock policy payload -> policy-present\n{\n  printf '%s\\n' 'Configuration Profiles:'\n  printf '%s\\n' '    ScreenLock Policy:'\n  printf '%s\\n' '        Payloads: com.apple.screensaver (askForPassword=1, idleTime=600)'\n} > \"$S/system_profiler-profiles.txt\"\n\n# A check that COULD NOT RUN: empty output. Must evaluate to UNKNOWN, never PASS/FAIL.\n: > \"$S/profiles-status-unknown.txt\"\n\necho \"lab03 fixtures written to $S/\"\n"
+      }
+    ],
+    "tools": {
+      "profiles": "#!/usr/bin/env bash\n# Simulated MDM-enrollment query for the module 03 lab box (§4.7).\n# Output is canon-locked to modules/03-macos-fundamentals/labs/setup.sh\n# (samples/profiles-status.txt) — the module's committed ground truth for the\n# enrolled, User-Approved-MDM scenario Mac. The module's own prose marks real\n# `profiles` output \"representative\"; the committed fixture strings are what the\n# lab's evaluator and CI (labs/happy-path.sh) test against, so the simulator\n# reproduces the FIXTURES byte-exactly (manifest entry m03-profiles-status).\n# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.\ncase \"${1:-} ${2:-} ${3:-}\" in\n  \"status -type enrollment\")\n    printf '%s\\n' 'Enrolled via DEP: Yes'\n    printf '%s\\n' 'MDM enrollment: Yes (User Approved)'\n    ;;\n  *)\n    echo \"profiles: only 'profiles status -type enrollment' is on this lab's simulated surface — run it on a real Mac to explore\" >&2\n    exit 64\n    ;;\nesac\n",
+      "system_profiler": "#!/usr/bin/env bash\n# Simulated configuration-profile enumeration for the module 03 lab box (§4.7).\n# Output is canon-locked to modules/03-macos-fundamentals/labs/setup.sh\n# (samples/system_profiler-profiles.txt) — the module's committed ground truth for\n# the scenario Mac with the ScreenLock Policy payload installed. Real\n# `system_profiler SPConfigurationProfileDataType` output is richer and\n# host-specific (the module prose says \"representative and abbreviated\"); the\n# committed fixture is the canon the evaluator and CI test against, so the\n# simulator reproduces it byte-exactly (manifest entry m03-system-profiler-profiles).\n# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.\ncase \"${1:-}\" in\n  SPConfigurationProfileDataType)\n    printf '%s\\n' 'Configuration Profiles:'\n    printf '%s\\n' '    ScreenLock Policy:'\n    printf '%s\\n' '        Payloads: com.apple.screensaver (askForPassword=1, idleTime=600)'\n    ;;\n  *)\n    echo \"system_profiler: only the SPConfigurationProfileDataType data type is on this lab's simulated surface — run it on a real Mac to explore\" >&2\n    exit 64\n    ;;\nesac\n",
+      "launchctl": "#!/usr/bin/env bash\n# Honest sim boundary (web ISA ISC-120). Module 03 §4.6 teaches `launchctl list`,\n# so the binary must EXIST on the simulated Mac (a real Mac always has it) — but its\n# output is host-specific and the module's committed fixture canon doesn't pin it,\n# so simulating a reply would be invention. The stub answers with the lab's standard\n# boundary message instead of a false `command not found`.\n# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.\necho \"launchctl: not on this lab's simulated surface (§4.6 teaches the concept) — run it on a real Mac to explore\" >&2\nexit 64\n",
+      "security": "#!/usr/bin/env bash\n# Honest sim boundary (web ISA ISC-120). Module 03 §4.5 teaches `security list-keychains`,\n# so the binary must EXIST on the simulated Mac (a real Mac always has it) — but keychain\n# listings are host-specific and the module's committed fixture canon doesn't pin them,\n# so simulating a reply would be invention. The stub answers with the lab's standard\n# boundary message instead of a false `command not found`.\n# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.\necho \"security: not on this lab's simulated surface (§4.5 teaches the concept) — run it on a real Mac to explore\" >&2\nexit 64\n"
+    }
+  },
+  "expectations": {
+    "t1:2": "FileVault is On.\n",
+    "t3:0": "FileVault is On.\n",
+    "t3:1": "assessments enabled\n",
+    "t3:2": "Enrolled via DEP: Yes\nMDM enrollment: Yes (User Approved)\n",
+    "t3:3": "Configuration Profiles:\n    ScreenLock Policy:\n        Payloads: com.apple.screensaver (askForPassword=1, idleTime=600)\n"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

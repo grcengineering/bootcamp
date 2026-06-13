@@ -1,0 +1,33 @@
+{
+  "catalog": {
+    "uuid": "11111111-1111-4111-8111-111111111111",
+    "metadata": {
+      "title": "Acme Internal Control Spine",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "last-modified": "2026-05-28T00:00:00Z"
+    },
+    "controls": [
+      {
+        "id": "ac-2",
+        "title": "Account Management",
+        "parts": [
+          {
+            "name": "statement",
+            "prose": "The organization manages information system accounts, including periodic review of who holds access to production."
+          }
+        ]
+      },
+      {
+        "id": "sc-28",
+        "title": "Protection of Information at Rest",
+        "parts": [
+          {
+            "name": "statement",
+            "prose": "The organization protects the confidentiality and integrity of information at rest."
+          }
+        ]
+      }
+    ]
+  }
+}

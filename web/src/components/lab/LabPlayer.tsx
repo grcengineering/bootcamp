@@ -71,6 +71,10 @@ interface LabPlayerProps {
   expectations: Record<string, string>;
   /** PowerShell engine seed (engine: powershell bundles only). */
   windowsSeed?: unknown;
+  /** Linux-admin lab wiring (module 02's booted web-01 bundle only). */
+  adminLab?: { password: string };
+  /** Prompt hostname override (module 02: web-01). */
+  host?: string;
 }
 
 interface SavedLab {
@@ -154,7 +158,7 @@ const STORAGE_WARNINGS: Record<PersistFailure, string> = {
   unavailable: "Local storage isn't available in this browser — progress won't survive a reload.",
 };
 
-export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed }: LabPlayerProps) {
+export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed, adminLab, host }: LabPlayerProps) {
   const persistKey = `grcb.lab.${spec.id}`;
   const variant = VARIANTS[spec.engine] ?? null;
   const kind = surfaceKindOf(spec.engine);
@@ -199,11 +203,12 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
       epoch,
       cols: 80,
       user: spec.seed.home.split("/").filter(Boolean).pop() ?? "analyst",
-      host: variant === "zsh-macos" ? "mac" : "workstation",
+      host: host ?? (variant === "zsh-macos" ? "mac" : "workstation"),
       home: spec.seed.home,
       ...(spec.engine === "api" ? { apiLab: {} } : {}),
+      ...(adminLab ? { adminLab } : {}),
     }),
-    [variant, seed, epoch, spec.seed.home, spec.engine],
+    [variant, seed, epoch, spec.seed.home, spec.engine, adminLab, host],
   );
 
   const loadSaved = useCallback((): SavedLab | null => {
@@ -936,7 +941,11 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
                   ref={termRef}
                   session={sessionRef.current}
                   onCommandComplete={onCommandComplete}
-                  onOpenEditor={bashWorld ? (fileArg) => setEditorFile(fileArg) : undefined}
+                  onOpenEditor={
+                    bashWorld || spec.engine === "powershell"
+                      ? (fileArg) => setEditorFile(fileArg)
+                      : undefined
+                  }
                   onActivity={() => setInteracted(true)}
                   promptMode={spec.engine === "powershell" ? "ps" : "bash"}
                   label={

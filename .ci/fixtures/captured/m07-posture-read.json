@@ -1,0 +1,30 @@
+{
+  "id": "m07-posture-read",
+  "module": "07",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m07",
+  "cwd": "/home/analyst/lab07",
+  "pre": [
+    "bash labs/setup.sh"
+  ],
+  "cmd": "cat fixtures/posture-findings.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "[\n  { \"resourceId\": \"audit-logs\",  \"control\": \"encryption\", \"status\": \"PASS\" },\n  { \"resourceId\": \"scratch-tmp\", \"control\": \"encryption\", \"status\": \"FAIL\" },\n  { \"resourceId\": \"exports-q2\",  \"control\": \"encryption\", \"status\": \"PASS\" }\n]\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:58:24.832Z",
+    "captured_with": "capture.ts v1"
+  }
+}

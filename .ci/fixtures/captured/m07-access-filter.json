@@ -1,0 +1,30 @@
+{
+  "id": "m07-access-filter",
+  "module": "07",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m07",
+  "cwd": "/home/analyst/lab07",
+  "pre": [
+    "bash labs/setup.sh"
+  ],
+  "cmd": "grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):'",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "  { \"eventTime\": \"2026-05-20T02:14:00Z\", \"eventName\": \"AttachUserPolicy\", \"actor\": \"contractor-7\", \"policy\": \"AdministratorAccess\" },\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:58:26.544Z",
+    "captured_with": "capture.ts v1"
+  }
+}

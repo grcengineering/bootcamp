@@ -1,0 +1,31 @@
+{
+  "id": "m09-awk-deny-violation",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "awk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' access-violation.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the taught-subset verdict one-liner (both columns ANDed) — the heart of the learner-authored my-check.sh; DENY line bytes match the module's §5.2 canon.\n",
+  "stdout": "DENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:38.132Z",
+    "captured_with": "capture.ts v1"
+  }
+}

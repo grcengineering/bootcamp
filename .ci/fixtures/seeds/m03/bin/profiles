@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Simulated MDM-enrollment query for the module 03 lab box (§4.7).
+# Output is canon-locked to modules/03-macos-fundamentals/labs/setup.sh
+# (samples/profiles-status.txt) — the module's committed ground truth for the
+# enrolled, User-Approved-MDM scenario Mac. The module's own prose marks real
+# `profiles` output "representative"; the committed fixture strings are what the
+# lab's evaluator and CI (labs/happy-path.sh) test against, so the simulator
+# reproduces the FIXTURES byte-exactly (manifest entry m03-profiles-status).
+# NOTE: written with `case`/`test` (no bare `[`) — the lab box is the zsh variant.
+case "${1:-} ${2:-} ${3:-}" in
+  "status -type enrollment")
+    printf '%s\n' 'Enrolled via DEP: Yes'
+    printf '%s\n' 'MDM enrollment: Yes (User Approved)'
+    ;;
+  *)
+    echo "profiles: only 'profiles status -type enrollment' is on this lab's simulated surface — run it on a real Mac to explore" >&2
+    exit 64
+    ;;
+esac

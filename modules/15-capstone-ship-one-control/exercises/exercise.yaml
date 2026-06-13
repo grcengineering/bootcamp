@@ -1,0 +1,265 @@
+id: lab-15
+module: 15-capstone-ship-one-control
+title: "The coverage spine: one control, seven stages, a green gate"
+owner: Justin Pagano
+volatility: A
+review_due: 2027-05-28
+engine: builder
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m15
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+builder:
+  surface: capstone
+  validator: capstone
+  validator_args: [capstone-manifest.yaml]
+
+intro: |
+  This is the capstone's guided portion: the coverage spine. Your surface is a simulated
+  capstone repo seeded byte-identically to what `bash labs/setup.sh` writes — the manifest,
+  the seven placeholder stage artifacts, the before/after skeleton — and a "Validate
+  capstone" button that runs the lab's own `validate-capstone.sh`, ported to engine code and
+  CI-verified byte-for-byte against real `bash` runs of that script. Every per-stage line,
+  verdict, and exit code you see here is what the real validator prints on a real machine.
+
+  Two honest boundaries. First: the engineering artifacts themselves (your collect script,
+  your policy, your scheduled workflow) are built in your real environment per Modules 5–13;
+  here they are the setup script's placeholders, and the work is the manifest-and-validator
+  loop that proves coverage. Second: in this simulation the validator is engine code — you
+  literally cannot edit it to make it pass. On your real machine you could, and §6 task 2
+  names that as the exact anti-pattern this program teaches against.
+
+  The control you'll ship is the one this program has carried since week 0: laptop disk
+  encryption — the same claim you watched a Mac answer with `fdesetup status` and a Windows
+  box answer with `Get-BitLockerVolume`. The eight-point checklist above the editor is read
+  from the validator's own output; your job is to make it green, break it in the two ways
+  real capstones break, read the difference, and make it green again — twice.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1]
+    instruction: |
+      §6 task 1. The seeded manifest still claims the fixture's S3 control. Re-found it for
+      the control you are shipping: in the manifest editor, replace the `control:` line with
+      exactly `control: "Company laptops enforce full-disk encryption (SOC 2 CC6.1)"` —
+      and leave all seven `loop_coverage:` stage mappings and the `before_after:` pointer in
+      place. In your real capstone this line names YOUR control and every mapping names a
+      real artifact; a stage you can't name an artifact for is a gap to close, not a line to
+      leave implicit.
+    verify:
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^control: \"Company laptops enforce full-disk encryption \\(SOC 2 CC6\\.1\\)\"$"
+      - check: file_not_matches
+        path: capstone-manifest.yaml
+        regex: "^control: \"S3 buckets"
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^\\s+MONITOR:\\s+\\.github/workflows/ccm\\.yml\\s*$"
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^before_after:\\s*before-after\\.md\\s*$"
+    hints:
+      - nudge: "Only one line changes. The seven loop_coverage rows and the before_after pointer are the coverage spine — they stay exactly as setup.sh wrote them."
+      - concept: "§4.2 — the manifest makes coverage machine-checkable: one stage, one named artifact"
+      - reveal: "In the editor, replace the control: line with: control: \"Company laptops enforce full-disk encryption (SOC 2 CC6.1)\" — touch nothing else"
+    explain: |
+      The capstone now names the claim this whole program has been sixteen ways of checking:
+      the week-0 laptop-encryption analysis is your "before," and the manifest you just
+      edited is the spine the "after" hangs on. Notice what did NOT change — the seven
+      stage-to-artifact rows. The control is yours; the coverage contract is invariant.
+
+  - id: t2
+    type: action
+    objective: [1, 5]
+    instruction: |
+      §6 task 2, first run. Before you click, predict all nine output lines: seven stage
+      rows, one before/after row, one verdict. Then press "Validate capstone" and reconcile.
+      Every stage should read `ok` with its artifact named, the verdict line should be the
+      PASS sentence, and the exit code should be 0 — the same transcript the real validator
+      prints over this manifest on a real machine.
+    verify:
+      - check: history_contains
+        regex: "^validator:capstone( |$)"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^PASS: all 7 loop stages covered; before/after present$"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^  UNDERSTAND  ok  -> control-statement\\.md$"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^  MONITOR     ok  -> \\.github/workflows/ccm\\.yml$"
+    hints:
+      - nudge: "The validator prints one aligned row per stage — `ok` names the artifact that discharges it, `MISSING` names the gap. The last line is the verdict; the exit code is the gate."
+      - concept: "§5.2 — the verdict line IS the gate: the curriculum eating its own dog food"
+      - reveal: "Click \"Validate capstone\": every stage reads ok, the before/after row reads ok, the final line is `PASS: all 7 loop stages covered; before/after present`, exit 0"
+    explain: |
+      That per-stage transcript is §5.1's coverage table, asserted by a machine instead of
+      claimed in prose. The column alignment isn't cosmetic — it's the validator's own
+      printf, and the module's CI greps those exact columns. The exit code is the part a
+      pipeline consumes: 0 ships, anything else names what doesn't.
+
+  - id: t3
+    type: action
+    objective: [1, 4, 5]
+    instruction: |
+      §6 task 2, the failure it warns about — made real. A capstone that claims coverage it
+      doesn't have is the §5.4 failure mode, so reproduce it deliberately: in the manifest
+      editor, delete the entire `MONITOR:` row and the entire `before_after:` line, then
+      validate. The validator must name BOTH gaps — `no artifact mapped` for MONITOR, the
+      before/after pointer absent — and exit 1. This is exactly the shape of the committed
+      `capstone-manifest-incomplete.yaml` fixture the module's own CI replays as its
+      negative case.
+    verify:
+      - check: file_not_matches
+        path: capstone-manifest.yaml
+        regex: "^\\s*MONITOR:"
+      - check: file_not_matches
+        path: capstone-manifest.yaml
+        regex: "^before_after:"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^  MONITOR     MISSING \\(no artifact mapped\\)$"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^  before/after MISSING \\(no before_after pointer or file not found\\)$"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^FAIL: capstone coverage incomplete — close the named gaps before shipping$"
+    hints:
+      - nudge: "Two deletions: the MONITOR row inside the loop_coverage block, and the top-level before_after pointer. Then run the gate and read what it names."
+      - concept: "§4.1 — a stage with no artifact next to it is a gap, full stop; naming it honestly beats pretending it's covered"
+      - reveal: "Delete `  MONITOR:    .github/workflows/ccm.yml` and `before_after: before-after.md`, then Validate capstone — MONITOR MISSING (no artifact mapped), before/after MISSING, FAIL, exit 1"
+    explain: |
+      The gate discriminated: green on full coverage, red with NAMED gaps on partial — that
+      discrimination is what makes it a control check rather than a ceremony. Exit 1 means a
+      CI pipeline would refuse to ship this capstone, and the per-stage output tells the
+      author exactly which artifact to produce next. Do not edit the gate; close the gap.
+
+  - id: t4
+    type: action
+    objective: [2, 5]
+    instruction: |
+      Now the subtler failure: a manifest can claim an artifact that is not there. Restore
+      the `before_after: before-after.md` line, and map MONITOR to a workflow that does not
+      exist — `MONITOR:    .github/workflows/monitor.yml` — then validate. Read the output
+      carefully: `MISSING (artifact not found: …)` is a different fact from
+      `MISSING (no artifact mapped)`. The first is a claim the repo contradicts; the second
+      is a claim never made. Reviewers meet the first kind far more often.
+    verify:
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^\\s+MONITOR:\\s+\\.github/workflows/monitor\\.yml\\s*$"
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^before_after:\\s*before-after\\.md\\s*$"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^  MONITOR     MISSING \\(artifact not found: \\.github/workflows/monitor\\.yml\\)$"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^  before/after ok -> before-after\\.md$"
+    hints:
+      - nudge: "Mapping a path doesn't make it real — the validator resolves every mapped path against the repo beside the manifest. Two different MISSING messages exist; this task produces the other one."
+      - concept: "§4.6 — done is falsifiable: a stage that is claimed is not the same as a stage that is satisfied"
+      - reveal: "Re-add `before_after: before-after.md`, change the MONITOR row to `  MONITOR:    .github/workflows/monitor.yml`, Validate capstone — MONITOR MISSING (artifact not found: .github/workflows/monitor.yml), before/after ok, exit 1"
+    explain: |
+      This is §5.4 in miniature: the manifest said MONITOR was covered and the repo said
+      otherwise — the validator caught the manifest lying, not just staying silent. Both
+      failures exit 1, but the messages route differently: "no artifact mapped" means decide
+      and name; "artifact not found" means the named thing must be produced or the claim
+      withdrawn. Distinguishing them is the diagnosis skill the §7 rubric checks.
+
+  - id: t5
+    type: action
+    objective: [1, 2, 5]
+    instruction: |
+      §6 task 7. Close the gap with the artifact that actually exists: point MONITOR back at
+      `.github/workflows/ccm.yml` (setup.sh wrote it; only your mapping was wrong), validate,
+      and confirm all seven stages plus the before/after read ok with exit 0. Then validate a
+      second time without touching anything: the verdict must be identical — your coverage
+      proof is itself reproducible.
+    verify:
+      - check: file_content_matches
+        path: capstone-manifest.yaml
+        regex: "^\\s+MONITOR:\\s+\\.github/workflows/ccm\\.yml\\s*$"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^  MONITOR     ok  -> \\.github/workflows/ccm\\.yml$"
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^PASS: all 7 loop stages covered; before/after present$"
+    hints:
+      - nudge: "The workflow file was in the repo all along — the gap was in your claim, not your artifacts. Re-point the mapping, run the gate, then run it again and compare verdicts."
+      - concept: "§4.2 — the manifest maps stages to artifacts; the validator asserts the mapping resolves, every run, identically"
+      - reveal: "Change the MONITOR row back to `  MONITOR:    .github/workflows/ccm.yml`, click Validate capstone (PASS, exit 0), then click it once more — the transcript is identical"
+    explain: |
+      Two runs, one verdict: the proof is a pure function of repo state, which is what lets
+      the module's own happy-path script assert reproducibility by comparing the verdict
+      line across consecutive runs of the real validator. A coverage proof that drifts
+      between runs would be exactly the unfalsifiable promise this program exists to retire.
+
+  - id: t6
+    type: reflection
+    objective: [1]
+    instruction: |
+      §6 task 3, for your control. Draft the `control-statement.md` that discharges
+      UNDERSTAND and LOCATE for the laptop-encryption claim: the claim in your own words;
+      the threat it mitigates, cited the Module-11 way (a lost or stolen laptop exposing
+      data at rest); and the named ground-truth location — specific enough that someone else
+      could fetch it. For this control that means naming the actual field on the actual
+      system: what `fdesetup status` reports on a Mac, what the volume protection status of
+      `Get-BitLockerVolume` reports on Windows. "The MDM says so" is a derived answer, not
+      ground truth — say where the truth lives.
+    hints:
+      - nudge: "Three parts: claim, threat, ground truth. The test of the third: could a colleague who has never met you fetch the value from what you wrote alone?"
+      - concept: "§5.1 — if you can't name the LOCATE artifact, you don't yet know where the truth lives"
+
+  - id: t7
+    type: reflection
+    objective: [2, 5]
+    instruction: |
+      §6 task 4, the seam — and the validator's honest limit. Look at what the seeded
+      placeholders actually do: `collect.sh` emits an empty bucket list, the rego policy is
+      a stub, and `ccm.yml` declares a schedule but never invokes collect.sh or the policy.
+      Yet the validator just printed `MONITOR ok` and exited 0. In 3–5 sentences: what does
+      the validator actually verify (presence of a mapped artifact), what must a reviewer
+      verify that it cannot (the seam — the scheduled path invoking the SAME
+      QUERY → EVALUATE → EVIDENCE code as your hand run, and producing the verdict the
+      evidence records), and write the one-sentence agreement statement §6 task 4 asks you
+      to put in before-after.md once you have verified the hand-run and scheduled paths
+      agree in your real environment.
+    hints:
+      - nudge: "A scheduled job that collects but never evaluates or alerts is logging wearing monitoring's clothes — §5.4's exact diagnosis. The coverage gate can't see that; the seam check can."
+      - concept: "§4.3 — integration is where the seams are, and the scheduled run is the truth"
+
+  - id: t8
+    type: reflection
+    objective: [3, 4, 6]
+    instruction: |
+      §6 tasks 5 and 6, plus the §7 walkthrough — the product half of shipping. For your
+      real control, draft: (a) the README product section — the customers who depend on the
+      control's output, ONE accountable named owner (a person, not a team alias), three
+      backlog items including at least one honest known gap, the single metric that says
+      it's working, and one sentence of UX rationale (evidence as a by-product of the work);
+      (b) the before/after — the same control's week-0 legacy state beside its engineered
+      state on at least four concrete dimensions (effort, frequency, drift detection,
+      durability), scored against the five legacy problems, with at least one residual gap
+      that did NOT improve, cross-referenced to a backlog item from (a); and (c) two or
+      three sentences you would say to a stakeholder who has never read the manifesto,
+      arguing from the before/after and the live monitoring — not assertion — why the
+      engineered control is more trustworthy than its legacy predecessor.
+    hints:
+      - nudge: "A before/after that is all upside is not credible; the honest residual gap, cross-referenced to your own backlog, is what makes a reviewer trust the rest."
+      - concept: "§4.4 and §4.5 — five named product elements; the before/after is a controlled comparison, not a brag"
+
+completion:
+  evidence_pack: true

@@ -1,0 +1,6 @@
+{"anti_for": "t3", "reason": "the cheat — claim the loop catches drift without ever inducing it: an all-green schedule never produces an rc=1 run or an alert, so the drift task cannot be satisfied by ticking alone"}
+{"input": "ccm-tick 1"}
+{"input": "ccm-tick 30"}
+{"input": "ccm-tick 1"}
+{"input": "ccm-tick 7"}
+{"input": "ccm-tick 1"}

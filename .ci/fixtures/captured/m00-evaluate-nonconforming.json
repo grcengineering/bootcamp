@@ -1,0 +1,35 @@
+{
+  "id": "m00-evaluate-nonconforming",
+  "module": "00",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m00",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "evaluate-analysis lab00/non-conforming.md",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "The legacy-only counterexample (labs/happy-path.sh BAD heredoc) is REJECTED with one two-space-indented line per missing element, exit 1 — the discrimination assertion the module's own CI makes.\n",
+  "stdout": "  missing legacy problem: manual toil\n  missing legacy problem: transactional\n  missing legacy problem: whack-a-mole\n  missing legacy problem: closed-framework\n  missing legacy problem: commoditized\n  missing loop stage: UNDERSTAND\n  missing loop stage: LOCATE\n  missing loop stage: QUERY\n  missing loop stage: EVALUATE\n  missing loop stage: EVIDENCE\n  missing loop stage: MONITOR\n  missing loop stage: OWN\n  missing reality->policy inversion statement\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:51:45.253Z",
+    "captured_with": "capture.ts v1"
+  }
+}

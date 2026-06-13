@@ -1,0 +1,9 @@
+{"anti_for": "t5", "reason": "near-miss: orphan force-fit to a loosely-related control (AC-2,exact) — the structural validator passes (exit 0, verified against a real run) but the false equivalence §6 task 3 warned about must not count as resolving the orphan"}
+{"input": "save-reflection t1\nThe spine file lists the twenty valid 800-53 families; a crosswalk row maps one profile requirement to a spine control with a relationship label."}
+{"input": "edit work/crosswalk.csv\nprofile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,,orphan\nSOC2,CC7.2,AU-6,narrower\nISO27001,A.8.15,AU-2,exact\nCIS8,8.2,AU-2,narrower\n"}
+{"input": "save-reflection t3\nThe orphan should map to CM-8; force-fitting it elsewhere would over-claim coverage — a false equivalence."}
+{"input": "run-validator"}
+{"input": "edit validation-before.txt\nprofiles: 5 | rows: 7 | spine families referenced: 3/20\nFAIL: 1 orphan(s) — profile requirement maps to no spine control:\n  - PCI4 6.3.2 (relationship=orphan)\nexit: 1\n"}
+{"input": "edit work/crosswalk.csv\nprofile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,AC-2,exact\nSOC2,CC7.2,AU-6,narrower\nISO27001,A.8.15,AU-2,exact\nCIS8,8.2,AU-2,narrower\n"}
+{"input": "run-validator"}
+{"input": "edit validation-after.txt\nprofiles: 5 | rows: 7 | spine families referenced: 3/20\nPASS: every profile requirement maps to a real spine family; no orphans; all relationships valid.\n"}

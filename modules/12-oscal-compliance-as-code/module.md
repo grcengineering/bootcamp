@@ -234,6 +234,8 @@ Exit code `1`, the defect named, the downstream blast radius stated — no human
 
 **Scenario.** You are converting the Module-10 access-review crosswalk into machine-readable OSCAL and proving that a control implementation is wired to the policy that enforces it. By the end you have a schema-valid catalog, a profile that selects from it, a component-definition implementing `ac-2`, and a link from that implementation to the Module-09 policy `ac-2-account-management` — validated by a gate that fails loudly on a broken document.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 12 → Interactive lab) as a CI-workspace simulation: the validator it runs is a port of the committed `validate-oscal.ts`, CI-verified byte-for-byte against real `bun` runs of that script — the same documents on a real machine produce the same verdict and exit code.
+
 **Setup.** Run `bash labs/setup.sh ./lab12`. This stages, in `./lab12/`: a minimal OSCAL catalog (`acme-catalog.json`), a profile (`acme-profile.json`), a component-definition linking `ac-2` to the policy (`acme-component.json`), a deliberately broken catalog (`acme-catalog-broken.json`), and the validator (`validate-oscal.ts`). No trestle, schema download, or network is needed for the offline core; steps marked *(real environment)* require your own `compliance-trestle` install.
 
 **Tasks.**

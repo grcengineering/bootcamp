@@ -1,0 +1,6 @@
+{
+  "control_id": "CC6.1-s3-public-access-block",
+  "captured_at": "2026-05-23T09:00:00Z",
+  "source": "aws-config-snapshot",
+  "buckets": []
+}

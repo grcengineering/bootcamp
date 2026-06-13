@@ -1,0 +1,37 @@
+{
+  "id": "m13-evaluate-drifted-pretty",
+  "module": "13",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m13",
+  "cwd": "/home/analyst",
+  "pre": [
+    "source ccm-lab/ccm-check.sh"
+  ],
+  "cmd": "evaluate_control labs/fixtures/state-drifted-pretty.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "The fail-open regression guard (§6 setup): the SAME drift expressed as pretty-printed multi-line JSON — the shape real cloud exports emit — must still be CAUGHT (exit 1), never parsed to zero buckets and silently passed.\n",
+  "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=3 noncompliant=1\nNONCOMPLIANT acme-public-website\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:23:38.514Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,392 @@
+{
+  "spec": {
+    "id": "lab-12",
+    "module": "12-oscal-compliance-as-code",
+    "title": "The compliance package a machine can refuse",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-08-28",
+    "engine": "builder",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m12",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "Module 10's crosswalk was a table a human reads; this workspace holds the same idea as\ndocuments a machine can refuse. It is staged exactly as `bash labs/setup.sh ./lab12`\nleaves it: a minimal OSCAL catalog (the spine as data), a profile that selects from it,\na component-definition that links control `ac-2` to the Module-09 policy that enforces\nit, a deliberately broken catalog, and the validator's own source. The \"Run validator\"\nbutton IS the pipeline's validate step — it runs the committed `validate-oscal.ts`\nlogic, verified byte-for-byte in CI against real `bun` runs of that script, so every\nverdict and exit code you see here is the one a real machine produces. The pipeline\nreads the catalog at a fixed path, `lab12/catalog-under-validation.json` — seeded with\nyour good catalog, exactly like a CI checkout — while the pristine fixtures stay\nuntouched beside it. One more thing to notice while you trace: the spine also defines\n`sc-28`, protection of information at rest — the laptop-encryption claim this\ncurriculum keeps re-asking — and this SOC 2 profile doesn't select it. Selection is a\ndecision, and now it's data.\n",
+    "builder": {
+      "surface": "workspace",
+      "validator": "oscal",
+      "validator_args": [
+        "lab12/catalog-under-validation.json",
+        "lab12/acme-profile.json",
+        "lab12/acme-component.json"
+      ]
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "Before running anything, open `lab12/acme-catalog.json` and find the three pieces\nthe schema requires for this document to be a catalog at all: the document UUID,\nthe metadata that names and versions it, and controls with stable ids. Record each\nin section 1 of `lab12/oscal-worksheet.md`, copying the values exactly as the file\nholds them.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^document-uuid: *11111111-1111-4111-8111-111111111111 *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^metadata-title: *Acme Internal Control Spine *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^control-ids: *ac-2,? +sc-28 *$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Three layers of identity: the `uuid` names THIS document, `metadata` names and versions the catalog, and each control's `id` is the handle everything later points at."
+          },
+          {
+            "concept": "§4.2 — the catalog: your spine, as data; absence of a required piece is the violation"
+          },
+          {
+            "reveal": "document-uuid: 11111111-1111-4111-8111-111111111111 · metadata-title: Acme Internal Control Spine · control-ids: ac-2, sc-28"
+          }
+        ],
+        "explain": "Module 10's crosswalk cell `AC-2` is now an addressable object with a document UUID\nabove it and a stable id on it. None of it is decoration: a control with no `id`\nisn't \"incomplete\" — nothing can reference it, so the document fails the schema's\ncontract entirely. That distinction is the whole module.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2,
+          3
+        ],
+        "instruction": "Open `lab12/acme-profile.json`. It copies no controls — it imports a catalog and\ndeclares a selection. In section 2 of the worksheet, record which catalog it\nimports, which control ids it puts in scope, and which control the catalog defines\nthat this profile does NOT select.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^imports-href: *acme-catalog\\.json *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^in-scope-ids: *ac-2 *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^defined-but-not-selected: *sc-28 *$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Look inside `imports`: the `href` names the catalog, `with-ids` lists the selection. Then compare that list against the catalog's two control ids — what's left out?"
+          },
+          {
+            "concept": "§4.3 — a profile is a selection over a catalog: Module 10's 'a framework is a subset of the spine', made mechanical"
+          },
+          {
+            "reveal": "imports-href: acme-catalog.json · in-scope-ids: ac-2 · defined-but-not-selected: sc-28"
+          }
+        ],
+        "explain": "The profile is the crosswalk's \"SOC 2 cares about these spine controls\" as data —\nchange the include-list, change the framework's scope, in a diffable file. And the\ncontrol it leaves out is `sc-28`, the encryption-at-rest claim this curriculum has\nchased since module 01: defined in the spine, out of scope for this framework.\nThat gap being visible in data, not in someone's memory, is the point.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3,
+          6
+        ],
+        "instruction": "Open `lab12/acme-component.json` and trace the C2P join that makes this more than\nformat conversion: the implemented requirement's `control-id`, the `links` entry\nwhose `rel` is `policy`, and the `back-matter` resource its `href` resolves to.\nRecord all three in section 3 of the worksheet. The policy id you land on is the\nModule-09 policy-as-code rule that denies `legacy-admin` grants in CI.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^chain-control-id: *ac-2 *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^chain-link-href: *#policy-ac-2-account-management *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^chain-policy-id: *ac-2-account-management *$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Walk it in order: `implemented-requirements[0].control-id` → its `links[0].href` → the back-matter resource whose `policy-id` prop the href names."
+          },
+          {
+            "concept": "§4.6 — C2P links the OSCAL claim to the enforcing code, by identifier, in a field a machine can follow"
+          },
+          {
+            "reveal": "chain-control-id: ac-2 · chain-link-href: #policy-ac-2-account-management · chain-policy-id: ac-2-account-management"
+          }
+        ],
+        "explain": "You just followed the chain a machine follows: the profile put `ac-2` in scope, the\ncomponent claims `ac-2` is implemented, and the claim carries — as data — the\nidentifier of the Module-09 policy that enforces it. The document doesn't just say\n\"implemented\"; it says \"implemented by THIS, provably\". That link is the difference\nbetween asserting a control and wiring the assertion to the enforcement.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          4,
+          6
+        ],
+        "instruction": "Run the validator: click \"Run validator\" — the pipeline's validate step over the\nstaged set. Confirm the verdict is PASS with exit code 0, that the profile resolves\nwith zero dangling references, and that `ac-2` is policy-linked. Then keep the\nverdict: copy the validator's complete output into\n`lab12/oscal-validation-pass.txt`, replacing the placeholder line.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^validator:oscal lab12/catalog-under-validation\\.json lab12/acme-profile\\.json lab12/acme-component\\.json$"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "^PASS: required fields present, profile references resolve, control is implemented and policy-linked$"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab12/oscal-validation-pass.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-validation-pass.txt",
+            "regex": "^  ac-2 -> policy \"ac-2-account-management\"  \\[link resolves\\]$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-validation-pass.txt",
+            "regex": "^component: implemented-requirements: 1 \\| policy-linked: 1$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Run validator IS `bun validate-oscal.ts` over the three staged documents. Watch the exit code under the output — 0 is the machine's blessing. The record itself is evidence: keep all of it."
+          },
+          {
+            "concept": "§4.7 — the validator makes the schema bite; its verdict is an exit code because the consumer is a CI pipeline"
+          },
+          {
+            "reveal": "Click Run validator (PASS, exit 0), then copy its full output into lab12/oscal-validation-pass.txt in place of the placeholder line"
+          }
+        ],
+        "explain": "A machine just judged the whole package — required fields present, every profile\nreference resolved, the implemented control wired to its policy — and blessed it\nwith exit 0, no human reading required. The record you kept is the §6 deliverable:\nthe EVALUATE verdict frozen as a file, produced by the gate itself, so it cannot\ndrift from what the gate actually checked.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "Now make the gate bite. Replace the ENTIRE contents of\n`lab12/catalog-under-validation.json` with `lab12/acme-catalog-broken.json`'s\ncontents (copy the whole file) — the same catalog with one control's `id` removed —\nand run the validator. Confirm it fails with exit code 1, naming the missing field\nAND the downstream consumer the defect would break. Copy the complete FAIL record\ninto `lab12/oscal-broken-record.txt`, record the diagnosis in section 4 of the\nworksheet, then restore the set: copy `lab12/acme-catalog.json` back over\n`lab12/catalog-under-validation.json`.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab12/oscal-broken-record.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-broken-record.txt",
+            "regex": "^FAIL: catalog control missing required \"id\"$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-broken-record.txt",
+            "regex": "^  -> a control with no id cannot be referenced by a profile or a policy link; this would break any importer \\(an auditor's tool, a FedRAMP pipeline\\) downstream\\.$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^missing-required-field: *\"?id\"? *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-worksheet.md",
+            "regex": "^downstream-consumer-broken: .*(importer|auditor|FedRAMP)"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab12/catalog-under-validation.json",
+            "from": "generated"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "^FAIL: catalog control missing required \"id\"$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Swap the broken catalog into the slot the pipeline reads (select all, copy, paste), run, and read the FAIL record like an auditor: it names the field AND who downstream it breaks. Don't leave the working tree red — restore the good catalog after."
+          },
+          {
+            "concept": "§4.7 — a failing exit names the field that broke and the consumer it would have broken; §5.4 — the verdict, the way a machine reports it"
+          },
+          {
+            "reveal": "Copy lab12/acme-catalog-broken.json over lab12/catalog-under-validation.json, Run validator (FAIL, exit 1), copy the output into lab12/oscal-broken-record.txt, fill worksheet section 4 (missing-required-field: id · downstream-consumer-broken: any importer — an auditor's tool, a FedRAMP pipeline), then copy lab12/acme-catalog.json back over lab12/catalog-under-validation.json"
+          }
+        ],
+        "explain": "The defect was one missing field, and the blast radius was named for you: a control\nwith no `id` can't be referenced by the profile, the implementation, or the policy\nlink, so any importer downstream — an auditor's tool, a FedRAMP pipeline — chokes\non it. Catching that in CI, with the consumer spelled out, is the difference\nbetween a malformed audit package failing a build and shipping to an assessor.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "Break a different thing yourself. Edit `lab12/acme-profile.json` so its `with-ids`\nselects `ac-9` — a control id the catalog does not define — and run the validator.\nConfirm it flags the dangling reference with exit 1 and copy the complete FAIL\nrecord into `lab12/oscal-dangling-record.txt`. Then restore the profile to select\n`ac-2` again and re-run the validator until the set is green.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab12/oscal-dangling-record.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab12/oscal-dangling-record.txt",
+            "regex": "^FAIL: profile references control id\\(s\\) the catalog does not define: ac-9$"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab12/acme-profile.json",
+            "from": "generated"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "^PASS: required fields present, profile references resolve, control is implemented and policy-linked$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One token in `with-ids` is the whole edit. The catalog defines ac-2 and sc-28 — ac-9 has no home in the spine, so the selection can't resolve. Remember the cycle isn't done at the FAIL: restore, re-run, leave it green."
+          },
+          {
+            "concept": "§4.3 — a profile including an id the catalog doesn't define is the OSCAL form of a Module-10 crosswalk orphan"
+          },
+          {
+            "reveal": "Edit lab12/acme-profile.json: \"ac-2\" → \"ac-9\" in with-ids, Run validator (FAIL, exit 1), copy the output into lab12/oscal-dangling-record.txt, edit \"ac-9\" back to \"ac-2\", Run validator again (PASS, exit 0)"
+          }
+        ],
+        "explain": "That FAIL is the Module-10 orphan check, mechanized: the profile claimed a control\nwith no home in the spine, and a resolving validator refused the document instead\nof trusting your eyes to spot it. You also just practiced the full discipline —\nbreak, observe the named defect, restore, re-run to green — which is exactly what\na CI pipeline demands of an author whose change is blocked.\n"
+      },
+      {
+        "id": "t7",
+        "type": "reflection",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "The real §6 task 7 runs on your own machine: install compliance-trestle, import\nthis lab's catalog, and validate it against the actual OSCAL schema. Before (or\ninstead of) doing that, answer in 2–4 sentences: which repository is the maintained\nhome of trestle, and why is pointing your toolchain at the dead NIST-hosted one a\ndefect and not a footnote? And name the kind of field the real schema requires that\nthis lab's minimal fixtures omit — the delta §4.8 calls Tier-C volatility.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "§4.8 names both: the maintained oscal-compass home vs the dead usnistgov repo, and the real schema's heavier requirements (more UUIDs, last-modified, parties/roles in metadata)."
+          },
+          {
+            "concept": "§4.8 — a tool's current home and current status are part of its correctness"
+          }
+        ]
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "instruction": "The lab's written deliverable, in 4–6 sentences for a colleague who keeps controls\nin a spreadsheet: what a schema gives you that a shared format does not (use the\nno-`id` control as the example — why it's invalid, not incomplete); what each layer\nyou touched is the machine-readable version of; the `ac-2` chain from profile to\nimplementation to enforcing policy, in words; and which downstream consumer the\nbroken catalog would have hurt, and how the dangling `ac-9` is Module 10's\ncrosswalk orphan wearing a schema.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Walk §3's six parts in order: schema → catalog → profile → component-definition → C2P link → validator. The package stops being files a human mentally joins and becomes one validatable graph."
+          },
+          {
+            "concept": "§3 — The Mental Model: why isn't a shared file format enough?"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/lab12",
+        "dir": true
+      },
+      {
+        "path": "~/lab12/acme-catalog-broken.json",
+        "content": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine (BROKEN - control id removed)\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+      },
+      {
+        "path": "~/lab12/acme-catalog.json",
+        "content": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"ac-2\",\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+      },
+      {
+        "path": "~/lab12/acme-component.json",
+        "content": "{\n  \"component-definition\": {\n    \"uuid\": \"33333333-3333-4333-8333-333333333333\",\n    \"metadata\": {\n      \"title\": \"Acme IAM Service - Control Implementation\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"components\": [\n      {\n        \"uuid\": \"44444444-4444-4444-8444-444444444444\",\n        \"type\": \"service\",\n        \"title\": \"IAM Service\",\n        \"description\": \"The identity and access management service that enforces account-management controls.\",\n        \"control-implementations\": [\n          {\n            \"uuid\": \"55555555-5555-4555-8555-555555555555\",\n            \"source\": \"acme-profile.json\",\n            \"description\": \"Implementation of the SOC 2 - Acme profile by the IAM service.\",\n            \"implemented-requirements\": [\n              {\n                \"uuid\": \"66666666-6666-4666-8666-666666666666\",\n                \"control-id\": \"ac-2\",\n                \"description\": \"Account management is enforced in CI: any change granting the legacy-admin role is denied by policy, and a structured evidence record is emitted on every run.\",\n                \"links\": [\n                  {\n                    \"rel\": \"policy\",\n                    \"href\": \"#policy-ac-2-account-management\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      }\n    ],\n    \"back-matter\": {\n      \"resources\": [\n        {\n          \"uuid\": \"77777777-7777-4777-8777-777777777777\",\n          \"title\": \"Policy: ac-2-account-management (Module 09 policy-as-code)\",\n          \"props\": [\n            {\n              \"name\": \"policy-id\",\n              \"value\": \"ac-2-account-management\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}\n"
+      },
+      {
+        "path": "~/lab12/acme-profile.json",
+        "content": "{\n  \"profile\": {\n    \"uuid\": \"22222222-2222-4222-8222-222222222222\",\n    \"metadata\": {\n      \"title\": \"SOC 2 Security - Acme Profile\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"imports\": [\n      {\n        \"href\": \"acme-catalog.json\",\n        \"include-controls\": [\n          {\n            \"with-ids\": [\n              \"ac-2\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+      },
+      {
+        "path": "~/lab12/catalog-under-validation.json",
+        "content": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"ac-2\",\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+      },
+      {
+        "path": "~/lab12/oscal-broken-record.txt",
+        "content": "(placeholder — replace this line with the validator's complete FAIL record for the broken catalog, copied from the validator output)\n"
+      },
+      {
+        "path": "~/lab12/oscal-dangling-record.txt",
+        "content": "(placeholder — replace this line with the validator's complete FAIL record for the dangling profile reference, copied from the validator output)\n"
+      },
+      {
+        "path": "~/lab12/oscal-validation-pass.txt",
+        "content": "(placeholder — replace this line with the validator's complete PASS record, copied from the validator output)\n"
+      },
+      {
+        "path": "~/lab12/oscal-worksheet.md",
+        "content": "# Lab 12 worksheet — the OSCAL set, traced before it is trusted\n\nFill each answer on its own line, keeping the line's leading label exactly as\nshown. Your sources are the staged JSON documents and the validator's own\nrecords — this worksheet is reconciliation, not memory.\n\n## 1. The three pieces a valid catalog requires\nOpen acme-catalog.json and copy each value exactly as the file holds it\n(for control-ids, list every control id the catalog defines, in order):\n\ndocument-uuid:\nmetadata-title:\ncontrol-ids:\n\n## 2. The profile is a selection over the catalog\nOpen acme-profile.json. Which catalog does it import, which control ids does\nit put in scope — and which control does the catalog define that this\nprofile does NOT select?\n\nimports-href:\nin-scope-ids:\ndefined-but-not-selected:\n\n## 3. The C2P chain, traced by identifier\nOpen acme-component.json and walk the join: the implemented requirement's\ncontrol id, the policy link's href, and the back-matter policy id that\nhref resolves to.\n\nchain-control-id:\nchain-link-href:\nchain-policy-id:\n\n## 4. The broken catalog, diagnosed\nFrom the FAIL record you captured (oscal-broken-record.txt): the missing\nrequired field, and the downstream consumer the validator says the defect\nwould break.\n\nmissing-required-field:\ndownstream-consumer-broken:\n"
+      },
+      {
+        "path": "~/lab12/validate-oscal.ts",
+        "content": "#!/usr/bin/env bun\n// validate-oscal.ts — the CORE LOGIC of the Module 12 §6 lab, isolated for testing.\n//\n// Reads a minimal OSCAL catalog, profile, and component-definition (JSON) and\n// asserts the load-bearing minimum that makes a compliance-as-code package\n// *machine-real* rather than machine-shaped prose:\n//\n//   1. The catalog carries required metadata and at least one control with a\n//      stable `id` — without an id, nothing can reference the control.\n//   2. The profile imports a catalog and includes only control ids the catalog\n//      actually defines — an include of an undefined id is a DANGLING reference\n//      (the OSCAL form of a Module-10 crosswalk orphan).\n//   3. The component-definition's implemented-requirements name real control\n//      ids, and at least one implemented control carries a RESOLVABLE link to a\n//      policy identifier (the Compliance-to-Policy linkage from Module 09).\n//\n// This is the EVALUATE/EVIDENCE step of the loop expressed as code. It is\n// deliberately free of network, schema-download, and trestle dependencies: a\n// real OSCAL validator (compliance-trestle) checks the full schema; this gate\n// proves the minimum the artifact requires against committed fixtures.\n//\n// Usage:  bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\n// Exit:   0 = the OSCAL set is valid for this module's contract\n//         1 = a required field is missing, a reference dangles, or the policy\n//             link does not resolve (the document is NOT audit-ready)\n//         2 = usage / input error (file missing or not parseable JSON)\n\nconst FAIL = (msg: string, consumer?: string): never => {\n  console.log(`FAIL: ${msg}`);\n  if (consumer) console.log(`  -> ${consumer}`);\n  console.log(\"exit: 1\");\n  process.exit(1);\n};\n\nconst USAGE = (msg: string): never => {\n  console.error(`ERROR: ${msg}`);\n  console.error(\"usage: bun validate-oscal.ts <catalog.json> <profile.json> <component.json>\");\n  process.exit(2);\n};\n\nasync function loadJson(path: string | undefined): Promise<any> {\n  if (!path) return USAGE(\"missing file argument\");\n  const f = Bun.file(path);\n  if (!(await f.exists())) return USAGE(`file not found: ${path}`);\n  try {\n    return JSON.parse(await f.text());\n  } catch {\n    return USAGE(`file is not valid JSON: ${path}`);\n  }\n}\n\nconst [, , catalogPath, profilePath, componentPath] = process.argv;\n\nconst catalogDoc = await loadJson(catalogPath);\nconst profileDoc = await loadJson(profilePath);\nconst componentDoc = await loadJson(componentPath);\n\n// --- 1. Catalog: required metadata + at least one control with an id. ---\nconst catalog = catalogDoc?.catalog;\nif (!catalog) FAIL('catalog document missing top-level \"catalog\" object',\n  \"an importer that expects an OSCAL catalog cannot read this file at all\");\nif (!catalog.uuid) FAIL('catalog missing required \"uuid\"',\n  \"the document has no stable identity; exchange tools cannot reference this version\");\nconst cm = catalog.metadata;\nif (!cm || !cm.title || !cm.version || !cm[\"oscal-version\"]) {\n  FAIL('catalog metadata missing a required field (title / version / oscal-version)',\n    \"a consumer cannot tell which catalog, version, or schema this is\");\n}\nconst controls: any[] = Array.isArray(catalog.controls) ? catalog.controls : [];\nif (controls.length === 0) FAIL(\"catalog defines no controls\",\n  \"an empty spine selects nothing; every profile importing it would be vacuous\");\n\nconst controlIds = new Set<string>();\nfor (const c of controls) {\n  if (!c || typeof c.id !== \"string\" || c.id.length === 0) {\n    FAIL('catalog control missing required \"id\"',\n      \"a control with no id cannot be referenced by a profile or a policy link; \" +\n      \"this would break any importer (an auditor's tool, a FedRAMP pipeline) downstream.\");\n  }\n  controlIds.add(c.id);\n}\n\n// --- 2. Profile: imports a catalog and includes only defined control ids. ---\nconst profile = profileDoc?.profile;\nif (!profile) FAIL('profile document missing top-level \"profile\" object',\n  \"a baseline consumer cannot read this as an OSCAL profile\");\nconst imports: any[] = Array.isArray(profile.imports) ? profile.imports : [];\nif (imports.length === 0) FAIL(\"profile imports no catalog\",\n  \"a profile that imports nothing selects from nothing; it is not a baseline\");\n\nconst inScope: string[] = [];\nconst dangling: string[] = [];\nfor (const imp of imports) {\n  if (!imp.href) FAIL('profile import missing \"href\" to a catalog',\n    \"a profile that does not point at a catalog cannot be resolved\");\n  const includeBlocks: any[] = Array.isArray(imp[\"include-controls\"]) ? imp[\"include-controls\"] : [];\n  for (const block of includeBlocks) {\n    const ids: string[] = Array.isArray(block[\"with-ids\"]) ? block[\"with-ids\"] : [];\n    for (const id of ids) {\n      inScope.push(id);\n      if (!controlIds.has(id)) dangling.push(id);\n    }\n  }\n}\nif (inScope.length === 0) FAIL(\"profile includes no control ids\",\n  \"a profile that selects no controls satisfies no framework requirement\");\nif (dangling.length > 0) {\n  FAIL(`profile references control id(s) the catalog does not define: ${dangling.join(\", \")}`,\n    \"this is the OSCAL form of a Module-10 crosswalk orphan: the profile claims a \" +\n    \"control that has no home in the spine, so the selection cannot be resolved.\");\n}\n\n// --- 3. Component-definition: real control ids + a resolvable policy link. ---\nconst compDef = componentDoc?.[\"component-definition\"];\nif (!compDef) FAIL('component document missing top-level \"component-definition\" object',\n  \"an implementation consumer cannot read this as an OSCAL component-definition\");\n\n// Build the set of policy-id values declared in back-matter resources so a link\n// can be checked as RESOLVABLE, not merely present.\nconst policyIds = new Set<string>();\nconst resources: any[] = compDef[\"back-matter\"]?.resources ?? [];\nfor (const r of resources) {\n  for (const p of r.props ?? []) {\n    if (p.name === \"policy-id\" && typeof p.value === \"string\") policyIds.add(p.value);\n  }\n}\n\nconst components: any[] = Array.isArray(compDef.components) ? compDef.components : [];\nlet implementedCount = 0;\nlet policyLinkedCount = 0;\nconst lines: string[] = [];\n\nfor (const comp of components) {\n  for (const ci of comp[\"control-implementations\"] ?? []) {\n    for (const ir of ci[\"implemented-requirements\"] ?? []) {\n      const cid = ir[\"control-id\"];\n      if (typeof cid !== \"string\" || cid.length === 0) {\n        FAIL(\"implemented-requirement missing required \\\"control-id\\\"\",\n          \"an implementation that names no control cannot be joined to the catalog or a policy\");\n      }\n      if (!controlIds.has(cid)) {\n        FAIL(`implemented-requirement names control \"${cid}\" the catalog does not define`,\n          \"the implementation claims a control with no home in the spine; the claim is unverifiable\");\n      }\n      implementedCount++;\n      // A C2P policy link: rel \"policy\" whose href resolves to a declared policy-id.\n      let linked = false;\n      for (const l of ir.links ?? []) {\n        if (l.rel === \"policy\" && typeof l.href === \"string\") {\n          const ref = l.href.startsWith(\"#\") ? l.href.slice(1) : l.href;\n          // The href points into back-matter (#policy-<id>) or names the id directly.\n          const matches = [...policyIds].some(\n            (pid) => ref === pid || ref === `policy-${pid}`,\n          );\n          if (matches) {\n            linked = true;\n            const pid = [...policyIds].find(\n              (p) => ref === p || ref === `policy-${p}`,\n            );\n            lines.push(`  ${cid} -> policy \"${pid}\"  [link resolves]`);\n          }\n        }\n      }\n      if (linked) policyLinkedCount++;\n    }\n  }\n}\n\nif (implementedCount === 0) FAIL(\"component-definition implements no controls\",\n  \"a component that implements nothing proves no control is satisfied\");\nif (policyLinkedCount === 0) {\n  FAIL(\"no implemented control carries a resolvable policy link (C2P)\",\n    \"without a link from the OSCAL claim to the enforcing policy, the document only \" +\n    \"ASSERTS the control is implemented; it does not WIRE the claim to the enforcement.\");\n}\n\n// --- PASS report (machine- and human-readable). ---\nconsole.log(`catalog: \"${cm.title}\" | controls: ${controls.length} (${[...controlIds].join(\", \")})`);\nconsole.log(\n  `profile: imports ${imports[0].href} | in-scope: ${inScope.length} (${inScope.join(\", \")}) | dangling: ${dangling.length}`,\n);\nconsole.log(`component: implemented-requirements: ${implementedCount} | policy-linked: ${policyLinkedCount}`);\nfor (const l of lines) console.log(l);\nconsole.log(\"PASS: required fields present, profile references resolve, control is implemented and policy-linked\");\nconsole.log(\"exit: 0\");\nprocess.exit(0);\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {
+    "t4:2": "catalog: \"Acme Internal Control Spine\" | controls: 2 (ac-2, sc-28)\nprofile: imports acme-catalog.json | in-scope: 1 (ac-2) | dangling: 0\ncomponent: implemented-requirements: 1 | policy-linked: 1\n  ac-2 -> policy \"ac-2-account-management\"  [link resolves]\nPASS: required fields present, profile references resolve, control is implemented and policy-linked\nexit: 0\n",
+    "t5:0": "FAIL: catalog control missing required \"id\"\n  -> a control with no id cannot be referenced by a profile or a policy link; this would break any importer (an auditor's tool, a FedRAMP pipeline) downstream.\nexit: 1\n",
+    "t5:5": "{\n  \"catalog\": {\n    \"uuid\": \"11111111-1111-4111-8111-111111111111\",\n    \"metadata\": {\n      \"title\": \"Acme Internal Control Spine\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"ac-2\",\n        \"title\": \"Account Management\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization manages information system accounts, including periodic review of who holds access to production.\"\n          }\n        ]\n      },\n      {\n        \"id\": \"sc-28\",\n        \"title\": \"Protection of Information at Rest\",\n        \"parts\": [\n          {\n            \"name\": \"statement\",\n            \"prose\": \"The organization protects the confidentiality and integrity of information at rest.\"\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+    "t6:0": "FAIL: profile references control id(s) the catalog does not define: ac-9\n  -> this is the OSCAL form of a Module-10 crosswalk orphan: the profile claims a control that has no home in the spine, so the selection cannot be resolved.\nexit: 1\n",
+    "t6:2": "{\n  \"profile\": {\n    \"uuid\": \"22222222-2222-4222-8222-222222222222\",\n    \"metadata\": {\n      \"title\": \"SOC 2 Security - Acme Profile\",\n      \"version\": \"1.0.0\",\n      \"oscal-version\": \"1.1.2\",\n      \"last-modified\": \"2026-05-28T00:00:00Z\"\n    },\n    \"imports\": [\n      {\n        \"href\": \"acme-catalog.json\",\n        \"include-controls\": [\n          {\n            \"with-ids\": [\n              \"ac-2\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

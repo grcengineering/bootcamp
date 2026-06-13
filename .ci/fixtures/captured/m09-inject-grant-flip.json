@@ -1,0 +1,49 @@
+{
+  "id": "m09-inject-grant-flip",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09s",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cp my-check.sh lab09/my-check.sh",
+    "cp my-gate.sh lab09/my-gate.sh",
+    "cd lab09",
+    "chmod +x my-check.sh my-gate.sh",
+    "cp access-clean.csv access-injected.csv",
+    "echo '5,frank,grantRole,legacy-admin' >> access-injected.csv"
+  ],
+  "cmd": "GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject ./my-gate.sh access-injected.csv evidence-store",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the inverse tamper proof: injecting a forbidden grant into the clean export flips PASS→FAIL — the assertion is not vacuously green on every input.\n",
+  "stdout": "EVAL  control=AC-6-legacy-admin engine=cedar input=access-injected.csv\nDENY  row 5: frank -> legacy-admin  (forbidden by AC-6)\nRESULT  control=AC-6-legacy-admin  decision=deny  violations=1\nEVIDENCE  wrote evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json\nGATE  result=FAIL  (violations=1)  exit=1\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json",
+      "stdout": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-injected.csv\", \"evaluated_at\": \"2026-05-28T18:05:00Z\", \"run\": \"ci-inject\"}\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:19:57.887Z",
+    "captured_with": "capture.ts v1"
+  }
+}

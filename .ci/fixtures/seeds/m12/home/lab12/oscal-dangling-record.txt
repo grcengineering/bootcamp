@@ -1,0 +1,1 @@
+(placeholder — replace this line with the validator's complete FAIL record for the dangling profile reference, copied from the validator output)

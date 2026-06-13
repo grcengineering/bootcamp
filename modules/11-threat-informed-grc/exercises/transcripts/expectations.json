@@ -1,0 +1,3 @@
+{
+  "_provenance": "lab-11 has no from:generated checks — every capturable verdict is the ported validate-coverage.ts validator's own output, byte-accepted against real `bun` runs of the committed script in web/tests/fixtures/builder-captures.json (m11). The capture files' required lines are pattern-anchored to those captured bytes, and tests/exercise-replay-11.test.ts asserts the golden replay's validation-before.txt / validation-after.txt and final workspace state byte-match the captured seed-two-defects-FAIL / resolved-PASS runs."
+}

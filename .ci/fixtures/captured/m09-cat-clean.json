@@ -1,0 +1,31 @@
+{
+  "id": "m09-cat-clean",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "cat access-clean.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "row 3 dave revokeRole legacy-admin is the deliberate trap row: a verdict that fires on the role alone (ignoring the action column) wrongly denies the CLEAN export — the module's §4.3 \"subtly, silently wrong\" lesson, exercised by anti-role-only.\n",
+  "stdout": "row,principal,action,resource_role\n1,alice,grantRole,reader\n2,bob,grantRole,editor\n3,dave,revokeRole,legacy-admin\n4,erin,grantRole,viewer\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:37.112Z",
+    "captured_with": "capture.ts v1"
+  }
+}

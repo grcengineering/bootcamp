@@ -1,0 +1,2 @@
+Replace this placeholder with the complete output of your passing validator
+run — the verdict you earned, not asserted.

@@ -1,0 +1,28 @@
+{
+  "id": "m06-grep-truthfield",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [],
+  "cmd": "grep -n mfa_enabled fixtures/users-page-1.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "3:    { \"id\": \"u_001\", \"email\": \"alice@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n4:    { \"id\": \"u_002\", \"email\": \"bob@acme.example\",   \"mfa_enabled\": false, \"status\": \"active\" },\n5:    { \"id\": \"u_003\", \"email\": \"carol@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n6:    { \"id\": \"u_004\", \"email\": \"dave@acme.example\",  \"mfa_enabled\": false, \"status\": \"suspended\" },\n7:    { \"id\": \"u_005\", \"email\": \"erin@acme.example\",  \"mfa_enabled\": true,  \"status\": \"active\" }\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:00:07.566Z",
+    "captured_with": "capture.ts v1"
+  }
+}

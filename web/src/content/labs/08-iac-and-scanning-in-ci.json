@@ -1,0 +1,332 @@
+{
+  "spec": {
+    "id": "lab-08",
+    "module": "08-iac-and-scanning-in-ci",
+    "title": "The gate that blocks the bad change",
+    "owner": "Justin Pagano",
+    "volatility": "C",
+    "review_due": "2026-08-28",
+    "engine": "builder",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m08",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "Module 01 asked a live machine \"is this disk encrypted?\" and kept the answer. This lab\nasks the same claim-class question — is storage encrypted at rest, and never public —\nagainst the CODE that will create the storage, before anything exists. Your workspace\nis the CI pipeline's working directory, staged exactly as `bash labs/setup.sh ./lab08`\nleaves it: the proposed Terraform change, the scanner's structured result for it, the\ncontrol map you own, and the gate. The \"Run validator\" button IS the pipeline's gate\nstep — it runs `gate.sh lab08/scan-under-gate.json lab08/control-map.csv HIGH`, a port\nof the committed gate.sh verified byte-for-byte in CI against real bash runs of the\nsame script, so the record and exit code you see here are the ones a real machine\nproduces. `lab08/scan-under-gate.json` is the scan step's output for the change under\nreview; this pipeline pins its severity floor at HIGH (one owned value in its config —\nthe MEDIUM-floor exploration runs on your own machine with the lab's setup script).\n",
+    "builder": {
+      "surface": "workspace",
+      "validator": "gate",
+      "validator_args": [
+        "lab08/scan-under-gate.json",
+        "lab08/control-map.csv",
+        "HIGH"
+      ]
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "Before running anything, read `lab08/main-noncompliant.tf` and predict which of the\nthree control questions (encryption / public access / versioning) the declared\nresources fail. Then open `lab08/checkov-noncompliant.json` and reconcile your\nprediction with the scanner's failed checks. Record the result in section 1 of\n`lab08/findings-worksheet.md` — one line per question, in the worksheet's format,\nwith the scanner's check id and severity.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^encryption: *FAIL +CKV_AWS_19 +HIGH *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^public-access: *FAIL +CKV_AWS_20 +HIGH *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^versioning: *FAIL +CKV_AWS_21 +MEDIUM *$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The violation is what the declaration is MISSING. The .tf declares a bucket and a public-read ACL — which question does each line answer, and which questions are answered by silence?"
+          },
+          {
+            "concept": "§4.1 — absence in the declaration is the violation; §4.2 — every rule has a stable identifier and a severity"
+          },
+          {
+            "reveal": "encryption: FAIL CKV_AWS_19 HIGH · public-access: FAIL CKV_AWS_20 HIGH · versioning: FAIL CKV_AWS_21 MEDIUM"
+          }
+        ],
+        "explain": "You answered a control question by reading text — no cloud account, no console,\nnothing provisioned. All three rules fail, including the MEDIUM versioning gap the\nworked example's summary tends to overshadow. That is the whole opening of this\nmodule: the bucket-that-will-exist is a file you can check at the speed of opening it.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "Run the gate: click \"Run validator\" — the pipeline's gate step, evaluating the scan\nresult at the HIGH floor. Confirm the decision is FAIL with exit code 1: that\nnon-zero exit is the entire enforcement — the build system refuses the merge. Then\nkeep the verdict: copy the gate's complete output into `lab08/gate-block-record.txt`,\nreplacing the placeholder line.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^validator:gate lab08/scan-under-gate\\.json lab08/control-map\\.csv HIGH$"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 1,
+            "stdout_matches": "^GATE_DECISION: FAIL"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/gate-block-record.txt",
+            "regex": "^blocking_at_or_above_HIGH: 2$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/gate-block-record.txt",
+            "regex": "^GATE_DECISION: FAIL  \\(build blocked — 2 control\\(s\\) violated at/above HIGH\\)$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Run validator IS `bash gate.sh lab08/scan-under-gate.json lab08/control-map.csv HIGH`. Watch the exit code under the output — 1 means blocked. The record itself is evidence: keep all of it."
+          },
+          {
+            "concept": "§4.5 — any blocking finding ⇒ non-zero exit ⇒ no merge"
+          },
+          {
+            "reveal": "Click Run validator (decision: FAIL, exit 1), then copy its full output into lab08/gate-block-record.txt in place of the placeholder line"
+          }
+        ],
+        "explain": "Two HIGH findings blocked; the MEDIUM one was recorded but did not block. Nothing\nwas created wrong, because the wrongness was caught while it was still text. A\ndetection sits in a report; this exit code physically refuses to let the bad change\nexist — that is the difference between detection and enforcement.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Read your block record as an auditor: each blocking FAILED line names both the\nscanner's rule id and the control it enforces. In section 2 of the worksheet, map\neach blocking finding to its named control. Then open `lab08/control-map.csv` —\nthe file that performed that translation — and notice it is yours: versioned,\nreviewable, and independent of the scanner vendor.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^CKV_AWS_19 *-> *SC-28 *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^CKV_AWS_20 *-> *AC-3 *$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/gate-block-record.txt",
+            "regex": "^FAILED  CKV_AWS_19  \\[HIGH\\]  -> SC-28 \\(Protection of Information at Rest\\)  : BLOCK$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/gate-block-record.txt",
+            "regex": "^FAILED  CKV_AWS_20  \\[HIGH\\]  -> AC-3 \\(Access Enforcement\\)  : BLOCK$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The block record already speaks both languages on each FAILED line: tool-speak (CKV_…) to the left of the arrow, auditor-speak (SC-… / AC-…) to the right. The bridge is one CSV you own."
+          },
+          {
+            "concept": "§4.3 — the control map is policy-as-data: the map is yours, the scanner is just the sensor"
+          },
+          {
+            "reveal": "Worksheet section 2: CKV_AWS_19 -> SC-28 and CKV_AWS_20 -> AC-3 — both mappings appear verbatim in the gate's block record"
+          }
+        ],
+        "explain": "`CKV_AWS_19` is a vendor's rule name; \"SC-28, Protection of Information at Rest\" is\na control with an owner an auditor recognises. The one-row-per-rule CSV that joins\nthem is the most GRC-specific artifact in this pipeline — when the catalogue changes,\nyou change that file, in version control, with a reviewer.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          5
+        ],
+        "instruction": "Diagnose the fix before shipping it: read `lab08/main-compliant.tf` and, in section 3\nof the worksheet, point to what remediates each blocking finding — which block or\nsetting answers the encryption question, and which clears public access.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^CKV_AWS_19 fixed by: .*server_side_encryption"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/findings-worksheet.md",
+            "regex": "^CKV_AWS_20 fixed by: .*private"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Diff the two .tf files in your head: which blocks exist only in main-compliant.tf? One declares encryption at rest; one line changes who can read the bucket."
+          },
+          {
+            "concept": "§5.3 — remediation makes the scanner's questions answerable with yes, in the declaration itself"
+          },
+          {
+            "reveal": "CKV_AWS_19 fixed by: the aws_s3_bucket_server_side_encryption_configuration block (sse_algorithm aws:kms) · CKV_AWS_20 fixed by: acl = \"private\" in aws_s3_bucket_acl"
+          }
+        ],
+        "explain": "Diagnosing a blocked build is exactly this walk: the gate names the finding, the map\nnames the control, and the fix is a visible diff in the declaration. The author\ndoesn't negotiate with the gate — they change the text until the questions answer yes.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          4,
+          6
+        ],
+        "instruction": "Ship the remediation. The scanner's re-run against the fixed change is the committed\n`lab08/checkov-compliant.json` — make the pipeline's scan step reflect it by replacing\nthe ENTIRE contents of `lab08/scan-under-gate.json` with that file's contents\n(copy the whole file). Run the gate again and confirm the decision is PASS with exit\ncode 0. Then capture the evidence: copy the complete PASS record into\n`lab08/evidence-storage-controls.txt`, replacing the placeholder.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/scan-under-gate.json",
+            "regex": "\"failed_checks\": \\[\\]"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab08/scan-under-gate.json",
+            "from": "generated"
+          },
+          {
+            "check": "validator_passes",
+            "exit": 0,
+            "stdout_matches": "^GATE_DECISION: PASS"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/evidence-storage-controls.txt",
+            "regex": "^failed_checks_evaluated: 0$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/evidence-storage-controls.txt",
+            "regex": "^blocking_at_or_above_HIGH: 0$"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab08/evidence-storage-controls.txt",
+            "regex": "^GATE_DECISION: PASS"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The gate evaluates whatever the scan step last produced — scan-under-gate.json. Replace its whole contents with checkov-compliant.json's (select all, copy, paste), run, and keep the gate's own PASS record."
+          },
+          {
+            "concept": "§4.6 — the evidence is generated by the control, not asserted about it; a record the gate emits cannot drift from what the gate did"
+          },
+          {
+            "reveal": "Copy ALL of lab08/checkov-compliant.json into lab08/scan-under-gate.json, click Run validator (PASS, exit 0), then copy the full output into lab08/evidence-storage-controls.txt"
+          }
+        ],
+        "explain": "The same gate that blocked the bad change just emitted the proof that SC-28 and AC-3\nwere evaluated and held on this one — failed_checks_evaluated: 0, nothing at or above\nthe floor. Because the record is a byproduct of the enforcement, it cannot lie about\nwhat happened: that file is the EVALUATE stage's output handed forward to EVIDENCE.\n"
+      },
+      {
+        "id": "t6",
+        "type": "reflection",
+        "objective": [
+          4
+        ],
+        "instruction": "The severity floor is a risk decision written as one value. This pipeline pins its\nfloor at HIGH; on your own machine, run the lab's gate with the floor lowered —\n`bash labs/setup.sh ./lab08`, then `bash lab08/gate.sh lab08/checkov-noncompliant.json\nlab08/control-map.csv MEDIUM` — or reason it through from the block record you kept.\nIn 2–4 sentences: what changes in the decision at a MEDIUM floor, why, and where in\nyour owned files a real organisation would record that risk-appetite change so it is\nreviewable.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "At HIGH, CKV_AWS_21 (CP-9, versioning) was recorded but did not block. Rank the severities: what crosses the line when the line moves to MEDIUM?"
+          },
+          {
+            "concept": "§4.4 — the floor is risk appetite expressed as code, and changing it is itself a reviewable diff"
+          }
+        ]
+      },
+      {
+        "id": "t7",
+        "type": "reflection",
+        "objective": [
+          1,
+          2,
+          3,
+          6
+        ],
+        "instruction": "The lab's written deliverable, in 4–6 sentences for a colleague who has never written\nTerraform: what declaring infrastructure as text made checkable, and when; why the\nnon-compliant change was blocked and what the exit code meant to the build system\n(enforcement, not detection); why mapping each finding to a named control matters and\nwhy the control map — not the scanner — is the artifact a GRC engineer owns; and why\nthe gate-emitted PASS record cannot drift from reality. If you do the optional\nreal-environment task, describe where the scanner and the gate sit in the workflow\nso a non-zero gate exit blocks the merge.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Walk the five parts of §3 in order: declare → scan → map → gate → evidence. The bucket is never created wrong, because the wrongness was caught while it was still text."
+          },
+          {
+            "concept": "§3 — The Mental Model: where, exactly, does a control fail?"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/lab08",
+        "dir": true
+      },
+      {
+        "path": "~/lab08/checkov-compliant.json",
+        "content": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": []\n  },\n  \"summary\": {\n    \"passed\": 4,\n    \"failed\": 0,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n"
+      },
+      {
+        "path": "~/lab08/checkov-noncompliant.json",
+        "content": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_19\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [6, 9],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_20\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_21\"\n      }\n    ]\n  },\n  \"summary\": {\n    \"passed\": 1,\n    \"failed\": 3,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n"
+      },
+      {
+        "path": "~/lab08/control-map.csv",
+        "content": "check_id,control_id,control_title,fail_severity_floor\nCKV_AWS_18,AU-9,Protection of Audit Information,HIGH\nCKV_AWS_19,SC-28,Protection of Information at Rest,HIGH\nCKV_AWS_20,AC-3,Access Enforcement,HIGH\nCKV_AWS_21,CP-9,System Backup,HIGH\n"
+      },
+      {
+        "path": "~/lab08/evidence-storage-controls.txt",
+        "content": "(placeholder — replace this line with the gate's complete PASS record; this file is the captured evidence the §6 lab calls evidence-storage-controls.txt)\n"
+      },
+      {
+        "path": "~/lab08/findings-worksheet.md",
+        "content": "# Lab 08 worksheet — storage controls, checked before anything exists\n\nFill each answer on its own line, keeping the line's leading label exactly as\nshown. Your sources are the committed fixtures and the gate's own output —\nthis worksheet is reconciliation, not memory.\n\n## 1. Prediction -> reconciliation\nRead main-noncompliant.tf FIRST and write your prediction; then open\ncheckov-noncompliant.json and reconcile. One line per control question:\n<question>: <PASS|FAIL> <check_id> <severity>\n\nencryption:\npublic-access:\nversioning:\n\n## 2. Blocking finding -> named control\nFrom the gate's block record (gate-block-record.txt): <check_id> -> <control_id>\n\nCKV_AWS_19 ->\nCKV_AWS_20 ->\n\n## 3. Remediation lines\nFrom main-compliant.tf: <check_id> fixed by: <the block or setting that remediates it>\n\nCKV_AWS_19 fixed by:\nCKV_AWS_20 fixed by:\n"
+      },
+      {
+        "path": "~/lab08/gate-block-record.txt",
+        "content": "(placeholder — replace this line with the gate's complete block record, copied from the validator output)\n"
+      },
+      {
+        "path": "~/lab08/gate.sh",
+        "content": "#!/usr/bin/env bash\n# gate.sh — the CORE LOGIC of the §6 lab, isolated for testing.\n#\n# Reads a Checkov-shaped JSON scan result and a control map, applies a severity\n# floor, maps every failed check to the control it enforces, decides PASS/FAIL,\n# and emits a machine- and auditor-readable evidence record on stdout.\n#\n# This is the EVALUATE step of the loop expressed as code. It is deliberately\n# free of network, cloud, and scanner dependencies: it consumes a scan result\n# that some scanner already produced. In the real pipeline the scanner runs\n# first; here we prove the gate decision against committed fixtures.\n#\n# Usage:   gate.sh <checkov-result.json> <control-map.csv> [severity-floor]\n# Default severity-floor: HIGH\n# Exit:    0 = control set PASSES (build proceeds)\n#          1 = control set FAILS  (build blocked)\n#          2 = usage / input error\n#\n# Dependencies: bash + coreutils + awk only. No jq, no network.\nset -euo pipefail\n\nRESULT=\"${1:-}\"\nCONTROL_MAP=\"${2:-}\"\nFLOOR=\"${3:-HIGH}\"\n\nif [ -z \"$RESULT\" ] || [ -z \"$CONTROL_MAP\" ]; then\n  echo \"usage: gate.sh <checkov-result.json> <control-map.csv> [severity-floor]\" >&2\n  exit 2\nfi\n[ -f \"$RESULT\" ]      || { echo \"ERROR: scan result not found: $RESULT\" >&2; exit 2; }\n[ -f \"$CONTROL_MAP\" ] || { echo \"ERROR: control map not found: $CONTROL_MAP\" >&2; exit 2; }\n\n# Rank severities so the floor is a numeric comparison, not a string match.\nsev_rank() {\n  case \"$1\" in\n    CRITICAL) echo 4 ;;\n    HIGH)     echo 3 ;;\n    MEDIUM)   echo 2 ;;\n    LOW)      echo 1 ;;\n    *)        echo 0 ;;\n  esac\n}\nFLOOR_RANK=\"$(sev_rank \"$FLOOR\")\"\n[ \"$FLOOR_RANK\" -gt 0 ] || { echo \"ERROR: unknown severity floor: $FLOOR\" >&2; exit 2; }\n\n# Extract failed checks from the JSON. We do NOT require jq: the relevant fields\n# (check_id, check_name, severity) appear as quoted \"key\": \"value\" pairs, and\n# every failed check is an object inside the \"failed_checks\" array. A single awk\n# pass tracks bracket/brace depth so it isolates exactly the failed_checks array\n# (correctly stepping over nested arrays like \"file_line_range\": [1, 4]), then\n# emits one tab-separated record per object: check_id, severity, check_name.\n#\n# This is a pragmatic parser for THIS well-formed, machine-generated shape, not\n# a general JSON parser. The real lab pipes real scanner output through jq; the\n# fixture parser keeps the happy path dependency-free.\nextract_failed() {\n  awk '\n    BEGIN { instr = 0; arm = 0; depth = 0; arraydepth = 0; objbuf = \"\" }\n    {\n      line = $0\n      # If this line names the failed_checks key, arm so the next \"[\" opens\n      # our array. The \"[\" can be on the same line, so arm before scanning.\n      if (line ~ /\"failed_checks\"[ \\t]*:/) arm = 1\n      n = length(line)\n      for (i = 1; i <= n; i++) {\n        c = substr(line, i, 1)\n        prev = (i > 1) ? substr(line, i-1, 1) : \"\"\n        # String-literal tracking so structural chars inside strings dont count.\n        if (c == \"\\\"\" && prev != \"\\\\\") { instr = !instr }\n\n        # Buffer EVERY char while we are inside a top-level object of the array,\n        # including string content (we need the field values).\n        if (collecting) objbuf = objbuf c\n\n        if (instr) continue   # only structure decisions below ignore strings\n\n        if (c == \"[\") {\n          depth++\n          if (arm == 1) { arraydepth = depth; arm = 0 }\n        } else if (c == \"]\") {\n          if (arraydepth && depth == arraydepth) arraydepth = 0\n          depth--\n        } else if (c == \"{\") {\n          if (arraydepth && depth == arraydepth && !collecting) {\n            collecting = 1; objbuf = \"{\"; objlevel = 0\n          }\n          if (collecting) objlevel++\n        } else if (c == \"}\") {\n          if (collecting) {\n            objlevel--\n            if (objlevel == 0) {\n              cid = field(objbuf, \"check_id\")\n              sev = field(objbuf, \"severity\")\n              nm  = field(objbuf, \"check_name\")\n              if (cid != \"\") {\n                if (sev == \"\") sev = \"UNKNOWN\"\n                if (nm  == \"\") nm  = \"unknown\"\n                printf \"%s\\t%s\\t%s\\n\", cid, sev, nm\n              }\n              collecting = 0; objbuf = \"\"\n            }\n          }\n        }\n      }\n      if (collecting) objbuf = objbuf \"\\n\"\n    }\n    function field(s, key,   re, m) {\n      re = \"\\\"\" key \"\\\"[ \\t]*:[ \\t]*\\\"[^\\\"]*\\\"\"\n      if (match(s, re)) {\n        m = substr(s, RSTART, RLENGTH)\n        sub(/^.*:[ \\t]*\"/, \"\", m)\n        sub(/\"$/, \"\", m)\n        return m\n      }\n      return \"\"\n    }\n  ' \"$RESULT\"\n}\n\n# Look a check_id up in the control map; print \"control_id|control_title\" or \"UNMAPPED\".\nmap_control() {\n  awk -F, -v want=\"$1\" '\n    NR == 1 { next }                      # skip header\n    $1 == want { print $2 \"|\" $3; found=1; exit }\n    END { if (!found) print \"UNMAPPED|unmapped check (no control owner)\" }\n  ' \"$CONTROL_MAP\"\n}\n\necho \"=== GRC IaC Gate — evidence record ===\"\necho \"scan_result: $RESULT\"\necho \"control_map: $CONTROL_MAP\"\necho \"severity_floor: $FLOOR\"\necho \"evaluated_at: ${GATE_FAKE_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)}\"\necho \"---\"\n\nBLOCKING=0\nEVALUATED=0\nwhile IFS=$'\\t' read -r cid sev name; do\n  [ -n \"${cid:-}\" ] || continue\n  EVALUATED=$((EVALUATED + 1))\n  rank=\"$(sev_rank \"$sev\")\"\n  mapping=\"$(map_control \"$cid\")\"\n  control_id=\"${mapping%%|*}\"\n  control_title=\"${mapping#*|}\"\n  if [ \"$rank\" -ge \"$FLOOR_RANK\" ]; then\n    verdict=\"BLOCK\"\n    BLOCKING=$((BLOCKING + 1))\n  else\n    verdict=\"below-floor (not blocking)\"\n  fi\n  echo \"FAILED  $cid  [$sev]  -> $control_id ($control_title)  : $verdict\"\n  echo \"        $name\"\ndone < <(extract_failed)\n\necho \"---\"\necho \"failed_checks_evaluated: $EVALUATED\"\necho \"blocking_at_or_above_${FLOOR}: $BLOCKING\"\n\nif [ \"$BLOCKING\" -gt 0 ]; then\n  echo \"GATE_DECISION: FAIL  (build blocked — $BLOCKING control(s) violated at/above $FLOOR)\"\n  exit 1\nfi\n\necho \"GATE_DECISION: PASS  (no violations at/above $FLOOR — build proceeds, evidence emitted)\"\nexit 0\n"
+      },
+      {
+        "path": "~/lab08/main-compliant.tf",
+        "content": "# Compliant remediation. This is what produces checkov-compliant.json.\n# Encrypted at rest, private ACL, versioning on, access logging configured.\nresource \"aws_s3_bucket\" \"evidence\" {\n  bucket = \"grc-evidence-store\"\n}\n\nresource \"aws_s3_bucket_acl\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  acl    = \"private\"\n}\n\nresource \"aws_s3_bucket_server_side_encryption_configuration\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  rule {\n    apply_server_side_encryption_by_default {\n      sse_algorithm = \"aws:kms\"\n    }\n  }\n}\n\nresource \"aws_s3_bucket_versioning\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  versioning_configuration {\n    status = \"Enabled\"\n  }\n}\n\nresource \"aws_s3_bucket_logging\" \"evidence\" {\n  bucket        = aws_s3_bucket.evidence.id\n  target_bucket = \"grc-access-logs\"\n  target_prefix = \"evidence/\"\n}\n"
+      },
+      {
+        "path": "~/lab08/main-noncompliant.tf",
+        "content": "# Deliberately non-compliant. This is what produces checkov-noncompliant.json.\n# No server-side encryption, public-read ACL, no versioning. Three controls violated.\nresource \"aws_s3_bucket\" \"evidence\" {\n  bucket = \"grc-evidence-store\"\n}\n\nresource \"aws_s3_bucket_acl\" \"evidence\" {\n  bucket = aws_s3_bucket.evidence.id\n  acl    = \"public-read\"\n}\n"
+      },
+      {
+        "path": "~/lab08/scan-under-gate.json",
+        "content": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_19\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [6, 9],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_20\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\",\n        \"file_line_range\": [1, 4],\n        \"guideline\": \"https://docs.example.test/CKV_AWS_21\"\n      }\n    ]\n  },\n  \"summary\": {\n    \"passed\": 1,\n    \"failed\": 3,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {
+    "t5:1": "{\n  \"check_type\": \"terraform\",\n  \"results\": {\n    \"passed_checks\": [\n      {\n        \"check_id\": \"CKV_AWS_18\",\n        \"check_name\": \"Ensure the S3 bucket has access logging configured\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"LOW\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_19\",\n        \"check_name\": \"Ensure all data stored in the S3 bucket is securely encrypted at rest\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_20\",\n        \"check_name\": \"Ensure the S3 bucket does not allow public read access\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"HIGH\",\n        \"file_path\": \"/main.tf\"\n      },\n      {\n        \"check_id\": \"CKV_AWS_21\",\n        \"check_name\": \"Ensure the S3 bucket has versioning enabled\",\n        \"resource\": \"aws_s3_bucket.evidence\",\n        \"severity\": \"MEDIUM\",\n        \"file_path\": \"/main.tf\"\n      }\n    ],\n    \"failed_checks\": []\n  },\n  \"summary\": {\n    \"passed\": 4,\n    \"failed\": 0,\n    \"skipped\": 0,\n    \"resource_count\": 1,\n    \"checkov_version\": \"3.2.0\"\n  }\n}\n"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

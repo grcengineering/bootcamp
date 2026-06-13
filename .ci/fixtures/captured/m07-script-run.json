@@ -1,0 +1,38 @@
+{
+  "id": "m07-script-run",
+  "module": "07",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m07s",
+  "cwd": "/home/analyst/lab07",
+  "pre": [
+    "bash labs/setup.sh",
+    "chmod +x control-evidence.sh"
+  ],
+  "cmd": "./control-evidence.sh",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "§5.4 determinism canon — cmd and post run the same reference script twice; the fixture records both stdouts byte-identical (the evaluation is a pure function of the committed fixtures). Seed m07s carries the reference solution and is capture-only.\n",
+  "stdout": "encryption: PASS\naccess violations: 1\nencryption FAIL rows: 1 of 3\naccess FAIL rows: 1 of 2\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "./control-evidence.sh",
+      "stdout": "encryption: PASS\naccess violations: 1\nencryption FAIL rows: 1 of 3\naccess FAIL rows: 1 of 2\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:58:29.376Z",
+    "captured_with": "capture.ts v1"
+  }
+}

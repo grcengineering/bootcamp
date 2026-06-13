@@ -1,0 +1,23 @@
+{
+  "profile": {
+    "uuid": "22222222-2222-4222-8222-222222222222",
+    "metadata": {
+      "title": "SOC 2 Security - Acme Profile",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "last-modified": "2026-05-28T00:00:00Z"
+    },
+    "imports": [
+      {
+        "href": "acme-catalog.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "ac-2"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,459 @@
+{
+  "spec": {
+    "id": "lab-04",
+    "module": "04-windows-fundamentals",
+    "title": "Evidence from the responsible subsystems",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-11-28",
+    "engine": "powershell",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m04",
+      "home": "C:\\Users\\labuser",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You are handed one Windows endpoint — WIN-LAB04 — and asked to produce a single\nmachine-readable evidence bundle an auditor can read against SOC 2 CC6: disk\nencryption, endpoint-protection posture, the effective screen-lock setting, recent\nfailed sign-ins, and who holds local administrator rights. Then make the whole thing\nre-runnable, so the same machine can be re-evidenced next quarter and compared.\nThis console is a simulated Windows PowerShell 5.1 session. No real PowerShell engine\nexists for the browser, so every output here is produced by an object pipeline that\nfollows PowerShell's documented formatting rules and this module's own committed lab\nfixtures — and where the simulation has a boundary, it says so in plain text instead\nof pretending to be Windows.\n",
+    "walkthrough_first_input": "Get-BitLockerVolume",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Ask the subsystem that owns the encryption claim. Run `Get-BitLockerVolume` bare\nand look at what comes back — an object with named properties, not a paragraph.\nThen ask precisely: `Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint,\nVolumeStatus`. Write down, in words, which subsystem owns the claim and which\nproperty decides it.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^Get-BitLockerVolume$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "Get-BitLockerVolume -MountPoint C: ?\\| ?Select-Object MountPoint, ?VolumeStatus"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "On Windows you never go looking for a file — you ask the responsible subsystem. BitLocker owns this claim; `Select-Object` keeps only the properties the control cares about."
+          },
+          {
+            "concept": "§4.2 — BitLocker owns the encryption claim; `VolumeStatus` decides it"
+          },
+          {
+            "reveal": "Get-BitLockerVolume, then: Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus"
+          }
+        ],
+        "explain": "`VolumeStatus = FullyEncrypted` is the pass condition, and it arrived as a typed\nproperty — you selected it by name, you didn't parse text. This is the same\nlaptop-encryption claim this curriculum keeps re-asking; here the operating\nsystem's own subsystem answered it directly.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          3,
+          4
+        ],
+        "instruction": "One query, the whole endpoint-protection posture: run `Get-MpComputerStatus |\nSelect-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge`.\nNote which property proves \"enabled\" and which proves \"current\" — installed,\nenabled, and current are three different facts.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "Get-MpComputerStatus ?\\| ?Select-Object AntivirusEnabled, ?RealTimeProtectionEnabled, ?AntivirusSignatureAge"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Defender hands back ONE status object carrying the whole posture. Pick the three properties that prove the words 'on' and 'up to date' — presence proves neither."
+          },
+          {
+            "concept": "§4.3 — installed is not enabled, and enabled is not current"
+          },
+          {
+            "reveal": "Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge"
+          }
+        ],
+        "explain": "A control that only checked installation would pass a machine whose protection was\nswitched off in January. You evidenced the behavioral properties — enabled and\ncurrent — which is what makes this reading mean something to an auditor.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3,
+          5
+        ],
+        "instruction": "Read the EFFECTIVE screen-lock timeout straight from the registry:\n`(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut`.\nThen ask the policy engine what was INTENDED — run `gpresult` bare first and read\nits complaint, then run `gpresult /R`. One of those two results is a collection\nerror and one is evidence; note the difference, and why your bundle must cite the\neffective value rather than the intended one.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "Get-ItemProperty 'HKCU:\\\\Control Panel\\\\Desktop' -Name ScreenSaveTimeOut\\)\\.ScreenSaveTimeOut"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^gpresult$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^gpresult /R$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The registry holds what the machine is actually doing; the policy tool reports what it was told to do. gpresult refuses to run without a scope — its error text tells you which switch the report needs."
+          },
+          {
+            "concept": "§4.4 — what was intended (policy) is not always what is effective (the registry value in force)"
+          },
+          {
+            "reveal": "(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut · gpresult · gpresult /R"
+          }
+        ],
+        "explain": "`ERROR: Invalid syntax.` was a collection error — your question was malformed; the\nmachine was never non-compliant. That distinction is rubric material. The registry\nsaid 600 seconds is in force (effective); the RSoP report shows the screen-lock\npolicy that was applied (intended). Defensible evidence cites what the endpoint is\nactually doing.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          3,
+          4
+        ],
+        "instruction": "Pull the recent failed sign-ins from the Security event log: `Get-WinEvent\n-FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 | Select-Object\nTimeCreated, Id`. Then count them mechanically with\n`(Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count`.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "Get-WinEvent -FilterHashtable @\\{ ?LogName='Security'; ?Id=4625 ?\\} -MaxEvents 20"
+          },
+          {
+            "check": "history_contains",
+            "regex": "\\(Get-WinEvent .*\\)\\.Count"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Failed sign-ins are structured records under one well-known event ID. The filter is a hashtable — log name plus ID — and `.Count` on the parenthesized query counts what came back."
+          },
+          {
+            "concept": "§4.5 — the log is structured data you query; records arrive as objects, so you filter by Id and read TimeCreated"
+          },
+          {
+            "reveal": "Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 | Select-Object TimeCreated, Id, then: (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count"
+          }
+        ],
+        "explain": "Three failures in thirteen seconds reads very differently from three across three\ndays — and because the records are typed objects, your collector simply records\nthe count. Whether 3 crosses a threshold is the EVALUATE stage's judgment, not the\ncollector's.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          3,
+          5
+        ],
+        "instruction": "Read the standing-privilege claim from the local account database: run\n`Get-LocalGroupMember -Group Administrators`, then select just the names with\n`(Get-LocalGroupMember -Group Administrators).Name`. Note why faithfully recording\nthis membership is LOCATE/QUERY work, and why deciding \"is this membership\ncorrect?\" belongs to a different loop stage.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^Get-LocalGroupMember -Group Administrators$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "\\(Get-LocalGroupMember -Group Administrators\\)\\.Name"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The local account database owns this claim. The bare command shows the member objects; member access on the parenthesized query keeps just the property the bundle needs."
+          },
+          {
+            "concept": "§4.6 — the endpoint can only tell you who is in the group; judging the membership against an approved list is EVALUATE"
+          },
+          {
+            "reveal": "Get-LocalGroupMember -Group Administrators, then: (Get-LocalGroupMember -Group Administrators).Name"
+          }
+        ],
+        "explain": "The endpoint told you who holds local-admin rights — that is everything it CAN\ntell you. Whether that membership is correct requires an approved list the machine\ndoesn't have, which is exactly why collection and evaluation are different loop\nstages with different owners.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          4,
+          6
+        ],
+        "instruction": "Assemble the readings into one `[pscustomobject]` whose field names map to SOC 2\nCC6 controls, and export it two ways: pipe it to `ConvertTo-Json > bundle.json`,\nthen build the same object again and pipe it to `Export-Csv bundle.csv\n-NoTypeInformation`. Read both files back with `Get-Content` to confirm they hold\nyour readings — and look closely at the CSV's LocalAdmins cell.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "bundle.json",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "bundle.json",
+            "min_pipes": 1,
+            "required_commands": [
+              "ConvertTo-Json"
+            ]
+          },
+          {
+            "check": "file_content_equals",
+            "path": "bundle.csv",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "bundle.csv",
+            "min_pipes": 1,
+            "required_commands": [
+              "Export-Csv"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "Get-Content bundle\\.json"
+          },
+          {
+            "check": "history_contains",
+            "regex": "Get-Content bundle\\.csv"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Each hashtable entry is ControlLabel = (Get-Subsystem).Property — the five readings you already made, wrapped in [pscustomobject]@{ } and piped to an exporter. The evidence must be PRODUCED by the pipeline, not typed in by hand."
+          },
+          {
+            "concept": "§5.4 — shaping selected properties into a labeled, control-mapped record"
+          },
+          {
+            "reveal": "[pscustomobject]@{ Control_CC6_1_Encryption = (Get-BitLockerVolume -MountPoint C:).VolumeStatus; Control_CC6_8_DefenderEnabled = (Get-MpComputerStatus).AntivirusEnabled; Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut; Control_CC6_1_FailedLogonCount = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count; Control_CC6_3_LocalAdmins = (Get-LocalGroupMember -Group Administrators).Name } | ConvertTo-Json > bundle.json — then the same object | Export-Csv bundle.csv -NoTypeInformation, then Get-Content bundle.json and Get-Content bundle.csv"
+          }
+        ],
+        "explain": "Every field is named for the control it evidences, and every value came from a\n`Get-` query — the bundle is a record an auditor can read without knowing\nPowerShell. The CSV's `System.Object[]` cell is real Export-Csv behavior: a CSV\ncell is flat text, so the admin LIST survived only in the JSON. That wrinkle is\nwhy the bundle ships in both shapes.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          5,
+          6,
+          7
+        ],
+        "instruction": "Make it re-runnable: open the editor with `notepad Collect-EndpointCompliance.ps1`\nand put your sequence in it — a comment naming what it is, your two export\npipelines from t6, and a final `Get-Content bundle.json` so each run prints the\nbundle it produced. Every command must be a read-only `Get-` (a collector that\nmutates is an intervention, not evidence). Save, exit, and run\n`.\\Collect-EndpointCompliance.ps1` twice. The checker will also re-run your script\nin two clean, clock-perturbed sessions and compare the evidence. Then write down\none control this endpoint script structurally cannot prove, and which cloud\nsubsystem owns it.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "Collect-EndpointCompliance.ps1"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Get-BitLockerVolume"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Get-MpComputerStatus"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Get-ItemProperty 'HKCU:\\\\Control Panel\\\\Desktop' -Name ScreenSaveTimeOut"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Get-WinEvent"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Get-LocalGroupMember"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "ConvertTo-Json"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "Export-Csv"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "Collect-EndpointCompliance.ps1",
+            "regex": "\\b([Ss]et|[Nn]ew|[Rr]emove|[Ee]nable|[Dd]isable|[Ss]top|[Ss]tart|[Aa]dd|[Cc]lear|[Rr]ename|[Rr]estart)-[A-Za-z]"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^\\.\\\\Collect-EndpointCompliance\\.ps1$"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "Collect-EndpointCompliance.ps1"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "bundle.json",
+            "from": "generated"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A script is just the lines you already ran, saved. The editor opens with `notepad <file>`; the read-only rule means every command in it starts with Get- (gpresult and the exporters read and write files, they don't change the endpoint)."
+          },
+          {
+            "concept": "§4.8 — read-only by construction: a collector observes and changes nothing, which is what makes its output trustworthy as evidence"
+          },
+          {
+            "reveal": "notepad Collect-EndpointCompliance.ps1 — paste a # comment, your t6 ConvertTo-Json > bundle.json pipeline, your t6 Export-Csv bundle.csv -NoTypeInformation pipeline, and Get-Content bundle.json — save with Ctrl+O, exit with Ctrl+X, then run .\\Collect-EndpointCompliance.ps1 twice"
+          }
+        ],
+        "explain": "Identical evidence twice, from clean sessions with different clocks — that is the\ndifference between \"we verified this once\" and \"we can re-evidence this machine\nnext quarter and diff the bundles.\" And the bundle stays honest about its\nboundary: MFA enforcement, sign-in location blocking, device-compliance gating —\nthose decisions happen in Entra ID conditional access at sign-in time, and their\nevidence lives in the cloud's logs (Module 06 reaches it by API). An endpoint\nscript that claimed to prove them would be lying.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1,
+          2,
+          7
+        ],
+        "instruction": "In 5–7 sentences, as if to a colleague who has never opened PowerShell: which\nsubsystem owns each of the five control claims; why you selected properties\ninstead of parsing text (objects, not text streams); why effective beats intended\nfor the screen-lock; what the failed-logon count does and does not prove; why the\ncollector is built entirely from `Get-`; and the one control that belongs to\nEntra ID, not the endpoint.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 mental model: a claim is owned by a named subsystem; you ask it with a Get- command; the answer is an object whose properties you select; and some claims' truth never touches the endpoint at all."
+          },
+          {
+            "concept": "§3 — The Mental Model; §4.7 — drawing the AD/Entra ID seam honestly"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {
+    "t6:0": "{\r\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\r\n  \"Control_CC6_8_DefenderEnabled\": true,\r\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\r\n  \"Control_CC6_1_FailedLogonCount\": 3,\r\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\r\n}\r\n",
+    "t6:2": "\"Control_CC6_1_Encryption\",\"Control_CC6_8_DefenderEnabled\",\"Control_CC6_1_ScreenLockTimeoutSeconds\",\"Control_CC6_1_FailedLogonCount\",\"Control_CC6_3_LocalAdmins\"\r\n\"FullyEncrypted\",\"True\",\"600\",\"3\",\"System.Object[]\"\r\n",
+    "t7:11": "{\r\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\r\n  \"Control_CC6_8_DefenderEnabled\": true,\r\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\r\n  \"Control_CC6_1_FailedLogonCount\": 3,\r\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\r\n}\r\n"
+  },
+  "epoch": "2026-06-01T09:00:00Z",
+  "windowsSeed": {
+    "_notes": [
+      "Module 04 simulated endpoint WIN-LAB04 (compliant posture) — typed object stores per",
+      "subsystem, per module 04 prose (§3-§5) and the committed lab fixture",
+      "modules/04-windows-fundamentals/labs/sample-bundle-compliant.json (THE canon):",
+      "BitLocker C: FullyEncrypted 100; Defender enabled, signature age 1; screen-lock 600s;",
+      "exactly three Security-log 4625 events at 5/27/2026 9:13:50/9:13:58/9:14:03 PM;",
+      "local Administrators = [WIN-LAB04\\Administrator].",
+      "ScreenSaveTimeOut is seeded NUMERIC per the module's canonical bundle (real REG_SZ is a",
+      "string '600' — documented divergence, DESIGN-INPUTS fidelity note 6).",
+      "Defender property set beyond the module's three taught properties carries names from the",
+      "Microsoft Learn Get-MpComputerStatus reference (representative values), so the bare cmdlet",
+      "honestly renders as a >4-property list. Event Message strings are the documented event",
+      "summaries (4624/4625/4672). gpresultReportFile resolves to the authored RSoP fixture;",
+      "loaders strip its single trailing newline when seeding gpresultReport."
+    ],
+    "hostname": "WIN-LAB04",
+    "bitlockerVolumes": [
+      {
+        "MountPoint": "C:",
+        "VolumeType": "OperatingSystem",
+        "VolumeStatus": "FullyEncrypted",
+        "EncryptionPercentage": 100
+      }
+    ],
+    "defenderStatus": {
+      "AMServiceEnabled": true,
+      "AntispywareEnabled": true,
+      "AntivirusEnabled": true,
+      "AntivirusSignatureAge": 1,
+      "AntivirusSignatureLastUpdated": "2026-05-26T06:12:44",
+      "RealTimeProtectionEnabled": true
+    },
+    "registry": {
+      "HKCU:\\Control Panel\\Desktop": {
+        "ScreenSaveActive": "1",
+        "ScreenSaverIsSecure": "1",
+        "ScreenSaveTimeOut": 600
+      }
+    },
+    "securityLog": [
+      {
+        "TimeCreated": "2026-05-27T08:02:11",
+        "Id": 4624,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account was successfully logged on."
+      },
+      {
+        "TimeCreated": "2026-05-27T08:02:11",
+        "Id": 4672,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "Special privileges assigned to new logon."
+      },
+      {
+        "TimeCreated": "2026-05-27T13:30:05",
+        "Id": 4624,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account was successfully logged on."
+      },
+      {
+        "TimeCreated": "2026-05-27T21:13:50",
+        "Id": 4625,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account failed to log on."
+      },
+      {
+        "TimeCreated": "2026-05-27T21:13:58",
+        "Id": 4625,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account failed to log on."
+      },
+      {
+        "TimeCreated": "2026-05-27T21:14:03",
+        "Id": 4625,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account failed to log on."
+      },
+      {
+        "TimeCreated": "2026-05-27T21:14:21",
+        "Id": 4624,
+        "LevelDisplayName": "Information",
+        "ProviderName": "Microsoft-Windows-Security-Auditing",
+        "Message": "An account was successfully logged on."
+      }
+    ],
+    "localGroups": {
+      "Administrators": [
+        {
+          "ObjectClass": "User",
+          "Name": "WIN-LAB04\\Administrator",
+          "PrincipalSource": "Local"
+        }
+      ],
+      "Users": [
+        {
+          "ObjectClass": "User",
+          "Name": "WIN-LAB04\\labuser",
+          "PrincipalSource": "Local"
+        }
+      ]
+    },
+    "files": [],
+    "gpresultReport": "Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0\n(c) Microsoft Corporation. All rights reserved.\n\nCreated on 5/27/2026 at 9:20:14 PM\n\nRSOP data for WIN-LAB04\\labuser on WIN-LAB04 : Logging Mode\n-----------------------------------------------------------\n\nOS Configuration:            Standalone Workstation\nOS Version:                  10.0.26100\nSite Name:                   N/A\nRoaming Profile:             N/A\nLocal Profile:               C:\\Users\\labuser\nConnected over a slow link?: No\n\nUSER SETTINGS\n--------------\n    Last time Group Policy was applied: 5/27/2026 at 8:00:03 PM\n    Group Policy was applied from:      N/A\n    Group Policy slow link threshold:   500 kbps\n    Domain Name:                        WIN-LAB04\n    Domain Type:                        <Local Computer>\n\n    Applied Group Policy Objects\n    -----------------------------\n        Local Group Policy\n        Workstation Screen Lock Policy\n\n    The user is a part of the following security groups\n    ----------------------------------------------------\n        Everyone\n        BUILTIN\\Users\n        NT AUTHORITY\\INTERACTIVE\n        CONSOLE LOGON\n        NT AUTHORITY\\Authenticated Users\n        This Organization\n        Local account\n        LOCAL\n\nCOMPUTER SETTINGS\n------------------\n    Last time Group Policy was applied: 5/27/2026 at 8:00:01 PM\n    Group Policy was applied from:      N/A\n    Group Policy slow link threshold:   500 kbps\n    Domain Name:                        WIN-LAB04\n    Domain Type:                        <Local Computer>\n\n    Applied Group Policy Objects\n    -----------------------------\n        Local Group Policy\n        Workstation Screen Lock Policy\n\n    The computer is a part of the following security groups\n    ---------------------------------------------------------\n        BUILTIN\\Administrators\n        Everyone\n        NT AUTHORITY\\Authenticated Users"
+  }
+}

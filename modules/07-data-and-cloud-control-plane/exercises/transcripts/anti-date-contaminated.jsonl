@@ -1,0 +1,6 @@
+{"anti_for": "t6", "reason": "a date-stamped verdict block passes a naive same-session double-run but is NOT reproducible — two clean runs with perturbed clock disagree (web ISA ISC-127; the §4.6 failure mode)"}
+{"input": "cd lab07"}
+{"input": "bash labs/setup.sh"}
+{"input": "cat > control-evidence.sh << 'EOF'\n#!/usr/bin/env bash\nawk '/\"resourceId\": \"audit-logs\"/ && /\"status\": \"PASS\"/ { print \"encryption: PASS\" } /\"resourceId\": \"audit-logs\"/ && /\"status\": \"FAIL\"/ { print \"encryption: FAIL\" }' fixtures/posture-findings.json\necho \"access violations: $(grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l)\"\nawk -F, '$1 == \"encryption\" { t++ } $1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print \"encryption FAIL rows: \" f \" of \" t }' fixtures/evidence.csv\nawk -F, '$1 == \"access\" { t++ } $1 == \"access\" && $2 == \"FAIL\" { f++ } END { print \"access FAIL rows: \" f \" of \" t }' fixtures/evidence.csv\ndate\nEOF"}
+{"input": "chmod +x control-evidence.sh"}
+{"input": "./control-evidence.sh"}

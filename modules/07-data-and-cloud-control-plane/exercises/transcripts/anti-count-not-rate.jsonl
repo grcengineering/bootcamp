@@ -1,0 +1,5 @@
+{"anti_for": "t5", "reason": "near miss — a failure COUNT is not a failure RATE: the §4.5 question is what fraction of in-scope resources fail, and the count-only result set is rejected by the real engine comparison"}
+{"input": "cd lab07"}
+{"input": "bash labs/setup.sh"}
+{"input": "awk -F, '$1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"}
+{"input": "SELECT COUNT(*) AS failing FROM evidence WHERE control = 'encryption' AND status = 'FAIL';", "pane": "sql"}

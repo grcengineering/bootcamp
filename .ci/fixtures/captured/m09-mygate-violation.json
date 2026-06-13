@@ -1,0 +1,47 @@
+{
+  "id": "m09-mygate-violation",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09s",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cp my-check.sh lab09/my-check.sh",
+    "cp my-gate.sh lab09/my-gate.sh",
+    "cd lab09",
+    "chmod +x my-check.sh my-gate.sh"
+  ],
+  "cmd": "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the CI gate blocking the bad change: EVAL/DENY/EVIDENCE/GATE lines, exit 1, and a passed:false record with all 8 §4.6 fields — proof as a by-product of judging. GATE result line follows the committed-fixture canon (violations=1), not the §5.2 prose variant \"(1 violation)\" — fixture-first per inventory fidelity_notes gap 1. input_ref is the input filename as typed (the record SHAPE is the contract; the reference's cksum-derived 8-hex ref is outside the taught subset — fidelity_notes gap 2 resolved per \"compute its own stable ref\" guidance).\n",
+  "stdout": "EVAL  control=AC-6-legacy-admin engine=cedar input=access-violation.csv\nDENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\nRESULT  control=AC-6-legacy-admin  decision=deny  violations=1\nEVIDENCE  wrote evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json\nGATE  result=FAIL  (violations=1)  exit=1\n",
+  "stderr": "",
+  "exit": 1,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "1\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json",
+      "stdout": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-violation.csv\", \"evaluated_at\": \"2026-05-28T17:04:00Z\", \"run\": \"ci-1789\"}\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:41.008Z",
+    "captured_with": "capture.ts v1"
+  }
+}

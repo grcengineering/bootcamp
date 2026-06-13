@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Lab tool (module 06 §6 tasks 3-6): the lab box's PATH port of the repo's
+# labs/aggregate-mfa.ts core logic. This box has no bun runtime (pinned-container
+# negative space), so the aggregator ships as this bash+awk port. The report bytes,
+# the completeness guard, and the exit codes (0 control PASS / 3 control FAIL /
+# 1 tooling error) are byte-locked to the real `bun aggregate-mfa.ts` output over
+# the lab's committed page shape (one user record per line, `"key": value` single-
+# space style, as labs/setup.sh writes and the mock vendor serves) — the docker
+# capture m06-aggregate-both asserts the equality against a fixture diffed with
+# the real tool's output. Re-shaped/arbitrary JSON is outside this port's surface:
+# run the real `bun aggregate-mfa.ts` on your own machine for that.
+
+if [ "$#" -eq 0 ]; then
+  echo "ERROR: usage: aggregate-mfa <page-1.json> [page-2.json ...]" >&2
+  exit 1
+fi
+
+for p in "$@"; do
+  if ! test -f "$p"; then
+    echo "ERROR: could not read or parse JSON page: $p" >&2
+    exit 1
+  fi
+  if ! grep -q '"data"' "$p"; then
+    echo "ERROR: page $p has no 'data' array" >&2
+    exit 1
+  fi
+done
+
+# Aggregate ACROSS ALL pages (the .ts concatenates every page's data array).
+TOTAL=$(awk '/"id":/ { n++ } END { print n + 0 }' "$@")
+HAVETOTAL=$(awk '/"total":/ { h = 1 } END { print h + 0 }' "$@")
+EXPECTED=$(awk '/"total":/ { i = index($0, "\"total\":"); t = substr($0, i + 8) + 0 } END { print t + 0 }' "$@")
+
+# COMPLETENESS CHECK (same rule, same message, same exit code as the .ts):
+# an evidence pull is only valid if it is COMPLETE. Fail loud, refuse to report.
+if [ "$HAVETOTAL" -eq 1 ]; then
+  if [ "$TOTAL" -ne "$EXPECTED" ]; then
+    echo "ERROR: incomplete pull: aggregated $TOTAL users but API reported total=$EXPECTED (missing pages? truncated pagination?)" >&2
+    exit 1
+  fi
+fi
+
+NOMFA=$(awk '/"mfa_enabled": false/ { n++ } END { print n + 0 }' "$@")
+
+# Emit the audit-ready record — byte-identical to JSON.stringify(record, null, 2)
+# from the real tool (collected_at pinned for reproducible evidence, as in the .ts).
+awk -v npages="$#" '
+  /"id":/ { n++ }
+  /"mfa_enabled": false/ {
+    i = index($0, "\"id\": \"");     r = substr($0, i + 7);  q = index(r, "\""); id = substr(r, 1, q - 1)
+    i = index($0, "\"email\": \"");  r = substr($0, i + 10); q = index(r, "\""); em = substr(r, 1, q - 1)
+    i = index($0, "\"status\": \""); r = substr($0, i + 11); q = index(r, "\""); st = substr(r, 1, q - 1)
+    item = "    {\n      \"id\": \"" id "\",\n      \"email\": \"" em "\",\n      \"status\": \"" st "\"\n    }"
+    if (buf == "") buf = item
+    else buf = buf ",\n" item
+    nomfa++
+    if (st == "active") an++
+  }
+  END {
+    nv = n + 0
+    mv = nomfa + 0
+    av = an + 0
+    print "{"
+    print "  \"control\": \"MFA enforced for all workforce users\","
+    print "  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\","
+    print "  \"collected_at\": \"2026-05-28T00:00:00Z\","
+    print "  \"pages_aggregated\": " npages ","
+    print "  \"total_users\": " nv ","
+    print "  \"users_without_mfa\": " mv ","
+    print "  \"active_users_without_mfa\": " av ","
+    if (mv == 0) {
+      print "  \"offending_users\": [],"
+      print "  \"control_result\": \"PASS\""
+    } else {
+      print "  \"offending_users\": ["
+      print buf
+      print "  ],"
+      print "  \"control_result\": \"FAIL\""
+    }
+    print "}"
+  }
+' "$@"
+
+if [ "$NOMFA" -eq 0 ]; then
+  exit 0
+fi
+exit 3

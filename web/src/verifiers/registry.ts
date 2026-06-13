@@ -183,7 +183,7 @@ export const PRIMITIVES = {
       return {
         pass,
         evidence: `${p.path} is clean of /${p.regex}/`,
-        gap: got === null ? `${p.path} does not exist yet` : `${p.path} contains content that belongs elsewhere (stream separation)`,
+        gap: got === null ? `${p.path} does not exist yet` : `${p.path} contains something this task forbids — re-read the constraint`,
       };
     },
   }),

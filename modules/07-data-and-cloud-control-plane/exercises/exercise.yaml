@@ -1,0 +1,240 @@
+id: lab-07
+module: 07-data-and-cloud-control-plane
+title: Two controls, one query, zero screenshots
+owner: Justin Pagano
+volatility: B
+review_due: 2026-11-28
+engine: mixed
+claim_thread: laptop-encryption
+payload_budget_bytes: 700000
+desktop_recommended: true
+
+seed:
+  profile: m07
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+intro: |
+  Module 01 proved one laptop's encryption claim by querying one machine. This lab is the
+  same discipline at cloud scale: the truth no longer sits in a file you can walk to — it
+  sits in the cloud's four parts, reachable only as data. You are asked to produce one
+  reproducible evidence report covering two controls — an encryption control (a STATE
+  question, answered by a posture-service finding) and an access control (an EVENT
+  question, answered by the audit log) — plus one SQL-derived risk metric, and to make the
+  whole thing re-runnable so it can later go on a monitoring schedule. The terminal is a
+  fidelity-pinned simulation of the lab box; the SQL console beside it is real SQLite
+  running in your browser, querying the evidence table your own setup run produces. One
+  honest boundary: `labs/happy-path.sh` is the repo's CI proof for this lab — it uses bash
+  constructs beyond this simulation's taught subset, so read it with `cat` here and run it
+  on a real machine.
+
+walkthrough_first_input: cd lab07
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Stand in `~/lab07` and run `bash labs/setup.sh` — it stands in for the authenticated
+      pulls you would make against a real cloud's posture service and audit log, and writes
+      three fixtures into `fixtures/`. Then open `fixtures/posture-findings.json` with
+      `cat` and read it as data: one finding per resource, each a verdict from the cloud
+      part whose whole job is judgment.
+    verify:
+      - check: history_contains
+        regex: "^bash labs/setup\\.sh$"
+      - check: file_exists
+        path: ~/lab07/fixtures/posture-findings.json
+      - check: file_exists
+        path: ~/lab07/fixtures/audit-events.json
+      - check: file_exists
+        path: ~/lab07/fixtures/evidence.csv
+      - check: history_contains
+        regex: "cat .*fixtures/posture-findings\\.json"
+    hints:
+      - nudge: "Collection first, evaluation second. The setup script IS the collection step — run it from `~/lab07`, then read what it pulled with the program that emits files."
+      - concept: "§4.1 — the control plane is data, not a dashboard: ask for the record, not the picture"
+      - reveal: "bash labs/setup.sh — then read the pull: cat fixtures/posture-findings.json"
+    explain: |
+      You just did what a console screenshot can never do: pulled the posture service's
+      judgment as rows you can keep, diff, and count. Each line is a structured verdict —
+      resource, control, status — and the rest of this lab never reads anything else.
+
+  - id: t2
+    type: action
+    objective: [3, 4]
+    instruction: |
+      Evaluate the encryption control for the in-scope resource: *"the bucket holding our
+      audit logs is encrypted at rest."* That is a state question, so the answer lives in
+      the posture finding. Pull the `audit-logs` finding line — whole and verbatim — into
+      `~/lab07/encryption-verdict.json` using `grep`, and read the verdict from its
+      `status` field. The evidence file must be produced by querying the record, not by
+      retyping what you saw.
+    verify:
+      - check: file_content_equals
+        path: ~/lab07/encryption-verdict.json
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab07/encryption-verdict.json
+        required_commands: [grep]
+        forbidden_commands: [echo, printf, nano]
+    hints:
+      - nudge: "Which program keeps only matching lines? Match on the resource id and redirect the keeper's output into the evidence file — the finding goes in whole, timestamp-free and re-pullable."
+      - concept: "§4.2/§5.1 — state questions are answered by the posture service, and the evidence is the finding itself, kept verbatim"
+      - reveal: "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json > encryption-verdict.json"
+    explain: |
+      The verdict is PASS, and your evidence is the cloud's own record — not your memory of
+      a green shield icon. Provenance matters as much as content here: a hand-typed copy of
+      the same bytes would be testimony, not evidence. This is module 01's laptop-encryption
+      claim again, answered at scale by a posture row instead of a one-machine query.
+
+  - id: t3
+    type: reflection
+    objective: [1, 6]
+    instruction: |
+      In 2–4 sentences: classify each control question — *"is the audit-logs bucket
+      encrypted?"* and *"was a privileged role granted outside business hours?"* — as state
+      or event, name the cloud part that answers each (four-part model), and explain why a
+      posture snapshot could never answer the second one. Close with one sentence on why
+      you did not open a console for any of this.
+    hints:
+      - nudge: "Snapshots prove the present; logs prove the past. By the time you snapshot the config, the suspicious timing has been erased."
+      - concept: "§4.2 — state vs. events, the two kinds of cloud truth; §4.7 — why a query beats an export"
+
+  - id: t4
+    type: action
+    objective: [3, 4]
+    instruction: |
+      Evaluate the access control: *"no privileged role was granted outside business
+      hours."* Open `fixtures/audit-events.json` with `cat`, then build a two-stage filter:
+      keep only privilege-granting events (`AttachUserPolicy`), pipe those into a second
+      `grep -E` that keeps only grants whose hour is outside the 09:00–18:00 UTC window,
+      and redirect the survivors into `~/lab07/access-violations.json`. The offending event
+      must be kept whole; the in-hours grant and the `GetObject` data-plane decoy must not
+      be in your evidence.
+    verify:
+      - check: history_contains
+        regex: "cat .*fixtures/audit-events\\.json"
+      - check: file_content_matches
+        path: ~/lab07/access-violations.json
+        regex: "contractor-7"
+      - check: file_not_matches
+        path: ~/lab07/access-violations.json
+        regex: "GetObject|T14:02"
+      - check: file_content_equals
+        path: ~/lab07/access-violations.json
+        from: generated
+      - check: artifact_produced_by
+        path: ~/lab07/access-violations.json
+        min_pipes: 1
+        required_commands: [grep]
+        forbidden_commands: [echo, printf, nano]
+    hints:
+      - nudge: "Two filters, one pipe: the first keeps the privilege grants (which also drops the data-plane decoy), the second keeps the bad hours. Out-of-hours is hour < 9 or hour ≥ 18 — as a pattern on the timestamp, that is hours 00–08, 18–19, and 20–23 right after the `T`."
+      - concept: "§4.4 — an audit-log event is just a typed row; the control is evaluated by filtering events, and control-plane grants are not data-plane reads"
+      - reveal: "cat fixtures/audit-events.json, then: grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' > access-violations.json"
+    explain: |
+      One violation: a 2 a.m. grant of AdministratorAccess to contractor-7 — a finding no
+      configuration snapshot could surface, because by snapshot time the grant is just
+      "contractor-7 has admin" with the timing erased. Your filter also had to *ignore* a
+      row: GetObject reads data without changing the control plane, so it is not evidence
+      for this claim. Keeping the offending event whole preserves actor and timestamp for
+      the auditor.
+
+  - id: t5
+    type: action
+    objective: [2]
+    instruction: |
+      Turn rows into the number an executive actually asked for. In the SQL console (real
+      SQLite, loaded from the same `evidence.csv` your setup wrote), write one query that
+      produces a per-control failure rate — not just a count: group the evidence rows by
+      `control` and compute failing, total, and a `fail_pct` rounded to one decimal. Then
+      hand-check it in the terminal: count the FAIL rows for one control with
+      `awk -F,` over `fixtures/evidence.csv` and confirm the query's numerator.
+    verify:
+      - check: engine_result_equals
+        from: generated
+        exit: 0
+      - check: history_contains
+        regex: "awk -F, .*fixtures/evidence\\.csv"
+    hints:
+      - nudge: "A rate is a summary of filtered rows: `SUM(CASE WHEN … THEN 1 ELSE 0 END)` counts the failures portably, `COUNT(*)` counts the bucket, and `GROUP BY control` makes one row per control. Avoid `SUM(status = 'FAIL')` — it works on SQLite but is a type error on PostgreSQL, SQL Server, and Oracle."
+      - concept: "§4.5 — SQL is the grammar of evidence: the metric is the query, and the query re-runs unchanged against next quarter's table"
+      - reveal: "SELECT control, SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) AS failing, COUNT(*) AS total, ROUND(100.0 * SUM(CASE WHEN status = 'FAIL' THEN 1 ELSE 0 END) / COUNT(*), 1) AS fail_pct FROM evidence GROUP BY control; — hand-check in the terminal: awk -F, '$1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"
+    explain: |
+      access 50, encryption 33.3 — that result set IS the risk report: it came from the
+      control plane, it reconciles against a hand count, and it is the same SQL whether the
+      rows originated in AWS, Azure, or GCP. One rendering honesty note: this is the real
+      engine's output — SQLite's shell prints 50.0 where the JS bindings print 50; the
+      module's prettified §5.3 table is representative, not byte-canon.
+
+  - id: t6
+    type: action
+    objective: [4, 5]
+    instruction: |
+      Make it re-runnable. Compose `~/lab07/control-evidence.sh` (with `nano`, or `cat` and
+      a heredoc) that re-derives the verdict block from the fixtures every run: the
+      encryption verdict from the posture finding, the violation count from the audit
+      events, and the FAIL-row counts per control from `evidence.csv`. Then `chmod +x` it
+      and run `./control-evidence.sh` twice — the two outputs must be byte-for-byte
+      identical, and every number must be computed from the input files, never hard-coded.
+    verify:
+      - check: file_exists
+        path: ~/lab07/control-evidence.sh
+      - check: file_content_matches
+        path: ~/lab07/control-evidence.sh
+        regex: "grep .*AttachUserPolicy .*fixtures/audit-events\\.json"
+      - check: file_content_matches
+        path: ~/lab07/control-evidence.sh
+        regex: "awk .*fixtures/evidence\\.csv"
+      - check: file_not_matches
+        path: ~/lab07/control-evidence.sh
+        regex: "echo .*encryption|echo .*violations: [0-9]"
+      - check: script_reproducible
+        path: ~/lab07/control-evidence.sh
+        args: []
+        expect_stdout: |
+          encryption: PASS
+          access violations: 1
+          encryption FAIL rows: 1 of 3
+          access FAIL rows: 1 of 2
+    hints:
+      - nudge: "The script is the lines you already ran, saved — your t2 evaluation as an awk verdict, your t4 pipeline counted with `wc -l` inside `$( )`, and an awk FAIL-rows count per control. If any number is typed in as a literal, the check that re-runs your script in a clean environment will still pass — but your evidence stops being evidence."
+      - concept: "§4.6 — deterministic evidence: separate collection (allowed to vary) from evaluation (a pure function of its input)"
+      - reveal: "nano control-evidence.sh with these five lines — #!/usr/bin/env bash · awk '/\"resourceId\": \"audit-logs\"/ && /\"status\": \"PASS\"/ { print \"encryption: PASS\" } /\"resourceId\": \"audit-logs\"/ && /\"status\": \"FAIL\"/ { print \"encryption: FAIL\" }' fixtures/posture-findings.json · echo \"access violations: $(grep AttachUserPolicy fixtures/audit-events.json | grep -E 'T(0[0-8]|1[89]|2[0-3]):' | wc -l)\" · awk -F, '$1 == \"encryption\" { t++ } $1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print \"encryption FAIL rows: \" f \" of \" t }' fixtures/evidence.csv · awk -F, '$1 == \"access\" { t++ } $1 == \"access\" && $2 == \"FAIL\" { f++ } END { print \"access FAIL rows: \" f \" of \" t }' fixtures/evidence.csv — then chmod +x control-evidence.sh and run ./control-evidence.sh twice"
+    explain: |
+      The reproducibility check just re-ran your script twice in a clean sub-environment
+      with the clock and entropy deliberately perturbed — and the outputs agreed, so the
+      determinism is a property of YOUR evaluation, not a fluke of the session. That is the
+      §4.6 contract: when this script's output changes on a monitoring schedule, the cloud
+      changed — not your code.
+
+  - id: t7
+    type: reflection
+    objective: [5, 6]
+    instruction: |
+      In 2–3 sentences: explain why byte-identical output across runs is the precondition
+      for putting this check on a monitoring schedule, and what a `date`-stamped verdict
+      line would do to a drift alert. Name the discipline: which half of the work is
+      allowed to vary (collection) and which half must not (evaluation)?
+    hints:
+      - nudge: "A monitoring alert you can't trust is worse than no alert: if the check's own output drifts, you cannot tell change in the world from noise in your code."
+      - concept: "§4.6/§5.4 — same input, same verdict, every time"
+
+  - id: t8
+    type: reflection
+    objective: [1, 4, 6]
+    instruction: |
+      Write the 4–6 sentence report an auditor would actually accept: map each verdict to
+      its control and name the cloud part its evidence came from (four-part model); state
+      each question's kind (state vs. event); say why your query-derived evidence is
+      stronger than an exported CSV or a screenshot; and describe how you would swap
+      `labs/setup.sh` for real authenticated pulls without changing one character of the
+      evaluation logic.
+    hints:
+      - nudge: "The whole inversion in one move: don't describe the state and attach a picture — query the state and ship the code that did it. Collection swaps out; evaluation stays."
+      - concept: "§3 — the four-part model; §4.7 — why a query beats an export"
+
+completion:
+  evidence_pack: true

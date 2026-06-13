@@ -214,19 +214,18 @@ function captureBootedInner(e: Entry, seedDef: { apply?: string } | null, user: 
         "for i in $(seq 1 50); do [ -f /seed/apply-seed.sh ] && exit 0; sleep 0.1; done; echo 'seed mount never appeared' >&2; exit 1"]);
     }
 
-    // root phase: seed overlay, then entry-specific root setup
-    const rootSteps = [
-      ...(seedDef?.apply ? ["bash /seed/apply-seed.sh"] : []),
-      ...(e.pre_root ?? []),
-    ];
-    for (const step of rootSteps) sh("docker", ["exec", cname, "bash", "-c", step]);
+    // root phase: seed overlay (sanity-checked), then entry-specific root setup
     if (seedDef?.apply) {
+      sh("docker", ["exec", cname, "bash", "-c", "bash /seed/apply-seed.sh"]);
       // sanity: the overlay's effects must be visible before the session runs — two
       // --privileged --cgroupns=host systemd containers in rapid succession can interfere
-      // during teardown, and a half-built world must fail loudly, never capture silently
+      // during teardown, and a half-built world must fail loudly, never capture silently.
+      // Runs BEFORE pre_root: entry-specific root setup may legitimately mutate the seeded
+      // world (e.g. the hardening entries append directives to the 3243-byte sshd_config).
       sh("docker", ["exec", cname, "bash", "-c",
         "[ -f /home/grcops/.ssh/id_ed25519 ] && [ \"$(stat -c %s /etc/ssh/sshd_config)\" = 3243 ] || { echo 'seed overlay not in effect' >&2; exit 1; }"]);
     }
+    for (const step of e.pre_root ?? []) sh("docker", ["exec", cname, "bash", "-c", step]);
 
     // learner session (same shape as the userland runner: streams + exit codes split)
     const session: string[] = [`cd ${shq(e.cwd)} || exit 99`];

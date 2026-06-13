@@ -1,0 +1,331 @@
+id: lab-02
+module: 02-linux-system-fundamentals
+title: Harden web-01 and prove it
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-01
+engine: shell-linux
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m02
+  home: /home/grcops
+  files: []
+  path_tools: [lab-setup]
+
+intro: |
+  You are grcops on a freshly provisioned Ubuntu host, web-01, holding a three-line
+  hardening standard: administration only by a named non-root user with sudo; SSH accepts
+  keys only — no passwords, no root login; and a defined background service installed,
+  running, and enabled to survive a reboot. Implement each control, then prove each one
+  from the host's own commands — evidence a reviewer can re-run, not a screenshot.
+  This terminal is a real simulation of web-01: its outputs are captured from a real
+  systemd-enabled Linux machine, and the same commands on a real box give the same
+  answers. Your sudo password is labpass.
+
+walkthrough_first_input: id grcops
+
+tasks:
+  - id: t1
+    type: action
+    objective: [3, 7]
+    instruction: |
+      The host was provisioned with your admin account. Prove the first half of control 1:
+      run `id grcops` and read the `groups=` field for the privileged group. Then start
+      your evidence trail — `mkdir evidence`, and capture the exact output with
+      `id grcops > evidence/id-grcops.txt`.
+    verify:
+      - check: file_content_equals
+        path: ~/evidence/id-grcops.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/evidence/id-grcops.txt
+        required_commands: [id]
+        forbidden_commands: [echo, printf, nano]
+      - check: file_content_matches
+        path: /etc/group
+        regex: "^sudo:x:27:.*\\bgrcops\\b"
+    hints:
+      - nudge: "`id <user>` asks the kernel's own account database, not a dashboard. `>` turns what it said into something you keep."
+      - concept: "§4.4 — who can become root is THE access-control fact; §5.1 reads it straight from `id`"
+      - reveal: "mkdir evidence, then: id grcops > evidence/id-grcops.txt"
+    explain: |
+      That one line is access-control evidence from the source of truth: `grcops` is in
+      `sudo` (gid 27), so it can elevate — as the standard intends. You did not trust an
+      org chart or a console screenshot; you asked the host who can become root.
+
+  - id: t2
+    type: action
+    objective: [3, 7]
+    instruction: |
+      Control 1 is two-sided: an ordinary account must demonstrably NOT be able to
+      elevate. Create `intern` (creating identities is a root-only act — `sudo` will ask
+      for your password), then capture `id intern > evidence/id-intern.txt`. The output
+      must show no privileged group.
+    verify:
+      - check: file_content_equals
+        path: ~/evidence/id-intern.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/evidence/id-intern.txt
+        required_commands: [id]
+        forbidden_commands: [echo, printf, nano]
+      - check: file_content_matches
+        path: /etc/passwd
+        regex: "^intern:x:1002:"
+      - check: file_not_matches
+        path: /etc/group
+        regex: "^sudo:x:27:.*\\bintern\\b"
+    hints:
+      - nudge: "Bare `useradd` hits a permission wall — that wall is the point. Which gate lets an authorized user cross it, and what does the crossing cost (a logged event)?"
+      - concept: "§4.4 — the sudo gate; §5.1 — least privilege is only evidenced when BOTH sides are shown"
+      - reveal: "sudo useradd -m intern (password: labpass), then: id intern > evidence/id-intern.txt"
+    explain: |
+      Two captured `id` outputs now evidence the control from both sides: the admin can
+      elevate, the ordinary account cannot. One-sided least-privilege evidence is half a
+      claim — the absent membership is as load-bearing as the present one.
+
+  - id: t3
+    type: action
+    objective: [4, 7]
+    instruction: |
+      Run `ls -l .ssh` and decode each ten-character permission string. One file is
+      over-permissioned for SSH trust material: every account on the box can read
+      `authorized_keys`. Fix it with `chmod 600`, then capture the corrected listing
+      with `ls -l .ssh > evidence/ssh-perms.txt`.
+    verify:
+      - check: file_content_matches
+        path: ~/evidence/ssh-perms.txt
+        regex: "^-rw------- 1 grcops grcops .* authorized_keys$"
+      - check: file_content_matches
+        path: ~/evidence/ssh-perms.txt
+        regex: "^-rw------- 1 grcops grcops .* id_ed25519$"
+      - check: artifact_produced_by
+        path: ~/evidence/ssh-perms.txt
+        required_commands: [ls]
+        forbidden_commands: [echo, printf, nano]
+    hints:
+      - nudge: "Three trios after the type character: owner, group, everyone-else. Which trio on which file says more than `---`? `chmod 600` means rw for owner, nothing for anyone."
+      - concept: "§4.5 — the ten-character string IS the verdict; §5.2 decodes it to yes/no"
+      - reveal: "chmod 600 .ssh/authorized_keys, then: ls -l .ssh > evidence/ssh-perms.txt"
+    explain: |
+      `-rw-------` on both files means only `grcops` can touch the key material — group
+      and world get nothing. You read a cryptic string to a per-user verdict, found the
+      over-permission, and remediated it; the captured listing is the after-state evidence.
+
+  - id: t4
+    type: action
+    objective: [5, 7]
+    instruction: |
+      Harden SSH. Append the two effective directives the standard requires —
+      `PasswordAuthentication no` and `PermitRootLogin no` — to `/etc/ssh/sshd_config`.
+      The file is root-owned, so prime sudo with `sudo true`, then use the
+      `printf ... | sudo tee -a` idiom. Reload the daemon. Then prove it from a fresh
+      connection: a key login to `grcops@web-01` succeeds, and a password-only probe
+      (`-o PubkeyAuthentication=no -o BatchMode=yes`) is refused — capture the refusal
+      by appending `2> evidence/ssh-password-refused.txt` to the probe.
+    verify:
+      - check: file_content_matches
+        path: /etc/ssh/sshd_config
+        regex: "^PasswordAuthentication no$"
+      - check: file_content_matches
+        path: /etc/ssh/sshd_config
+        regex: "^PermitRootLogin no$"
+      - check: history_contains
+        regex: "\\| *sudo tee -a /etc/ssh/sshd_config"
+      - check: history_contains
+        regex: "sudo systemctl (reload|restart) ssh"
+      - check: history_contains
+        regex: "^ssh .*grcops@web-01"
+      - check: file_content_matches
+        path: ~/evidence/ssh-password-refused.txt
+        regex: "Permission denied \\(publickey\\)\\."
+      - check: artifact_produced_by
+        path: ~/evidence/ssh-password-refused.txt
+        required_commands: [ssh]
+        forbidden_commands: [echo, printf, nano]
+    hints:
+      - nudge: "`>>` runs as you, and you can't write a root-owned file — but a pipe into an elevated `tee -a` can. And the running daemon keeps using the OLD config until you tell it to re-read."
+      - concept: "§4.6 — key-only SSH is a control, not a preference; a config edit nobody reloaded is a control nobody enforced"
+      - reveal: "sudo true, then: printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config, then: sudo systemctl reload ssh, then: ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true, then: ssh -o StrictHostKeyChecking=accept-new -o PubkeyAuthentication=no -o BatchMode=yes grcops@web-01 true 2> evidence/ssh-password-refused.txt"
+    explain: |
+      `Permission denied (publickey).` is the server naming the ONLY method it still
+      offers. Before the reload that same probe said `(publickey,password)` — the
+      difference between those two parentheses is the control taking effect, and your
+      captured refusal is the negative test every auth control deserves.
+
+  - id: t5
+    type: action
+    objective: [5, 7]
+    instruction: |
+      Evaluate the config the way `sshd` does. First witness the trap: run the naive
+      `sudo grep PasswordAuthentication /etc/ssh/sshd_config` and notice the commented
+      decoy in the output. Then resolve the EFFECTIVE value the way the daemon parses it
+      — comments stripped, last directive wins — keeping only the single effective line
+      as evidence in `evidence/effective-passwordauth.txt`, and do the same for
+      `PermitRootLogin` into `evidence/effective-permitrootlogin.txt`.
+    verify:
+      - check: file_content_equals
+        path: ~/evidence/effective-passwordauth.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/evidence/effective-passwordauth.txt
+        min_pipes: 2
+        required_commands: [grep, tail]
+        forbidden_commands: [echo, printf, nano]
+      - check: file_content_equals
+        path: ~/evidence/effective-permitrootlogin.txt
+        from: generated
+      - check: artifact_produced_by
+        path: ~/evidence/effective-permitrootlogin.txt
+        min_pipes: 2
+        required_commands: [grep, tail]
+        forbidden_commands: [echo, printf, nano]
+      - check: history_contains
+        regex: "sudo grep PasswordAuthentication /etc/ssh/sshd_config"
+    hints:
+      - nudge: "Three stages: drop every line whose first non-blank character is `#`, keep only the directive you're resolving, keep only the LAST survivor. The daemon ignores comments and honors the last duplicate — your evidence must too."
+      - concept: "§5.3 — evidence must be evaluated by the enforcing program's parse rules, or it's a guess that looks official"
+      - reveal: "sudo grep -v '^[[:space:]]*#' /etc/ssh/sshd_config | grep -i '^[[:space:]]*PasswordAuthentication' | tail -1 > evidence/effective-passwordauth.txt, then the same pipeline with PermitRootLogin into evidence/effective-permitrootlogin.txt"
+    explain: |
+      Your evidence file holds exactly one line — the directive `sshd` actually enforces —
+      with the decoy gone. A naive grep would have shipped the commented `yes` to an
+      auditor as a false finding. Same file, two methods, opposite conclusions: the parse
+      rules are part of the evidence.
+
+  - id: t6
+    type: action
+    objective: [2, 7]
+    instruction: |
+      Control 3: the evidence-collector service must be installed, running, AND
+      persistent. The package is already on the box — install it with
+      `sudo apt install -y ./evidence-collector_1.0.0_all.deb`, start it, then run
+      `systemctl status evidence-collector` and READ the `Loaded:` line before you
+      celebrate: `active (running)` with `disabled` is a control that dies at the next
+      reboot. Enable it, then capture the final status with
+      `systemctl status evidence-collector > evidence/service-status.txt`.
+    verify:
+      - check: file_content_matches
+        path: ~/evidence/service-status.txt
+        regex: "Active: active \\(running\\)"
+      - check: file_content_matches
+        path: ~/evidence/service-status.txt
+        regex: "evidence-collector\\.service; enabled;"
+      - check: artifact_produced_by
+        path: ~/evidence/service-status.txt
+        required_commands: [systemctl]
+        forbidden_commands: [echo, printf, nano]
+      - check: history_contains
+        regex: "sudo systemctl enable evidence-collector"
+    hints:
+      - nudge: "`apt install` puts the unit on disk, `start` makes it run NOW — neither says anything about the next boot. One word in the `Loaded:` line carries the reboot promise."
+      - concept: "§4.3 — a service is a program the OS guarantees keeps happening; §5.4 — read BOTH fields, not one"
+      - reveal: "sudo apt install -y ./evidence-collector_1.0.0_all.deb, then: sudo systemctl start evidence-collector, then: sudo systemctl enable evidence-collector, then: systemctl status evidence-collector > evidence/service-status.txt"
+    explain: |
+      Your captured status shows both words that matter: `active (running)` — it is up
+      now — and `enabled` — it returns after a reboot. A check that records only the
+      first is a point-in-time snapshot wearing a continuous control's name tag.
+
+  - id: t6a
+    type: reflection
+    objective: [2]
+    instruction: |
+      In one sentence: if you had skipped `enable`, what exactly would a reviewer find
+      after the next reboot — and why does a point-in-time "it's running" check miss
+      that failure mode entirely?
+    hints:
+      - nudge: "Think about WHEN each of the two status fields is allowed to become false."
+      - concept: "§4.3 / §5.4 — active vs enabled is now vs next-boot"
+
+  - id: t7
+    type: action
+    objective: [6, 7]
+    instruction: |
+      Controls leave records. Query the SSH unit's journal for the login you performed
+      and keep the proof:
+      `sudo journalctl -u ssh --since "2026-05-27" | grep -i "accepted" > evidence/auth-event.txt`.
+      Read your captured line: method `publickey`, account `grcops` — and note that no
+      successful `password` line exists to be found.
+    verify:
+      - check: file_content_matches
+        path: ~/evidence/auth-event.txt
+        regex: "Accepted publickey for grcops"
+      - check: file_not_matches
+        path: ~/evidence/auth-event.txt
+        regex: "Accepted password"
+      - check: artifact_produced_by
+        path: ~/evidence/auth-event.txt
+        min_pipes: 1
+        required_commands: [grep]
+        forbidden_commands: [echo, printf, nano]
+      - check: history_contains
+        regex: "journalctl -u ssh"
+    hints:
+      - nudge: "The journal is queried per unit (`-u`). Which unit witnessed your login — and whose journal do you need sudo to read in full?"
+      - concept: "§4.7 — /etc is where a control is declared; the journal is where it is witnessed actually working"
+      - reveal: "sudo journalctl -u ssh --since \"2026-05-27\" | grep -i \"accepted\" > evidence/auth-event.txt"
+    explain: |
+      `Accepted publickey for grcops` is the host's own append-only memory of the control
+      being exercised — not configured, exercised. The absence of any `Accepted password`
+      line is the other half of the proof, and absence is only evidence when you looked
+      for the thing and can show how you looked.
+
+  - id: t8
+    type: action
+    objective: [1, 7]
+    instruction: |
+      Assemble the writeup a reviewer could re-run. Create `evidence-writeup.md` in your
+      home directory — open the editor with `nano evidence-writeup.md` (or compose it
+      with a heredoc) — with one block per control: the control statement, WHERE its
+      truth lives on the host, the exact command, the evidence line, and a final line
+      reading `Verdict: PASS`.
+    verify:
+      - check: file_exists
+        path: ~/evidence-writeup.md
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "id grcops"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "27\\(sudo\\)"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "/etc/ssh/sshd_config"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "PasswordAuthentication no"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "active \\(running\\)"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "Accepted publickey"
+      - check: file_content_matches
+        path: ~/evidence-writeup.md
+        regex: "Verdict: PASS"
+    hints:
+      - nudge: "Three controls, three blocks. Each block answers four questions: what was claimed, where does its truth live (§4.1), what command was run, what line came back — then the verdict."
+      - concept: "§6 deliverable — evidence is defensible when a reviewer re-running every command reaches the identical verdict"
+      - reveal: "nano evidence-writeup.md — one block per control with its claim, its home (/etc/group · /etc/ssh/sshd_config · the unit + journal), the exact command (id grcops · the grep -v pipeline · systemctl status evidence-collector), the evidence line (27(sudo) · PasswordAuthentication no · active (running) plus enabled · Accepted publickey for grcops) and a final line Verdict: PASS"
+    explain: |
+      This page is the assessment artifact in miniature: every verdict is welded to the
+      command that produced it and the line it produced. Anyone with access to web-01 can
+      re-run your three commands and arrive at your three verdicts — that re-runnability
+      is what separates compliance evidence from compliance theater.
+
+  - id: t9
+    type: reflection
+    objective: [1, 4]
+    instruction: |
+      In 4–6 sentences for a non-technical reviewer: for each of the three controls, name
+      where its truth physically lives on the host (a declaration in /etc, a record in
+      the journal, or running state) and how you would find it on an unfamiliar machine.
+      Then decode `-rw-r----- root root` on /etc/ssh/sshd_config — who can read it, who
+      can write it, and why that shape is right for a security-relevant config.
+    hints:
+      - nudge: "The §3 map: files persist (declarations), processes run, systemd supervises, the journal remembers. Every control is a checkable fact in exactly one of those places."
+      - concept: "§4.1 — the filesystem hierarchy is a map of where evidence is kept"
+
+completion:
+  evidence_pack: true

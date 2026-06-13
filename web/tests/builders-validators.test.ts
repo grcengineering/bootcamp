@@ -128,6 +128,17 @@ describe("module 08 — gate.sh port", () => {
   const m08 = captures.m08;
   const fs = fsFrom(m08.seed);
 
+  test("drift guard: captured seed bytes equal the committed labs/fixtures (recapture on change)", () => {
+    // The byte-fidelity cases below replay against the CAPTURE-TIME inputs. If a lab
+    // fixture changes without re-running web/scripts/capture-builder-fixtures.ts, the
+    // suite would keep validating the port against stale bytes while the live exercise
+    // seeds the new ones — this guard turns that silent drift into a failure.
+    const fixtures = join(MODULES, "08-iac-and-scanning-in-ci/labs/fixtures");
+    for (const [name, content] of Object.entries(m08.seed as Record<string, string>)) {
+      expect(`${name}:${readFileSync(join(fixtures, name), "utf8")}`).toBe(`${name}:${content}`);
+    }
+  });
+
   for (const c of m08.cases as CapturedCase[]) {
     test(`gate.sh ${c.argv.join(" ") || "(no args)"} [${c.id}] byte-identical`, () => {
       const got = runGate(c.argv, fs, { fakeTime: "ci" });

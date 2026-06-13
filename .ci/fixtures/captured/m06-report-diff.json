@@ -1,0 +1,38 @@
+{
+  "id": "m06-report-diff",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [
+    "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json",
+    "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json"
+  ],
+  "cmd": "diff report-run-1.json report-run-2.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "§6 task 8's run-twice check — byte-identical reports because collected_at is pinned (reproducible evidence)",
+  "stdout": "",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "0\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:08:53.507Z",
+    "captured_with": "capture.ts v1"
+  }
+}

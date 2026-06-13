@@ -1,0 +1,7 @@
+{"input": "ccm-tick 1"}
+{"input": "ccm-tick 30"}
+{"input": "inject-drift"}
+{"input": "ccm-tick 1"}
+{"input": "ccm-tick 7"}
+{"input": "remediate"}
+{"input": "ccm-tick 1"}

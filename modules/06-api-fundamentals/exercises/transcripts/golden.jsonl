@@ -1,0 +1,45 @@
+{"input": "pwd"}
+{"input": "cd lab06"}
+{"input": "ls"}
+{"input": "ls fixtures"}
+{"input": "cat vendor-docs.md"}
+{"input": "curl -i acme.example/api/v2/users > unauth-response.txt"}
+{"input": "cat unauth-response.txt"}
+{"input": "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=users:read' acme.example/oauth/token > token.json"}
+{"input": "cat token.json"}
+{"input": "curl -s -H 'Authorization: Bearer tok_4f11b94d68af0a484c732907024fd2ba' acme.example/api/v2/users > pulled-page-1.json"}
+{"input": "grep next_cursor pulled-page-1.json"}
+{"input": "curl -s -H 'Authorization: Bearer tok_4f11b94d68af0a484c732907024fd2ba' 'acme.example/api/v2/users?cursor=eyJwYWdlIjoyfQ==' > pulled-page-2.json"}
+{"input": "grep next_cursor pulled-page-2.json"}
+{"input": "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=devices:read' acme.example/oauth/token > devices-token.json"}
+{"input": "cat devices-token.json"}
+{"input": "curl -i -H 'Authorization: Bearer tok_bc9cc2d14c6d1dfc8587e12b253f848e' acme.example/api/v2/users > scope-error.txt"}
+{"input": "cat scope-error.txt"}
+{"input": "curl -s -H 'Authorization: Bearer tok_bc9cc2d14c6d1dfc8587e12b253f848e' acme.example/api/v2/devices > devices.json"}
+{"input": "grep -c '\"disk_encrypted\": false' devices.json > unencrypted-count.txt"}
+{"input": "cat unencrypted-count.txt"}
+{"input": "cat fixtures/users-page-1.json"}
+{"input": "grep -n mfa_enabled fixtures/users-page-1.json"}
+{"input": "grep -n next_cursor fixtures/users-page-1.json"}
+{"input": "grep -c '\"mfa_enabled\": false' fixtures/users-page-1.json > page1-count.txt"}
+{"input": "cat fixtures/users-page-1.json fixtures/users-page-2.json | grep -c '\"mfa_enabled\": false' > combined-count.txt"}
+{"input": "cat page1-count.txt combined-count.txt"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json"}
+{"input": "cat mfa-report.json"}
+{"input": "grep -n u_004 mfa-report.json"}
+{"input": "grep -n active_users_without_mfa mfa-report.json"}
+{"input": "aggregate-mfa fixtures/users-page-1.json 2> incomplete-error.txt"}
+{"input": "echo $? > truncated-exit.txt"}
+{"input": "cat incomplete-error.txt"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json"}
+{"input": "echo $? > exit-fail.txt"}
+{"input": "echo '{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ], \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }' > fixtures/users-allpass.json"}
+{"input": "aggregate-mfa fixtures/users-allpass.json > allpass-report.json"}
+{"input": "echo $? > exit-pass.txt"}
+{"input": "cat exit-fail.txt exit-pass.txt truncated-exit.txt"}
+{"input": "cat > LOCATE-plan.md << 'EOF'\n# LOCATE plan — acme.example, control: every workforce user has MFA enabled\n\n1. Auth rung: OAuth2 client-credentials — POST /oauth/token with client_id + client_secret, scope users:read; short-lived Bearer token (expires_in 3600).\n2. Truth lives at: GET /api/v2/users — boolean field mfa_enabled per user record.\n3. Pagination: cursor-based — follow pagination.next_cursor, stop when null; every page advertises the same total (verify the accumulated count against it).\n4. Rate limit: 600 requests/minute; 429 answers with Retry-After in seconds — wait and retry, never drop the page.\n5. Error shape: { \"error\": \"...\", \"message\": \"...\" } — read the status code before the body.\nEOF"}
+{"input": "cat LOCATE-plan.md"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json"}
+{"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json"}
+{"input": "diff report-run-1.json report-run-2.json && echo identical > repro-verdict.txt"}
+{"input": "cat repro-verdict.txt"}

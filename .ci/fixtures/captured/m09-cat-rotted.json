@@ -1,0 +1,31 @@
+{
+  "id": "m09-cat-rotted",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "cat rotted-policy.txt",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the §6 task-6 policy-rot drill fixture (VR-3) — read in the exercise's t9 reflection.\n",
+  "stdout": "CONTROL: VR-3 — vendor risk acceptances must be re-justified when the vendor's\nrisk tier changes.\n\nENCODED (Rego, authored ~1 year ago, has passed every run since):\n\n  package vendor\n  import rego.v1\n\n  deny contains msg if {\n      not input.risk_acceptance.last_reviewed\n      msg := \"risk acceptance is missing a last_reviewed date\"\n  }\n\nOWNER: (none recorded)\nREVIEW CADENCE: (none recorded)\n\nNOTE FROM THE TICKETING SYSTEM: the `last_reviewed` field is auto-stamped with\nthe current date on ANY edit to the risk-acceptance ticket — a comment, a label\nchange, an attachment. No human risk decision is required for the field to be set.\n\nThis is the policy-rot fixture for the §6 task-6 drill. The rule is green on every\nrun, but it checks only that a date EXISTS, never that a human re-evaluated the\nrisk. With no owner and no cadence, the verdict drifted from the control's intent\nwhile staying green. Diagnose it, name the ownership gap, state the fix — then\ndecide (task 7) whether this control should have been policy-as-code at all.\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:37.868Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,5 @@
+{"anti_for": "t8", "reason": "right bytes, wrong provenance \u2014 a report pasted from the module page is not evidence produced by the aggregator"}
+{"input": "cd lab06"}
+{"input": "cat > mfa-report.json << 'REPORT'\n{\n  \"control\": \"MFA enforced for all workforce users\",\n  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\",\n  \"collected_at\": \"2026-05-28T00:00:00Z\",\n  \"pages_aggregated\": 2,\n  \"total_users\": 8,\n  \"users_without_mfa\": 4,\n  \"active_users_without_mfa\": 3,\n  \"offending_users\": [\n    {\n      \"id\": \"u_002\",\n      \"email\": \"bob@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_004\",\n      \"email\": \"dave@acme.example\",\n      \"status\": \"suspended\"\n    },\n    {\n      \"id\": \"u_006\",\n      \"email\": \"frank@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_008\",\n      \"email\": \"heidi@acme.example\",\n      \"status\": \"active\"\n    }\n  ],\n  \"control_result\": \"FAIL\"\n}\nREPORT"}
+{"input": "cat mfa-report.json"}
+{"input": "grep -n u_004 mfa-report.json"}

@@ -1,0 +1,3 @@
+{
+  "_provenance": "lab-15 has no from:generated checks: the only deterministic capturable artifact on the capstone surface is the validator's own verdict stream, which the spec gates via validator_passes regexes whose ground-truth bytes are web/tests/fixtures/builder-captures.json m15 — real bash runs of the setup.sh-generated validate-capstone.sh, captured by web/scripts/capture-builder-fixtures.ts. web/tests/exercise-replay-15.test.ts replays golden.jsonl and asserts the final validator stdout/exit are byte-identical to the m15 complete-PASS capture (the builder-surface equivalent of root ISA ISC-60's regenerate-and-assert). Manifest content is learner line-edited (indentation-flexible) and is deliberately pattern-gated, never byte-gated."
+}

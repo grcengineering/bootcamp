@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Module 00 rubric check as a PATH tool (fidelity grounding for exercise lab-00).
+# Logic: modules/00-what-grc-engineering-is/labs/happy-path.sh evaluate_analysis(),
+# arrays unrolled into sequential greps. One declared narrowing: the inversion grep
+# uses ' *' where the canonical CI uses [[:space:]]* (tabs inside a one-line markdown
+# sentence are not a taught/realistic input; the web builder port keeps the exact CI
+# character class and is byte-accepted against a real bash run of the source function).
+file="$1"
+missing=0
+if ! grep -q -i "manual toil" "$file"; then echo "  missing legacy problem: manual toil"; missing=1; fi
+if ! grep -q -i "transactional" "$file"; then echo "  missing legacy problem: transactional"; missing=1; fi
+if ! grep -q -i "whack-a-mole" "$file"; then echo "  missing legacy problem: whack-a-mole"; missing=1; fi
+if ! grep -q -i "closed-framework" "$file"; then echo "  missing legacy problem: closed-framework"; missing=1; fi
+if ! grep -q -i "commoditized" "$file"; then echo "  missing legacy problem: commoditized"; missing=1; fi
+if ! grep -q "UNDERSTAND" "$file"; then echo "  missing loop stage: UNDERSTAND"; missing=1; fi
+if ! grep -q "LOCATE" "$file"; then echo "  missing loop stage: LOCATE"; missing=1; fi
+if ! grep -q "QUERY" "$file"; then echo "  missing loop stage: QUERY"; missing=1; fi
+if ! grep -q "EVALUATE" "$file"; then echo "  missing loop stage: EVALUATE"; missing=1; fi
+if ! grep -q "EVIDENCE" "$file"; then echo "  missing loop stage: EVIDENCE"; missing=1; fi
+if ! grep -q "MONITOR" "$file"; then echo "  missing loop stage: MONITOR"; missing=1; fi
+if ! grep -q "OWN" "$file"; then echo "  missing loop stage: OWN"; missing=1; fi
+if ! grep -q -i -E 'reality *-> *policy|reality.*drive.*policy' "$file"; then
+  echo "  missing reality->policy inversion statement"
+  missing=1
+fi
+exit "$missing"

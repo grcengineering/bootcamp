@@ -1,0 +1,3 @@
+{
+  "_provenance": "lab-00 has no from:generated checks \u2014 the learner's analysis is free-form prose, so capturable literals do not exist; the machine gate is the module's own evaluate_analysis validator (ported byte-accepted vs web/tests/fixtures/builder-captures.json m00 and captured real in .ci/fixtures/captured/m00-evaluate-*.json)"
+}

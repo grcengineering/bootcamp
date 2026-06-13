@@ -185,6 +185,8 @@ Now the MEDIUM versioning finding (CP-9) also blocks. One value, in one owned fi
 
 **Scenario.** You own one control area: storage must be encrypted at rest and never publicly readable. You will wire a gate into a build so that a deliberately non-compliant Terraform change is **blocked**, the blocking finding is **mapped to the control it enforces**, and a passing change **emits evidence**.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 08 → Interactive lab) as a CI-workspace simulation: the gate decision it runs is a port of the committed `gate.sh`, CI-verified byte-for-byte against real `bash` runs of that script — the same inputs on a real machine produce the same record and exit code.
+
 **Setup.** Run `bash labs/setup.sh ./lab08`. This stages, in `./lab08/`: two scan-result fixtures (`checkov-noncompliant.json`, `checkov-compliant.json`), the two Terraform snippets they correspond to (`main-noncompliant.tf`, `main-compliant.tf`), the control map (`control-map.csv`), and the gate (`gate.sh`). No scanner, cloud, or network is required for the offline core; the optional steps marked *(real environment)* require your own tooling.
 
 **Tasks.**

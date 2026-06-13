@@ -273,6 +273,8 @@ This failure is *your logic*, not bad input: `evaluate` returned `PASS` for a re
 
 **Scenario.** You own the laptop-encryption control. You are handed a directory of raw evidence files — one JSON record per laptop, plus the inevitable malformed one — and asked to build a tool that QUERIES them, judges each against the control, handles the bad file without dying, writes a structured report, ships meaningful tests, and lives in a Git repository whose history is itself change-management evidence.
 
+> **Interactive lab.** A browser version of this lab runs on the bootcamp site (Module 05 → Interactive lab): its Git is a real engine — commits, branches, and merges are genuine repository state, verified against real git captures — and its shell is CI-verified against a real Linux machine; you author the Python tool there as real, runnable code, then run `pytest` here, on your own machine, as below.
+
 **Setup.** Create a working directory and generate fixtures: `bash labs/setup.sh evidence/` writes a folder of evidence JSON files including one deliberately malformed file. Initialise a repository: `git init`, then `git add` and an initial commit of an empty `validator.py` so you have a clean starting point on `main`.
 
 **Tasks.**

@@ -1,0 +1,237 @@
+id: lab-00
+module: 00-what-grc-engineering-is
+title: The before picture, machine-checked
+owner: Justin Pagano
+volatility: A
+review_due: 2027-05-28
+engine: builder
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m00
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+builder:
+  surface: workspace
+  validator: evaluate-analysis
+  validator_args: [lab00/legacy-vs-engineered-my-control.md]
+
+intro: |
+  This is the mindset lab — no terminal, no tooling, just the one intellectual move the
+  whole program exists to make routine. You will write the one-page legacy-vs-engineered
+  analysis of a real control you own, in the exact fixed shape the capstone re-opens at
+  the end of the program. Three files are in your workspace: a conforming exemplar (the
+  laptop-encryption worked example from §5.1 — the claim thread you will meet again in
+  almost every module), a legacy-only counterexample, and your own template. The "Run
+  validator" button runs the module's own structural rubric check — the same logic this
+  curriculum's CI runs against its own lab — and its verdict is earned, not scripted:
+  it really rejects, then really accepts, whatever your document currently says. One
+  honesty note: the check is structural. Passing it is the floor, not the grade — the
+  honest sentences are yours to write.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [2]
+    instruction: |
+      Before writing a word: read the exemplar (`lab00/legacy-vs-engineered-laptop-encryption.md`)
+      to calibrate, then press **Run validator** with your template untouched. Watch the
+      check reject it — naming every missing legacy problem, every missing loop stage,
+      and the missing inversion statement. A check that cannot reject is not a check;
+      this is the same discrimination assertion the module's CI makes against its own lab.
+    verify:
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "missing legacy problem: manual toil[\\s\\S]*missing loop stage: OWN[\\s\\S]*missing reality->policy inversion statement"
+      - check: history_contains
+        regex: "^validator:evaluate-analysis"
+    hints:
+      - nudge: "Don't write anything yet. Run the check against the empty template and read every line it emits — that list is your work plan."
+      - concept: "§4.1 — a control is a falsifiable claim; a rubric that can't fail a bad document verifies nothing"
+      - reveal: "Press Run validator with the template as-is. It exits 1 and lists 13 gaps: 5 problems, 7 stages, 1 inversion statement."
+    explain: |
+      You just watched evidence-grade verification do its first job: discriminate. The
+      thirteen lines it printed are the exact contract your document must satisfy — and
+      because the check evaluates your real current text, the pass you earn later is a
+      genuine state change, not a quiz answer.
+
+  - id: t2
+    type: action
+    objective: [3]
+    instruction: |
+      §6 task 1 — name the control as a claim. In your template's **Control as a claim**
+      section, pick one real control your organization owns (one you privately suspect is
+      run the legacy way) and write it as a single falsifiable sentence: "X is true of
+      system Y." If you can't phrase it that way, you picked a policy — pick again. Then
+      add a line stating where the truth of that claim physically lives today, in the
+      form "Truth lives today in: …" — name the actual config file, API, log, DB row, or
+      cloud setting.
+    verify:
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "## Control as a claim\\n+[^#\\s]"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Tt]ruth lives (today )?in:? *\\S"
+    hints:
+      - nudge: "Strip the policy language until reality can make the sentence true or false. \"Access reviews are performed quarterly\" is a process; \"no disabled employee has an active account\" is a claim."
+      - concept: "§4.1 — a control is a claim about system state"
+      - reveal: "Under the first heading write e.g.: 'Claim: MFA is required for every production-console login.' and 'Truth lives today in: the identity provider's authentication policy API and its sign-in event log.'"
+    explain: |
+      The moment a control reads "X is true of system Y," you can ask system Y whether X
+      holds — which is the whole job. Naming where the truth physically lives is LOCATE
+      before you've met the loop: every later module starts exactly here.
+
+  - id: t3
+    type: action
+    objective: [2]
+    instruction: |
+      §6 task 2 — score your control against all five legacy problems (§4.3), one honest
+      sentence each, in the **Five-problem scorecard** section. All five must be named by
+      name: manual toil, transactional relationship, whack-a-mole, closed-framework
+      focus, commoditized compliance. "N/A" is allowed only with a one-line justification.
+    verify:
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Mm]anual [Tt]oil"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Tt]ransactional"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Ww]hack-[Aa]-[Mm]ole"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Cc]losed-[Ff]ramework"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Cc]ommoditized"
+    hints:
+      - nudge: "One sentence per problem, each problem named exactly (hyphens matter: whack-a-mole, closed-framework). The exemplar's scorecard shows the shape."
+      - concept: "§4.3 — the five problems with legacy GRC"
+      - reveal: "Five lines, e.g.: '- Manual toil, trivial output: …' '- Transactional relationship: …' '- Whack-a-mole: …' '- Closed-framework focus: …' '- Commoditized compliance: …' — each finished with an honest sentence about YOUR control."
+    explain: |
+      Naming all five forces the uncomfortable audit: most controls fail several at once,
+      and the trap problem — commoditized compliance — is the one a tooling enthusiast
+      walks into first. If a future "improvement" only makes the toil cheaper, you now
+      have the sentence on file that says so.
+
+  - id: t4
+    type: action
+    objective: [1, 3]
+    instruction: |
+      §6 task 3 — map the legacy arrow. In the **Legacy arrow** section, describe in one
+      or two sentences how this control is verified today, writing the chain out as
+      framework -> controls -> implementation -> evidence -> audit on one line, and note
+      specifically where reality is consulted (usually: last, by hand, periodically).
+      The module's own CI does not check this section — the in-app check here is
+      deliberately stricter, because the capstone diffs against it.
+    verify:
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Ff]ramework.*(->|→).*[Aa]udit"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Cc]onsulted"
+    hints:
+      - nudge: "Write the five-stage chain with arrows on a single line, then answer: at which arrow does anyone actually look at the running system — and how often?"
+      - concept: "§4.2 — the inversion thesis: which end of the arrow you start from"
+      - reveal: "e.g. 'Today this control runs framework -> controls -> implementation -> evidence -> audit: reality is consulted last, by hand, once a quarter.'"
+    explain: |
+      Writing the arrow down makes the diagnosis structural instead of personal: nobody
+      on the legacy path is lazy — the *direction* guarantees reality is consulted last.
+      That sentence is the "before" the capstone will hold your engineered control against.
+
+  - id: t5
+    type: action
+    objective: [1, 3]
+    instruction: |
+      §6 task 4 — map the engineered arrow. In the **Engineered arrow** section, walk the
+      SAME control through all seven loop stages, one line each, in loop order, using the
+      uppercase stage tokens: UNDERSTAND, LOCATE, QUERY, EVALUATE, EVIDENCE, MONITOR, OWN
+      (the tokens are the contract — the rubric matches them case-sensitively). Each line
+      is "STAGE: detail". Be concrete at LOCATE — name the actual system that holds the
+      truth.
+    verify:
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "UNDERSTAND[\\s\\S]*LOCATE[\\s\\S]*QUERY[\\s\\S]*EVALUATE[\\s\\S]*EVIDENCE[\\s\\S]*MONITOR[\\s\\S]*OWN"
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "LOCATE[^\\n]*: *\\S"
+    hints:
+      - nudge: "Seven lines, loop order, UPPERCASE tokens followed by a colon. The §3 worked pair: LOCATE is the MDM's device API, QUERY is the authenticated call, EVALUATE is 'flag == on for every device'."
+      - concept: "§4.6 — the irreducible seven-stage loop"
+      - reveal: "e.g. '- UNDERSTAND: the claim is …' '- LOCATE: the truth lives in <the named system>.' '- QUERY: …' '- EVALUATE: …' '- EVIDENCE: …' '- MONITOR: …' '- OWN: …'"
+    explain: |
+      That seven-line map is the table of contents for your entire program: each line
+      becomes a module, and the file you just wrote it in becomes the capstone's input.
+      The uppercase tokens aren't pedantry — they're the machine-readable spine the
+      module-15 validator (and this one) keys on.
+
+  - id: t6
+    type: action
+    objective: [1]
+    instruction: |
+      §6 task 5 — state the inversion in your own words. Close the **Inversion statement**
+      section with one sentence contrasting the two arrows for THIS control: what changes
+      when reality drives the policy instead of the document. Make the direction explicit —
+      "reality -> policy", or say it: reality drives the policy.
+    verify:
+      - check: file_content_matches
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+        regex: "[Rr]eality[ \\t]*->[ \\t]*[Pp]olicy|[Rr]eality[^\\n]*[Dd]rive[^\\n]*[Pp]olicy"
+    hints:
+      - nudge: "One sentence, this control, both arrows. The §3 closer is the shape: legacy asks the document whether reality complied; engineering asks reality and rewrites the document to match."
+      - concept: "§4.2 — the inversion thesis"
+      - reveal: "e.g. 'Reality -> policy: instead of asking the binder whether the fleet complied, we ask the fleet continuously and let what it reports drive the policy and the proof.'"
+    explain: |
+      If you internalize one sentence from module 00, it's the one you just wrote. Every
+      technique in the next fifteen modules is instrumentation for that arrow — and you
+      phrased it for a control you actually own, which is what makes it commit you.
+
+  - id: t7
+    type: action
+    objective: [4]
+    instruction: |
+      The deliverable. Press **Run validator** again: your analysis must now PASS the
+      same check that rejected the empty template in step 1 — exit 0, no missing lines.
+      That fail-then-pass pair is your first piece of engineered evidence, and the
+      document itself is the *before* half of the program-long before/after: module 15
+      re-opens this exact artifact. On your own machine you'd save it as
+      legacy-vs-engineered-<control>.md and keep it.
+    verify:
+      - check: file_exists
+        path: ~/lab00/legacy-vs-engineered-my-control.md
+      - check: validator_passes
+        exit: 0
+      - check: history_contains
+        regex: "^validator:evaluate-analysis lab00/legacy-vs-engineered-my-control\\.md$"
+    hints:
+      - nudge: "If it still exits 1, the output names each gap exactly — fix only what it names. Lowercase stage tokens and missing hyphens are the classic near-misses."
+      - concept: "§6 deliverables — the fixed shape exists so the capstone can diff against it"
+      - reveal: "Complete all five sections per t2–t6 (the exemplar shows a full conforming document), then press Run validator: it prints nothing and exits 0."
+    explain: |
+      The verdict you just earned is re-runnable: anyone with your document and this
+      check gets the same answer, which is what separates evidence from assertion. Keep
+      the artifact — the capstone diffs your fully-engineered control against this exact
+      before picture, and the delta is the proof the program worked.
+
+  - id: t8
+    type: reflection
+    objective: [1, 2]
+    instruction: |
+      The defense, in writing (4–6 sentences): state the inversion thesis cold — no notes,
+      no peeking at §3 — then pick ONE of the five principles (§4.4) and connect it to the
+      specific legacy problem it answers, using your control as the example. This is the
+      spoken-defense half of the module's assessment, rehearsed.
+    hints:
+      - nudge: "The thesis is one sentence about direction, not technology. Then: name a principle, name its problem — if you can't pair them, you've memorized a slogan, not the model."
+      - concept: "§4.4 — the five principles, each a response to a named problem"
+
+completion:
+  evidence_pack: true

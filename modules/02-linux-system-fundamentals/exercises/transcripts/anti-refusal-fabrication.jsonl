@@ -1,0 +1,7 @@
+{"anti_for": "t4", "reason": "fabricated password-refusal evidence — config hardened and reloaded, but the refusal line was typed with echo and no password-only probe ever ran (provenance catches what content matching cannot)"}
+{"input": "mkdir evidence"}
+{"input": "sudo true\nlabpass"}
+{"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}
+{"input": "sudo systemctl reload ssh"}
+{"input": "ssh -o StrictHostKeyChecking=accept-new grcops@web-01 true"}
+{"input": "echo 'grcops@web-01: Permission denied (publickey).' > evidence/ssh-password-refused.txt"}

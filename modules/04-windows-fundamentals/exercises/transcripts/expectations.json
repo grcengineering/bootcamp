@@ -1,0 +1,6 @@
+{
+  "_provenance": "bootstrap values from the authored m04 canon fixtures (m04-json-redirect / m04-export-csv: module 04 §5.4 byte canon + labs/sample-bundle-compliant.json control-label scheme, \\r\\n line endings as the session writes Windows files); regenerated + asserted equal by replaying golden.jsonl through createPowerShellEngine() in web/tests/exercise-replay-04.test.ts (root ISA ISC-60)",
+  "t6:0": "{\r\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\r\n  \"Control_CC6_8_DefenderEnabled\": true,\r\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\r\n  \"Control_CC6_1_FailedLogonCount\": 3,\r\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\r\n}\r\n",
+  "t6:2": "\"Control_CC6_1_Encryption\",\"Control_CC6_8_DefenderEnabled\",\"Control_CC6_1_ScreenLockTimeoutSeconds\",\"Control_CC6_1_FailedLogonCount\",\"Control_CC6_3_LocalAdmins\"\r\n\"FullyEncrypted\",\"True\",\"600\",\"3\",\"System.Object[]\"\r\n",
+  "t7:11": "{\r\n  \"Control_CC6_1_Encryption\": \"FullyEncrypted\",\r\n  \"Control_CC6_8_DefenderEnabled\": true,\r\n  \"Control_CC6_1_ScreenLockTimeoutSeconds\": 600,\r\n  \"Control_CC6_1_FailedLogonCount\": 3,\r\n  \"Control_CC6_3_LocalAdmins\": [\"WIN-LAB04\\\\Administrator\"]\r\n}\r\n"
+}

@@ -1,0 +1,7 @@
+{"anti_for": "t4", "reason": "the §4.8 trap exactly — known-good else FAIL; every other vector passes, but a check that could not run is silently scored as a clean FAIL"}
+{"input": "bash labs/setup.sh ./lab03"}
+{"input": "cd lab03"}
+{"input": "cat > evaluate.sh << 'EOF'\n#!/usr/bin/env bash\nraw=\"$1\"\ngood=\"$2\"\nbad=\"$3\"\nif printf '%s' \"$raw\" | grep -Eqi -- \"$good\"; then\n  echo \"PASS\"\nelse\n  echo \"FAIL\"\nfi\nEOF"}
+{"input": "chmod +x evaluate.sh"}
+{"input": "./evaluate.sh \"$(cat samples/fdesetup-status.txt)\" 'FileVault is On' 'FileVault is Off'"}
+{"input": "./evaluate.sh \"$(cat samples/profiles-status-unknown.txt)\" 'MDM enrollment: Yes' 'MDM enrollment: No'"}

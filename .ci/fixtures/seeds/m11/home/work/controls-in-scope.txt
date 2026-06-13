@@ -1,0 +1,9 @@
+# The controls the team actually RUNS (Module 11 lab fixture).
+# One control identifier per line. These are the RIGHT column — every control here costs real
+# effort to operate, so every one must earn its place by mapping to a prioritized threat (§4.4).
+# The validator asserts that each in-scope control appears on at least one coverage-map line to a
+# prioritized threat; a control here that maps to nothing is the ZERO-THREAT defect (§4.4/§4.5).
+CTRL-MFA-01
+CTRL-ACCESS-REVIEW-02
+CTRL-BUCKET-ENC-03
+CTRL-DLP-AGENT-04

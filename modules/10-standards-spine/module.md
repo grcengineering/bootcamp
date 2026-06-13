@@ -154,6 +154,8 @@ Exit code `1`, one orphan named, no human reading required to know the crosswalk
 
 **Scenario.** Your team is consolidating five framework obligations onto one internal spine. You will hand-author a crosswalk that maps four profile requirements onto NIST 800-53 spine controls, label every line honestly, deliberately plant one orphan, then run a validator that refuses to bless the crosswalk until the orphan is resolved — producing a verified artifact the team owns.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 10 → Interactive lab) in a crosswalk workspace whose Run-validator button executes the same logic as `validate-crosswalk.ts`, CI-verified byte-for-byte against real runs of the committed validator — the same crosswalk on a real machine gets the same verdict.
+
 **Setup.** From this module's `labs/` directory, run `bash setup.sh ./work` to generate the starter fixtures: a `spine-families.txt` (the twenty valid 800-53 family abbreviations) and a `crosswalk.csv` seeded with a header and a few example rows including one intentional orphan.
 
 **Tasks.**

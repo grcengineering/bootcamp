@@ -1,0 +1,39 @@
+{"input": "pwd"}
+{"input": "bash labs/setup.sh ./lab09"}
+{"input": "cd lab09"}
+{"input": "ls"}
+{"input": "cat access-clean.csv"}
+{"input": "cat access-violation.csv"}
+{"input": "cat > my-policy.cedar << 'EOF'\nforbid(\n  principal,\n  action == Action::\"grantRole\",\n  resource\n)\nwhen { resource.role == \"legacy-admin\" };\nEOF"}
+{"input": "cat my-policy.cedar"}
+{"input": "cat > my-policy.rego << 'EOF'\npackage access\n\nimport rego.v1\n\ndeny contains msg if {\n    input.action == \"grantRole\"\n    input.resource.role == \"legacy-admin\"\n    msg := \"granting the legacy-admin role is forbidden\"\n}\nEOF"}
+{"input": "cat my-policy.rego"}
+{"input": "cat > my-check.sh << 'EOF'\n#!/usr/bin/env bash\n# my-check.sh \u2014 the verdict-function: decision = policy(input).\n# Denies a row only when BOTH the action is grantRole AND the role is legacy-admin.\nINPUT=\"${1:-}\"\nif [ -z \"$INPUT\" ]; then\n  echo \"usage: my-check.sh <access-export.csv>\" >&2\n  exit 2\nfi\nif [ ! -f \"$INPUT\" ]; then\n  echo \"ERROR: access export not found: $INPUT\" >&2\n  exit 2\nfi\nawk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' \"$INPUT\"\nCOUNT=$(grep -c ',grantRole,legacy-admin$' \"$INPUT\")\nif [ \"$COUNT\" -gt 0 ]; then\n  echo \"RESULT  control=AC-6-legacy-admin  decision=deny  violations=$COUNT\"\n  exit 1\nfi\necho \"RESULT  control=AC-6-legacy-admin  decision=allow  violations=0\"\nexit 0\nEOF"}
+{"input": "chmod +x my-check.sh"}
+{"input": "./my-check.sh access-violation.csv"}
+{"input": "echo $?"}
+{"input": "./my-check.sh access-violation.csv > check-violation.out"}
+{"input": "cat check-violation.out"}
+{"input": "./my-check.sh access-clean.csv"}
+{"input": "echo $?"}
+{"input": "./my-check.sh access-violation.csv"}
+{"input": "echo $?"}
+{"input": "cat > my-gate.sh << 'EOF'\n#!/usr/bin/env bash\n# my-gate.sh \u2014 the CI gate: run the verdict-function, then write one evidence\n# record on EVERY run, and exit with the verdict so the pipeline blocks on deny.\nINPUT=\"${1:-}\"\nSTORE=\"${2:-}\"\nif [ -z \"$INPUT\" ]; then\n  echo \"usage: my-gate.sh <access-export.csv> <evidence-store-dir>\" >&2\n  exit 2\nfi\nif [ -z \"$STORE\" ]; then\n  echo \"usage: my-gate.sh <access-export.csv> <evidence-store-dir>\" >&2\n  exit 2\nfi\nmkdir -p \"$STORE\"\nRUN_ID=\"${CI_RUN_ID:-ci-local}\"\nNOW=\"$GATE_FAKE_TIME\"\nif [ -z \"$NOW\" ]; then\n  NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)\nfi\necho \"EVAL  control=AC-6-legacy-admin engine=cedar input=$INPUT\"\n./my-check.sh \"$INPUT\"\nCODE=$?\nif [ \"$CODE\" -eq 0 ]; then\n  DECISION=\"allow\"\n  PASSED=\"true\"\n  GATE=\"PASS\"\nelse\n  DECISION=\"deny\"\n  PASSED=\"false\"\n  GATE=\"FAIL\"\nfi\nCOUNT=$(grep -c ',grantRole,legacy-admin$' \"$INPUT\")\nSTAMP=$(echo \"$NOW\" | tr -d 'TZ:-')\nRECORD=\"$STORE/AC-6-legacy-admin-$RUN_ID-$STAMP.json\"\necho \"{\\\"control_id\\\": \\\"AC-6-legacy-admin\\\", \\\"policy_engine\\\": \\\"cedar\\\", \\\"decision\\\": \\\"$DECISION\\\", \\\"passed\\\": $PASSED, \\\"violations\\\": $COUNT, \\\"input_ref\\\": \\\"$INPUT\\\", \\\"evaluated_at\\\": \\\"$NOW\\\", \\\"run\\\": \\\"$RUN_ID\\\"}\" > \"$RECORD\"\necho \"EVIDENCE  wrote $RECORD\"\necho \"GATE  result=$GATE  (violations=$COUNT)  exit=$CODE\"\nexit \"$CODE\"\nEOF"}
+{"input": "chmod +x my-gate.sh"}
+{"input": "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"}
+{"input": "echo $?"}
+{"input": "cat evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"}
+{"input": "GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 ./my-gate.sh access-clean.csv evidence-store"}
+{"input": "echo $?"}
+{"input": "ls evidence-store"}
+{"input": "cat evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json"}
+{"input": "grep -v ',grantRole,legacy-admin$' access-violation.csv > access-tampered.csv"}
+{"input": "echo '4,carol,revokeRole,legacy-admin' >> access-tampered.csv"}
+{"input": "cat access-tampered.csv"}
+{"input": "GATE_FAKE_TIME=2026-05-28T18:00:00Z CI_RUN_ID=ci-tamper ./my-gate.sh access-tampered.csv evidence-store"}
+{"input": "echo $?"}
+{"input": "cp access-clean.csv access-injected.csv"}
+{"input": "echo '5,frank,grantRole,legacy-admin' >> access-injected.csv"}
+{"input": "GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject ./my-gate.sh access-injected.csv evidence-store"}
+{"input": "echo $?"}
+{"input": "cat rotted-policy.txt"}

@@ -1,0 +1,25 @@
+CONTROL: VR-3 — vendor risk acceptances must be re-justified when the vendor's
+risk tier changes.
+
+ENCODED (Rego, authored ~1 year ago, has passed every run since):
+
+  package vendor
+  import rego.v1
+
+  deny contains msg if {
+      not input.risk_acceptance.last_reviewed
+      msg := "risk acceptance is missing a last_reviewed date"
+  }
+
+OWNER: (none recorded)
+REVIEW CADENCE: (none recorded)
+
+NOTE FROM THE TICKETING SYSTEM: the `last_reviewed` field is auto-stamped with
+the current date on ANY edit to the risk-acceptance ticket — a comment, a label
+change, an attachment. No human risk decision is required for the field to be set.
+
+This is the policy-rot fixture for the §6 task-6 drill. The rule is green on every
+run, but it checks only that a date EXISTS, never that a human re-evaluated the
+risk. With no owner and no cadence, the verdict drifted from the control's intent
+while staying green. Diagnose it, name the ownership gap, state the fix — then
+decide (task 7) whether this control should have been policy-as-code at all.

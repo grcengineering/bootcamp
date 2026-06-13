@@ -1,0 +1,41 @@
+{
+  "id": "m09-mycheck-usage",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09s",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cp my-check.sh lab09/my-check.sh",
+    "cp my-gate.sh lab09/my-gate.sh",
+    "cd lab09",
+    "chmod +x my-check.sh my-gate.sh"
+  ],
+  "cmd": "./my-check.sh",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "usage line to stderr + exit 2 — usage errors are a third verdict, distinct from pass(0)/fail(1), mirroring the committed reference check.sh contract.\n",
+  "stdout": "",
+  "stderr": "usage: my-check.sh <access-export.csv>\n",
+  "exit": 2,
+  "stderr_interactive": "usage: my-check.sh <access-export.csv>\n",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "2\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:40.379Z",
+    "captured_with": "capture.ts v1"
+  }
+}

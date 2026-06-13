@@ -1,0 +1,14 @@
+# Sample INCOMPLETE capstone manifest (committed fixture, negative-case).
+# MONITOR is missing from loop_coverage and there is no before_after pointer.
+# The validator MUST reject this (name the gaps, exit non-zero) — proving the
+# coverage gate actually gates, instead of rubber-stamping. This is the §5.4
+# "weak capstone" failure mode made machine-detectable.
+control: "S3 buckets block public access (SOC 2 CC6.1)"
+owner: "a.engineer@example.com"
+loop_coverage:
+  UNDERSTAND: control-statement.md
+  LOCATE:     control-statement.md
+  QUERY:      collect.sh
+  EVALUATE:   policy/public_access.rego
+  EVIDENCE:   evidence/
+  OWN:        README.md

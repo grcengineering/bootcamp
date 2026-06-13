@@ -1,0 +1,266 @@
+id: lab-04
+module: 04-windows-fundamentals
+title: Evidence from the responsible subsystems
+owner: Justin Pagano
+volatility: B
+review_due: 2026-11-28
+engine: powershell
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m04
+  home: C:\Users\labuser
+  files: []
+  path_tools: []
+
+intro: |
+  You are handed one Windows endpoint — WIN-LAB04 — and asked to produce a single
+  machine-readable evidence bundle an auditor can read against SOC 2 CC6: disk
+  encryption, endpoint-protection posture, the effective screen-lock setting, recent
+  failed sign-ins, and who holds local administrator rights. Then make the whole thing
+  re-runnable, so the same machine can be re-evidenced next quarter and compared.
+  This console is a simulated Windows PowerShell 5.1 session. No real PowerShell engine
+  exists for the browser, so every output here is produced by an object pipeline that
+  follows PowerShell's documented formatting rules and this module's own committed lab
+  fixtures — and where the simulation has a boundary, it says so in plain text instead
+  of pretending to be Windows.
+
+walkthrough_first_input: Get-BitLockerVolume
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Ask the subsystem that owns the encryption claim. Run `Get-BitLockerVolume` bare
+      and look at what comes back — an object with named properties, not a paragraph.
+      Then ask precisely: `Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint,
+      VolumeStatus`. Write down, in words, which subsystem owns the claim and which
+      property decides it.
+    verify:
+      - check: history_contains
+        regex: "^Get-BitLockerVolume$"
+      - check: history_contains
+        regex: "Get-BitLockerVolume -MountPoint C: ?\\| ?Select-Object MountPoint, ?VolumeStatus"
+    hints:
+      - nudge: "On Windows you never go looking for a file — you ask the responsible subsystem. BitLocker owns this claim; `Select-Object` keeps only the properties the control cares about."
+      - concept: "§4.2 — BitLocker owns the encryption claim; `VolumeStatus` decides it"
+      - reveal: "Get-BitLockerVolume, then: Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus"
+    explain: |
+      `VolumeStatus = FullyEncrypted` is the pass condition, and it arrived as a typed
+      property — you selected it by name, you didn't parse text. This is the same
+      laptop-encryption claim this curriculum keeps re-asking; here the operating
+      system's own subsystem answered it directly.
+
+  - id: t2
+    type: action
+    objective: [3, 4]
+    instruction: |
+      One query, the whole endpoint-protection posture: run `Get-MpComputerStatus |
+      Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge`.
+      Note which property proves "enabled" and which proves "current" — installed,
+      enabled, and current are three different facts.
+    verify:
+      - check: history_contains
+        regex: "Get-MpComputerStatus ?\\| ?Select-Object AntivirusEnabled, ?RealTimeProtectionEnabled, ?AntivirusSignatureAge"
+    hints:
+      - nudge: "Defender hands back ONE status object carrying the whole posture. Pick the three properties that prove the words 'on' and 'up to date' — presence proves neither."
+      - concept: "§4.3 — installed is not enabled, and enabled is not current"
+      - reveal: "Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge"
+    explain: |
+      A control that only checked installation would pass a machine whose protection was
+      switched off in January. You evidenced the behavioral properties — enabled and
+      current — which is what makes this reading mean something to an auditor.
+
+  - id: t3
+    type: action
+    objective: [3, 5]
+    instruction: |
+      Read the EFFECTIVE screen-lock timeout straight from the registry:
+      `(Get-ItemProperty 'HKCU:\Control Panel\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut`.
+      Then ask the policy engine what was INTENDED — run `gpresult` bare first and read
+      its complaint, then run `gpresult /R`. One of those two results is a collection
+      error and one is evidence; note the difference, and why your bundle must cite the
+      effective value rather than the intended one.
+    verify:
+      - check: history_contains
+        regex: "Get-ItemProperty 'HKCU:\\\\Control Panel\\\\Desktop' -Name ScreenSaveTimeOut\\)\\.ScreenSaveTimeOut"
+      - check: history_contains
+        regex: "^gpresult$"
+      - check: history_contains
+        regex: "^gpresult /R$"
+    hints:
+      - nudge: "The registry holds what the machine is actually doing; the policy tool reports what it was told to do. gpresult refuses to run without a scope — its error text tells you which switch the report needs."
+      - concept: "§4.4 — what was intended (policy) is not always what is effective (the registry value in force)"
+      - reveal: "(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut · gpresult · gpresult /R"
+    explain: |
+      `ERROR: Invalid syntax.` was a collection error — your question was malformed; the
+      machine was never non-compliant. That distinction is rubric material. The registry
+      said 600 seconds is in force (effective); the RSoP report shows the screen-lock
+      policy that was applied (intended). Defensible evidence cites what the endpoint is
+      actually doing.
+
+  - id: t4
+    type: action
+    objective: [3, 4]
+    instruction: |
+      Pull the recent failed sign-ins from the Security event log: `Get-WinEvent
+      -FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 | Select-Object
+      TimeCreated, Id`. Then count them mechanically with
+      `(Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count`.
+    verify:
+      - check: history_contains
+        regex: "Get-WinEvent -FilterHashtable @\\{ ?LogName='Security'; ?Id=4625 ?\\} -MaxEvents 20"
+      - check: history_contains
+        regex: "\\(Get-WinEvent .*\\)\\.Count"
+    hints:
+      - nudge: "Failed sign-ins are structured records under one well-known event ID. The filter is a hashtable — log name plus ID — and `.Count` on the parenthesized query counts what came back."
+      - concept: "§4.5 — the log is structured data you query; records arrive as objects, so you filter by Id and read TimeCreated"
+      - reveal: "Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 | Select-Object TimeCreated, Id, then: (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count"
+    explain: |
+      Three failures in thirteen seconds reads very differently from three across three
+      days — and because the records are typed objects, your collector simply records
+      the count. Whether 3 crosses a threshold is the EVALUATE stage's judgment, not the
+      collector's.
+
+  - id: t5
+    type: action
+    objective: [3, 5]
+    instruction: |
+      Read the standing-privilege claim from the local account database: run
+      `Get-LocalGroupMember -Group Administrators`, then select just the names with
+      `(Get-LocalGroupMember -Group Administrators).Name`. Note why faithfully recording
+      this membership is LOCATE/QUERY work, and why deciding "is this membership
+      correct?" belongs to a different loop stage.
+    verify:
+      - check: history_contains
+        regex: "^Get-LocalGroupMember -Group Administrators$"
+      - check: history_contains
+        regex: "\\(Get-LocalGroupMember -Group Administrators\\)\\.Name"
+    hints:
+      - nudge: "The local account database owns this claim. The bare command shows the member objects; member access on the parenthesized query keeps just the property the bundle needs."
+      - concept: "§4.6 — the endpoint can only tell you who is in the group; judging the membership against an approved list is EVALUATE"
+      - reveal: "Get-LocalGroupMember -Group Administrators, then: (Get-LocalGroupMember -Group Administrators).Name"
+    explain: |
+      The endpoint told you who holds local-admin rights — that is everything it CAN
+      tell you. Whether that membership is correct requires an approved list the machine
+      doesn't have, which is exactly why collection and evaluation are different loop
+      stages with different owners.
+
+  - id: t6
+    type: action
+    objective: [4, 6]
+    instruction: |
+      Assemble the readings into one `[pscustomobject]` whose field names map to SOC 2
+      CC6 controls, and export it two ways: pipe it to `ConvertTo-Json > bundle.json`,
+      then build the same object again and pipe it to `Export-Csv bundle.csv
+      -NoTypeInformation`. Read both files back with `Get-Content` to confirm they hold
+      your readings — and look closely at the CSV's LocalAdmins cell.
+    verify:
+      - check: file_content_equals
+        path: bundle.json
+        from: generated
+      - check: artifact_produced_by
+        path: bundle.json
+        min_pipes: 1
+        required_commands: [ConvertTo-Json]
+      - check: file_content_equals
+        path: bundle.csv
+        from: generated
+      - check: artifact_produced_by
+        path: bundle.csv
+        min_pipes: 1
+        required_commands: [Export-Csv]
+      - check: history_contains
+        regex: "Get-Content bundle\\.json"
+      - check: history_contains
+        regex: "Get-Content bundle\\.csv"
+    hints:
+      - nudge: "Each hashtable entry is ControlLabel = (Get-Subsystem).Property — the five readings you already made, wrapped in [pscustomobject]@{ } and piped to an exporter. The evidence must be PRODUCED by the pipeline, not typed in by hand."
+      - concept: "§5.4 — shaping selected properties into a labeled, control-mapped record"
+      - reveal: "[pscustomobject]@{ Control_CC6_1_Encryption = (Get-BitLockerVolume -MountPoint C:).VolumeStatus; Control_CC6_8_DefenderEnabled = (Get-MpComputerStatus).AntivirusEnabled; Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut; Control_CC6_1_FailedLogonCount = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count; Control_CC6_3_LocalAdmins = (Get-LocalGroupMember -Group Administrators).Name } | ConvertTo-Json > bundle.json — then the same object | Export-Csv bundle.csv -NoTypeInformation, then Get-Content bundle.json and Get-Content bundle.csv"
+    explain: |
+      Every field is named for the control it evidences, and every value came from a
+      `Get-` query — the bundle is a record an auditor can read without knowing
+      PowerShell. The CSV's `System.Object[]` cell is real Export-Csv behavior: a CSV
+      cell is flat text, so the admin LIST survived only in the JSON. That wrinkle is
+      why the bundle ships in both shapes.
+
+  - id: t7
+    type: action
+    objective: [5, 6, 7]
+    instruction: |
+      Make it re-runnable: open the editor with `notepad Collect-EndpointCompliance.ps1`
+      and put your sequence in it — a comment naming what it is, your two export
+      pipelines from t6, and a final `Get-Content bundle.json` so each run prints the
+      bundle it produced. Every command must be a read-only `Get-` (a collector that
+      mutates is an intervention, not evidence). Save, exit, and run
+      `.\Collect-EndpointCompliance.ps1` twice. The checker will also re-run your script
+      in two clean, clock-perturbed sessions and compare the evidence. Then write down
+      one control this endpoint script structurally cannot prove, and which cloud
+      subsystem owns it.
+    verify:
+      - check: file_exists
+        path: Collect-EndpointCompliance.ps1
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Get-BitLockerVolume"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Get-MpComputerStatus"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Get-ItemProperty 'HKCU:\\\\Control Panel\\\\Desktop' -Name ScreenSaveTimeOut"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Get-WinEvent"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Get-LocalGroupMember"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "ConvertTo-Json"
+      - check: file_content_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "Export-Csv"
+      - check: file_not_matches
+        path: Collect-EndpointCompliance.ps1
+        regex: "\\b([Ss]et|[Nn]ew|[Rr]emove|[Ee]nable|[Dd]isable|[Ss]top|[Ss]tart|[Aa]dd|[Cc]lear|[Rr]ename|[Rr]estart)-[A-Za-z]"
+      - check: history_contains
+        regex: "^\\.\\\\Collect-EndpointCompliance\\.ps1$"
+      - check: script_reproducible
+        path: Collect-EndpointCompliance.ps1
+      - check: file_content_equals
+        path: bundle.json
+        from: generated
+    hints:
+      - nudge: "A script is just the lines you already ran, saved. The editor opens with `notepad <file>`; the read-only rule means every command in it starts with Get- (gpresult and the exporters read and write files, they don't change the endpoint)."
+      - concept: "§4.8 — read-only by construction: a collector observes and changes nothing, which is what makes its output trustworthy as evidence"
+      - reveal: "notepad Collect-EndpointCompliance.ps1 — paste a # comment, your t6 ConvertTo-Json > bundle.json pipeline, your t6 Export-Csv bundle.csv -NoTypeInformation pipeline, and Get-Content bundle.json — save with Ctrl+O, exit with Ctrl+X, then run .\\Collect-EndpointCompliance.ps1 twice"
+    explain: |
+      Identical evidence twice, from clean sessions with different clocks — that is the
+      difference between "we verified this once" and "we can re-evidence this machine
+      next quarter and diff the bundles." And the bundle stays honest about its
+      boundary: MFA enforcement, sign-in location blocking, device-compliance gating —
+      those decisions happen in Entra ID conditional access at sign-in time, and their
+      evidence lives in the cloud's logs (Module 06 reaches it by API). An endpoint
+      script that claimed to prove them would be lying.
+
+  - id: t8
+    type: reflection
+    objective: [1, 2, 7]
+    instruction: |
+      In 5–7 sentences, as if to a colleague who has never opened PowerShell: which
+      subsystem owns each of the five control claims; why you selected properties
+      instead of parsing text (objects, not text streams); why effective beats intended
+      for the screen-lock; what the failed-logon count does and does not prove; why the
+      collector is built entirely from `Get-`; and the one control that belongs to
+      Entra ID, not the endpoint.
+    hints:
+      - nudge: "The §3 mental model: a claim is owned by a named subsystem; you ask it with a Get- command; the answer is an object whose properties you select; and some claims' truth never touches the endpoint at all."
+      - concept: "§3 — The Mental Model; §4.7 — drawing the AD/Entra ID seam honestly"
+
+completion:
+  evidence_pack: true

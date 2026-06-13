@@ -96,8 +96,12 @@ if (existsSync(TRACKS)) {
 // so the Lab Player renders pure data — the app never hardcodes exercise content.
 // ---------------------------------------------------------------------------
 import { ExerciseSpecSchema, findBannedKeys } from "../src/lib/exercise-spec";
+import { buildM02Seed } from "../src/engines/linuxadmin";
 
-interface SeedFileOut { path: string; content?: string; dir?: boolean; mode?: number }
+interface SeedFileOut {
+  path: string; content?: string; dir?: boolean; mode?: number;
+  owner?: string; group?: string; mtimeMs?: number;
+}
 interface SeedSpecOut { files: SeedFileOut[]; tools: Record<string, string> }
 
 function walkSeedHome(homeDir: string): SeedFileOut[] {
@@ -160,23 +164,64 @@ for (const id of readdirSync(MODULES).sort()) {
     console.error(`sync-content: FAIL — ${id} names seed profile '${spec.seed.profile}' not in .ci/fixtures/manifest.yaml`);
     process.exit(1);
   }
-  const files = seedDef.home ? walkSeedHome(join(FIXTURES, seedDef.home)) : [];
-  for (const ref of spec.seed.files) {
-    const src = join(MODULES, id, "exercises", ref.from);
-    if (!existsSync(src)) {
-      console.error(`sync-content: FAIL — ${id} seed file ref '${ref.from}' not found`);
+  // Booted admin profile (module 02): the bundle ships the FULL web-01 machine seed —
+  // root-owned /etc files, the ssh unit, the apt DB, the scenario keypair — assembled by
+  // the engine's own builder (buildM02Seed), the exact construction the fidelity + replay
+  // suites use (one world for capture, tests, and the browser). The session must then be
+  // created with `adminLab` for the booted command family; emitted on the bundle below.
+  let adminLab: { password: string } | undefined;
+  let host: string | undefined;
+  let seed: SeedSpecOut;
+  if (seedDef.system && seedDef.apply) {
+    const profileDir = join(FIXTURES, "seeds", spec.seed.profile);
+    const sd = (rel: string) => readFileSync(join(profileDir, rel), "utf8");
+    const built = buildM02Seed({
+      etcPasswd: sd("system/etc/passwd"),
+      etcGroup: sd("system/etc/group"),
+      etcHostname: sd("system/etc/hostname"),
+      sshdConfig: sd("system/etc/ssh/sshd_config"),
+      sshServiceUnit: sd("system/usr/lib/systemd/system/ssh.service"),
+      skel: {
+        ".bashrc": sd("system/etc/skel/.bashrc"),
+        ".profile": sd("system/etc/skel/.profile"),
+        ".bash_logout": sd("system/etc/skel/.bash_logout"),
+      },
+      aptInstalled: sd("system/var/apt-installed.txt"),
+      idEd25519: sd("home/.ssh/id_ed25519"),
+      idEd25519Pub: sd("home/.ssh/id_ed25519.pub"),
+      authorizedKeys: sd("home/.ssh/authorized_keys"),
+      debPlaceholder: sd("home/evidence-collector_1.0.0_all.deb"),
+      labSetupTool: sd("bin/lab-setup"),
+    });
+    seed = {
+      files: built.files as SeedFileOut[],
+      tools: {
+        ...built.tools,
+        ...(seedDef.path_bin ? readSeedTools(join(FIXTURES, seedDef.path_bin), spec.seed.path_tools) : {}),
+      },
+    };
+    const contract = manifest?.meta?.contracts?.["docker-linux-booted"];
+    adminLab = { password: String(contract?.password ?? "labpass") };
+    host = sd("system/etc/hostname").trim();
+  } else {
+    const files = seedDef.home ? walkSeedHome(join(FIXTURES, seedDef.home)) : [];
+    for (const ref of spec.seed.files) {
+      const src = join(MODULES, id, "exercises", ref.from);
+      if (!existsSync(src)) {
+        console.error(`sync-content: FAIL — ${id} seed file ref '${ref.from}' not found`);
+        process.exit(1);
+      }
+      files.push({ path: ref.path, content: readFileSync(src, "utf8") });
+    }
+    if (spec.seed.path_tools.length > 0 && !seedDef.path_bin) {
+      console.error(`sync-content: FAIL — ${id} names path_tools but seed profile '${spec.seed.profile}' has no path_bin`);
       process.exit(1);
     }
-    files.push({ path: ref.path, content: readFileSync(src, "utf8") });
+    seed = {
+      files,
+      tools: seedDef.path_bin ? readSeedTools(join(FIXTURES, seedDef.path_bin), spec.seed.path_tools) : {},
+    };
   }
-  if (spec.seed.path_tools.length > 0 && !seedDef.path_bin) {
-    console.error(`sync-content: FAIL — ${id} names path_tools but seed profile '${spec.seed.profile}' has no path_bin`);
-    process.exit(1);
-  }
-  const seed: SeedSpecOut = {
-    files,
-    tools: seedDef.path_bin ? readSeedTools(join(FIXTURES, seedDef.path_bin), spec.seed.path_tools) : {},
-  };
 
   // PowerShell engine seed (web ISA ISC-63): the manifest profile's typed object stores,
   // with the authored gpresult report file resolved — same loader rule the m04 fidelity
@@ -214,7 +259,11 @@ for (const id of readdirSync(MODULES).sort()) {
   writeFileSync(
     join(OUT_LABS, `${id}.json`),
     JSON.stringify(
-      { spec, seed, expectations, epoch: bundleEpoch, ...(windowsSeed !== undefined ? { windowsSeed } : {}) },
+      {
+        spec, seed, expectations, epoch: bundleEpoch,
+        ...(windowsSeed !== undefined ? { windowsSeed } : {}),
+        ...(adminLab !== undefined ? { adminLab, host } : {}),
+      },
       null,
       2,
     ),

@@ -1,0 +1,37 @@
+{
+  "id": "m07-evidence-verdict-file",
+  "module": "07",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m07",
+  "cwd": "/home/analyst/lab07",
+  "pre": [
+    "bash labs/setup.sh"
+  ],
+  "cmd": "grep '\"resourceId\": \"audit-logs\"' fixtures/posture-findings.json > encryption-verdict.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": null,
+  "stdout": "",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "cat encryption-verdict.json",
+      "stdout": "  { \"resourceId\": \"audit-logs\",  \"control\": \"encryption\", \"status\": \"PASS\" },\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:58:26.207Z",
+    "captured_with": "capture.ts v1"
+  }
+}

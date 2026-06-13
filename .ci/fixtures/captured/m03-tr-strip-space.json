@@ -1,0 +1,23 @@
+{
+  "id": "m03-tr-strip-space",
+  "module": "03",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [],
+  "cmd": "printf ' error:  not\\tpermitted ' | tr -d '[:space:]'",
+  "citation": null,
+  "notes": "the evaluator's emptiness probe (§4.8) — tr -d '[:space:]' collapses whitespace-only raw output to nothing so test -z can flag a check that did not run (macos capture has no post support, so the probe with visible remainder is the cmd itself)\n",
+  "holes": null,
+  "stdout": "error:notpermitted",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:03:43.219Z",
+    "captured_with": "capture.ts v1"
+  }
+}

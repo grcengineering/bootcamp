@@ -1,0 +1,37 @@
+{
+  "id": "m13-evaluate-empty",
+  "module": "13",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m13",
+  "cwd": "/home/analyst",
+  "pre": [
+    "source ccm-lab/ccm-check.sh"
+  ],
+  "cmd": "evaluate_control labs/fixtures/state-empty.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "Fail closed (§6 setup, exercise lab-13 t7): zero resources evaluated → ERROR complaint on stderr, FAIL reason=no-resources-evaluated on stdout, exit 2 — a monitor must refuse to emit a green verdict it cannot justify.\n",
+  "stdout": "FAIL control=CC6.1-s3-public-access-block evaluated=0 noncompliant=0 reason=no-resources-evaluated\n",
+  "stderr": "ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\n",
+  "exit": 2,
+  "stderr_interactive": "ERROR control=CC6.1-s3-public-access-block evaluated=0 — refusing to pass: zero resources evaluated (empty, unparsed, or wrong-shape snapshot)\n",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "2\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:23:39.166Z",
+    "captured_with": "capture.ts v1"
+  }
+}

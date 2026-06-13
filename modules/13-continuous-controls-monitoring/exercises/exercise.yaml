@@ -1,0 +1,217 @@
+id: lab-13
+module: 13-continuous-controls-monitoring
+title: The control that checks itself
+owner: Justin Pagano
+volatility: A
+review_due: 2027-05-28
+engine: builder
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m13
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+builder:
+  surface: ccm
+  ccm:
+    state_file: labs/fixtures/state-compliant.json
+    start: "2026-05-20T09:00:00Z"
+    drift_bucket: acme-public-website
+    interval_hours_options: [24]
+
+intro: |
+  You own one control: every S3 bucket has all four public-access-block flags enabled.
+  This surface is the §6 lab's five-part loop already wired to a scheduler — the thing
+  the real lab's optional task 8 needs a cloud account for. Every scheduled run executes
+  this module's own check library (`ccm-check.sh`, the exact code `labs/setup.sh`
+  generates), ported and CI-verified byte-for-byte against real `bash` runs — the
+  verdicts, evidence records, ledger rows, and alert files are earned from your current
+  simulated cloud state, never scripted. Honesty notes: one tick = 24 hours of schedule
+  (a declared time compression, so a month of monitoring fits in a sitting), and the
+  dashboard tile you watch is a query over the append-only ledger, recomputed every run.
+  On a real machine, §6 walks the same loop by hand: `source ./ccm-lab/ccm-check.sh`,
+  then `evaluate_control` and `emit_evidence` against the committed state fixtures.
+  One more thread to notice: this loop is claim-agnostic. Swap part one for module 00's
+  laptop-encryption claim and part two for the check you scripted in module 01, and
+  nothing else changes — this module is where that check stops being a thing you run
+  and becomes a thing that runs.
+
+tasks:
+  - id: t1
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Run the first scheduled check against the seeded compliant snapshot: press
+      **Run next scheduled check** once. Read the run line it prints —
+      `2026-05-20T09:00:00Z run-20260520090000 rc=0` — and notice which part of it is
+      for you and which is for the machine. `rc` is the check's exit code: zero means
+      the control holds, and it is the only part of the output the rest of the loop
+      branches on.
+    verify:
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^2026-05-20T09:00:00Z run-20260520090000 rc=0$"
+      - check: history_contains
+        regex: "^ccm:tick x1$"
+    hints:
+      - nudge: "One button. The scheduler captures the current state, evaluates the claim against it, and reports a verdict — the same capture-then-evaluate split you'd drive by hand with `evaluate_control`."
+      - concept: "§4.3 — the verdict: a PASS/FAIL line for humans, an exit code for machines"
+      - reveal: "Press “Run next scheduled check”. The run line reads `2026-05-20T09:00:00Z run-20260520090000 rc=0` — exit code 0, the control holds."
+    explain: |
+      That `rc=0` is module 01's `$?` wearing its production clothes. No human read any
+      output to produce the green tile — the scheduler branched on the exit code, wrote
+      the evidence record, appended the ledger row, and stayed silent. The exit code is
+      the hinge the entire loop turns on.
+
+  - id: t2
+    type: action
+    objective: [3, 4]
+    instruction: |
+      A monitor that only speaks when something breaks can never prove that nothing
+      did. Build that proof: press **Advance 30 days**. Each of those thirty scheduled
+      runs evaluated the real state, emitted a dated evidence record, and appended one
+      ledger row — and fired no alert. Watch the dashboard tile fill with an unbroken
+      green strip: that strip is the proof of the negative a point-in-time audit
+      structurally cannot produce.
+    verify:
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "rc=0$"
+      - check: history_contains
+        regex: "^ccm:tick x30$"
+    hints:
+      - nudge: "Time is the declared compression control here: one gesture is a month of schedule, and every tick in it is a genuine run of the check — not a painted-on green square."
+      - concept: "§4.4 — evidence on every run: proving the negative"
+      - reveal: "Press “Advance 30 days”. The latest run line still ends `rc=0`, no alert appears, and the tile's trend strip is solid green for the window."
+    explain: |
+      Thirty deliberately boring records are most of CCM's value. When an auditor asks
+      "show me the control held the entire period," the green rows are the answer — an
+      alert-only system that stays silent when healthy throws that proof away. Append-only
+      matters for the same reason: evidence you could rewrite proves nothing.
+
+  - id: t3
+    type: action
+    objective: [3, 5]
+    instruction: |
+      Mid-quarter, someone flips all four public-access-block flags off on
+      `acme-public-website` to debug a static site — and forgets to restore them. Be
+      that someone: press **Inject drift (acme-public-website)**, then
+      **Run next scheduled check**. The same check, unchanged, now answers `rc=1` —
+      and this run, unlike every green one before it, leaves an alert file behind,
+      named by the run that caught it.
+    verify:
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "rc=1 alert=ccm-lab/evidence/alert-run-[0-9]+\\.txt$"
+      - check: history_contains
+        regex: "^ccm:tick x1$"
+    hints:
+      - nudge: "Two presses: change reality first, then let the schedule discover it. The alert exists only because a scheduled run returned non-zero — silence is reserved for health."
+      - concept: "§4.7 — the drift alert: silence means healthy, noise means act"
+      - reveal: "Press “Inject drift (acme-public-website)”, then “Run next scheduled check”: the run line ends `rc=1 alert=ccm-lab/evidence/alert-run-<digits>.txt`."
+    explain: |
+      The alert file this run wrote carries exactly what §5.3 shows: the control id, the
+      captured_at timestamp, and `drifted_resource=acme-public-website` — what broke,
+      where, and when, with no console spelunking. The annual-audit version of this story
+      is an assessor finding the public bucket eleven months later; the loop's version is
+      a notification the morning after the change.
+
+  - id: t4
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Leave the drift exactly as it is and press **Advance a week**. Seven more
+      scheduled runs against the same drifted state: seven identical FAIL verdicts,
+      seven red intervals on the tile, and not one flap. The point of this week is what
+      does NOT change — a check that could answer differently against unchanged state
+      would turn the entire history store into noise.
+    verify:
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "rc=1 alert=ccm-lab/evidence/alert-run-[0-9]+\\.txt$"
+      - check: history_contains
+        regex: "^ccm:tick x7$"
+    hints:
+      - nudge: "Don't remediate yet. Determinism is a property you can only observe by re-running against held-still state — same snapshot in, same verdict out, every time."
+      - concept: "§4.2 — capture vs evaluation: deterministic, testable verdicts"
+      - reveal: "Press “Advance a week” with the drift still in place: the latest run line still ends `rc=1 alert=…` and the tile shows an unbroken run of red after the green month."
+    explain: |
+      Same captured state, same verdict — seven times. That determinism is what makes the
+      ledger trustworthy: a red row means reality drifted, never "the check was moody
+      today." When you cannot distinguish drift from flake, you do not have a monitor;
+      you have a random-number generator with a dashboard.
+
+  - id: t5
+    type: action
+    objective: [4, 5]
+    instruction: |
+      Close the loop the way a responder would: press **Remediate**, then
+      **Run next scheduled check**. The very next run returns `rc=0` and goes silent
+      again. Now read the dashboard tile as evidence: the current verdict is green, but
+      the trailing strip still shows the red gap — "green now" and "green the whole
+      window" are different claims, and the strip is what tells them apart.
+    verify:
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "rc=0$"
+      - check: history_contains
+        regex: "^ccm:tick x1$"
+    hints:
+      - nudge: "Reality changed back, so the next scheduled verdict follows it — the check evaluates state, not history. The red interval stays on the tile because the ledger is append-only."
+      - concept: "§4.6 — the dashboard tile: current state + 30-day history as a query"
+      - reveal: "Press “Remediate”, then “Run next scheduled check”: the run line ends `rc=0`, no new alert fires, and the tile shows a green current verdict above a strip that still contains the red week."
+    explain: |
+      The tile is not a status somebody updates — it is a query over the append-only
+      ledger, recomputed from the records. That is why the red week cannot be quietly
+      erased, and why this table is admissible when the §7 assessment (or a real audit)
+      asks for it. A bare status light would have shown only "green now" and hidden the
+      drift entirely.
+
+  - id: t6
+    type: reflection
+    objective: [1, 2]
+    instruction: |
+      In 4–6 sentences: state this lab's control as a binary claim — name the population,
+      the four observable flags by name, and the pass condition — then trace it through
+      the five loop parts exactly as you just drove them (check, evidence emission,
+      history store, dashboard tile, drift alert). Close with one sentence for the
+      colleague who believes an annual audit means they are compliant: snapshot versus
+      monitor, no jargon. Then name what you would change to monitor module 00's
+      laptop-encryption claim instead — and notice how little it is.
+    hints:
+      - nudge: "If your claim sentence can't be answered true-or-false by reading bucket flags, it isn't monitorable yet. And the loop swap question has a one-line answer: only part one (the claim) and the capture change."
+      - concept: "§3 — The Mental Model: stop treating a control check as an event"
+
+  - id: t7
+    type: reflection
+    objective: [5, 3]
+    instruction: |
+      The diagnosis, in writing: from the loop's own output alone — the failing run
+      line, the alert filename, and the tile — name the control, the drifted resource,
+      and the exact moment compliance was lost. Then the hardening question from this
+      lab's fixtures: `state-empty.json` evaluates zero resources and the check answers
+      `rc=2`, refusing to pass. Explain in two sentences why a monitor that green-lights
+      an empty snapshot is worse than no monitor at all.
+    hints:
+      - nudge: "The run id is the captured_at timestamp with the punctuation stripped — the moment is in the filename. For the empty case: what does a green verdict claim, and what did the check actually look at?"
+      - concept: "§4.1 + §6 setup — fail closed: never report a green verdict you cannot justify"
+
+  - id: t8
+    type: reflection
+    objective: [6]
+    instruction: |
+      The build-vs-buy memo, 5–7 sentences: for each of the five loop parts (control
+      claim, check/evaluation, evidence emission, history store + dashboard, drift
+      alert) plus the scheduler, state whether you would own or rent it and why. Close
+      by naming one vendor claim you would refuse to treat as evidence, and what you
+      would ask instead.
+    hints:
+      - nudge: "A useful default: own what encodes YOUR policy and YOUR evidence definitions; rent the undifferentiated heavy lifting. 'Category leader' and growth percentages are marketing — which of the five stages does the tool actually perform?"
+      - concept: "§4.8 — the schedule, and build-vs-buy as a stage-by-stage decision"
+
+completion:
+  evidence_pack: true

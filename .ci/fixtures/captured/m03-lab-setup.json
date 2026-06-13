@@ -1,0 +1,53 @@
+{
+  "id": "m03-lab-setup",
+  "module": "03",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m03",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "bash labs/setup.sh ./lab03",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "setup.sh is the module's own committed lab asset (seeded byte-identical); the echo line and all seven samples/ fixtures are the script's real output. The posts pin the canon strings the MDM seed tools and the authored entries must agree with, and the empty could-not-run gap fixture (0 bytes).\n",
+  "stdout": "lab03 fixtures written to ./lab03/samples/\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "cat lab03/samples/fdesetup-status.txt",
+      "stdout": "FileVault is On.\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat lab03/samples/profiles-status.txt",
+      "stdout": "Enrolled via DEP: Yes\nMDM enrollment: Yes (User Approved)\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat lab03/samples/system_profiler-profiles.txt",
+      "stdout": "Configuration Profiles:\n    ScreenLock Policy:\n        Payloads: com.apple.screensaver (askForPassword=1, idleTime=600)\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "wc -c lab03/samples/profiles-status-unknown.txt",
+      "stdout": "0 lab03/samples/profiles-status-unknown.txt\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:56:41.542Z",
+    "captured_with": "capture.ts v1"
+  }
+}

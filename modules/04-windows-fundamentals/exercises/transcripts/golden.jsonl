@@ -1,0 +1,17 @@
+{"input": "Get-BitLockerVolume"}
+{"input": "Get-BitLockerVolume -MountPoint C: | Select-Object MountPoint, VolumeStatus"}
+{"input": "Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureAge"}
+{"input": "(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut"}
+{"input": "gpresult"}
+{"input": "gpresult /R"}
+{"input": "Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=4625 } -MaxEvents 20 |\n        Select-Object TimeCreated, Id"}
+{"input": "(Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count"}
+{"input": "Get-LocalGroupMember -Group Administrators"}
+{"input": "(Get-LocalGroupMember -Group Administrators).Name"}
+{"input": "[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | ConvertTo-Json > bundle.json"}
+{"input": "[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | Export-Csv bundle.csv -NoTypeInformation"}
+{"input": "Get-Content bundle.json"}
+{"input": "Get-Content bundle.csv"}
+{"edit": {"path": "Collect-EndpointCompliance.ps1", "content": "# Module 04 endpoint compliance collector - read-only by construction (all Get-)\n[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | ConvertTo-Json > bundle.json\n[pscustomobject]@{\n  Control_CC6_1_Encryption              = (Get-BitLockerVolume -MountPoint C:).VolumeStatus\n  Control_CC6_8_DefenderEnabled         = (Get-MpComputerStatus).AntivirusEnabled\n  Control_CC6_1_ScreenLockTimeoutSeconds = (Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name ScreenSaveTimeOut).ScreenSaveTimeOut\n  Control_CC6_1_FailedLogonCount        = (Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625} -MaxEvents 20).Count\n  Control_CC6_3_LocalAdmins             = (Get-LocalGroupMember -Group Administrators).Name\n} | Export-Csv bundle.csv -NoTypeInformation\nGet-Content bundle.json\n"}}
+{"input": ".\\Collect-EndpointCompliance.ps1"}
+{"input": ".\\Collect-EndpointCompliance.ps1"}

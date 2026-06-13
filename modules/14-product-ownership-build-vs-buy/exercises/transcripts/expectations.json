@@ -1,0 +1,3 @@
+{
+  "_provenance": "lab-14 has no from:generated checks — the calculator's outputs are pinned as validator_passes stdout_matches literals because they are the REAL tool's deterministic bytes (LCG seed 42): fixture run mean=493516/tailValue=1133873 and the guided $5M stress edit mean=934417/tailValue=2240391, both byte-accepted against real `bun expected_loss.ts` runs (web/tests/fixtures/builder-captures.json m14 + the live cross-run in web/tests/exercise-replay-14.test.ts). The memo and scoring table are free-form learner artifacts gated structurally."
+}

@@ -1,0 +1,718 @@
+{
+  "spec": {
+    "id": "lab-06",
+    "module": "06-api-fundamentals",
+    "title": "Evidence from behind an endpoint",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-11-28",
+    "engine": "api",
+    "claim_thread": "laptop-encryption",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m06",
+      "home": "/home/analyst",
+      "files": [
+        {
+          "path": "~/lab06/vendor-docs.md",
+          "from": "assets/vendor-docs.md"
+        }
+      ],
+      "path_tools": [
+        "aggregate-mfa"
+      ]
+    },
+    "intro": "The truth of the control \"every workforce user has MFA enabled\" no longer sits in a\nfile you can ls — it sits behind a vendor's API. Your job: walk up to the counter,\nprove who you are, pull EVERY page of the answer, compute the metric, and keep\nevidence an auditor can re-run. This terminal is the lab's Linux box with one\naddition: curl is wired to the (fictional) vendor acme.example — its responses are\nthe lab's committed fixture bytes and its documented error shapes, never invented.\nThe vendor's API documentation is on the box as ~/lab06/vendor-docs.md. Two honest\nboundaries: bun and git are not installed here (exactly as the pinned lab container\nlacks them), so the module's aggregator runs as its PATH port `aggregate-mfa` —\nbyte-locked to the real `bun aggregate-mfa.ts` output — and the §6 Git step happens\non your real machine. The lab folder arrives exactly as `bash labs/setup.sh` writes it.\n",
+    "walkthrough_first_input": "pwd",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "LOCATE starts with the docs, not with code. Move into the lab (`cd lab06`),\nlook around (`ls`, `ls fixtures`), and read the vendor's API reference\n(`cat vendor-docs.md`). Find the five answers §4.7 says you need: auth rung,\nendpoint + truth field, pagination + stop signal, rate limit, error shape.\n",
+        "verify": [
+          {
+            "check": "cwd_is",
+            "path": "~/lab06"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cat vendor-docs\\.md$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ls( |$)"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Reading an unfamiliar vendor's docs and answering five questions fast IS the durable skill — the code is mechanics."
+          },
+          {
+            "concept": "§4.7 — reading vendor API docs is the actual skill"
+          },
+          {
+            "reveal": "cd lab06, then: ls · ls fixtures · cat vendor-docs.md"
+          }
+        ],
+        "explain": "You now know everything the pull needs before writing a line of it: OAuth2\nclient-credentials at /oauth/token, GET /api/v2/users with `mfa_enabled` as the\ntruth field, cursor pagination stopping at null, 600 req/min, and the\n{error, message} error shape. That five-line understanding IS the LOCATE stage.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Knock on the counter with no credentials and read the verdict BEFORE the payload:\n`curl -i acme.example/api/v2/users > unauth-response.txt`, then `cat` the file.\nThe status line is the clerk's answer; the body explains it.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/unauth-response.txt",
+            "regex": "^HTTP/1\\.1 401 Unauthorized"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/unauth-response.txt",
+            "regex": "\"error\": \"unauthorized\""
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/unauth-response.txt",
+            "required_commands": [
+              "curl"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "cat unauth-response\\.txt"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`-i` makes curl print the status line and headers above the body — the verdict before the payload. `>` keeps what came back as evidence."
+          },
+          {
+            "concept": "§4.2 — status codes are the verdict; read them before the payload"
+          },
+          {
+            "reveal": "curl -i acme.example/api/v2/users > unauth-response.txt, then: cat unauth-response.txt"
+          }
+        ],
+        "explain": "401 means \"who are you?\" — an authentication problem. The script that parses\nthis body as if it were users would happily report zero users without MFA.\nReading the status first is the single cheapest bug-prevention habit in\nevidence collection.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Climb the right rung: exchange the lab's client credentials (they're in\nvendor-docs.md) for a short-lived bearer token, requesting ONLY the scope this\ncontrol needs (`users:read`). Save the response as `token.json` and `cat` it —\nyou'll need the access_token for every call that follows.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/token.json",
+            "regex": "\"access_token\": \"tok_"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/token.json",
+            "regex": "\"expires_in\": 3600"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/token.json",
+            "required_commands": [
+              "curl"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "grant_type=client_credentials"
+          },
+          {
+            "check": "history_contains",
+            "regex": "scope=users:read"
+          },
+          {
+            "check": "history_contains",
+            "regex": "cat token\\.json"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "POST the form fields grant_type, client_id, client_secret, and scope to the token endpoint. curl's `-d` sends a form body (and makes the request a POST)."
+          },
+          {
+            "concept": "§4.3 — the authentication ladder: client-credentials trades a storable secret for an ephemeral token"
+          },
+          {
+            "reveal": "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=users:read' acme.example/oauth/token > token.json, then: cat token.json"
+          }
+        ],
+        "explain": "The secret in your config is now exchangeable, and the thing riding on every\nrequest dies in an hour. You also asked for the narrowest scope the control\nallows — a leaked users:read token cannot delete users. That narrowing is a\ncontrol in its own right.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Pull EVERY page. Call `GET /api/v2/users` with your bearer token and save page 1\nas `pulled-page-1.json`. Find `pagination.next_cursor` in it, follow the cursor\n(`?cursor=...`) to page 2, save it as `pulled-page-2.json`, and confirm the\ncursor came back null — that is the API saying \"no more\".\n",
+        "verify": [
+          {
+            "check": "api_pull_complete",
+            "collection": "/api/v2/users",
+            "cursors": [
+              "",
+              "eyJwYWdlIjoyfQ=="
+            ]
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/pulled-page-1.json",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/pulled-page-2.json",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/pulled-page-2.json",
+            "required_commands": [
+              "curl"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Send the token as `-H 'Authorization: Bearer <your access_token>'`. Page 1's pagination block carries the cursor for page 2; quote the URL when it has a `?` in it."
+          },
+          {
+            "concept": "§4.4 — loop until the API says stop: a null cursor, not your patience, ends the pull"
+          },
+          {
+            "reveal": "curl -s -H 'Authorization: Bearer <access_token from token.json>' acme.example/api/v2/users > pulled-page-1.json, then grep next_cursor pulled-page-1.json, then: curl -s -H 'Authorization: Bearer <same token>' 'acme.example/api/v2/users?cursor=eyJwYWdlIjoyfQ==' > pulled-page-2.json"
+          }
+        ],
+        "explain": "One logical question took two authenticated requests, and only the null cursor\ntold you that you were done. Both pages advertise total: 8 — you accumulated\n5 + 3. The pull is provably complete, which is exactly what the aggregator will\ncheck mechanically in a moment.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          3,
+          4
+        ],
+        "instruction": "Prove 401 and 403 are different facts. Request a SECOND token scoped only\n`devices:read` (save it as `devices-token.json`), aim it at `/api/v2/users` with\n`-i`, and keep the refusal as `scope-error.txt`. Then point the same token at the\nendpoint it IS scoped for — `/api/v2/devices`, saved as `devices.json` — and\ncount the unencrypted laptops into `unencrypted-count.txt`\n(the records carry a `disk_encrypted` field).\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/scope-error.txt",
+            "regex": "^HTTP/1\\.1 403 Forbidden"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/scope-error.txt",
+            "regex": "insufficient_scope"
+          },
+          {
+            "check": "api_pull_complete",
+            "collection": "/api/v2/devices",
+            "cursors": [
+              ""
+            ]
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/devices.json",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/unencrypted-count.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/unencrypted-count.txt",
+            "required_commands": [
+              "grep"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Same token request as t3 with `scope=devices:read`. The 403 means: authenticated fine, not allowed THIS question. Count with `grep -c '\"disk_encrypted\": false' devices.json`."
+          },
+          {
+            "concept": "§4.2/§4.3 — 401 is authentication, 403 is authorization; least-privilege scopes make the difference visible"
+          },
+          {
+            "reveal": "curl -s -d 'grant_type=client_credentials&client_id=grc_evidence_bot&client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35&scope=devices:read' acme.example/oauth/token > devices-token.json · curl -i -H 'Authorization: Bearer <access_token from devices-token.json>' acme.example/api/v2/users > scope-error.txt · curl -s -H 'Authorization: Bearer <same token>' acme.example/api/v2/devices > devices.json · grep -c '\"disk_encrypted\": false' devices.json > unencrypted-count.txt"
+          }
+        ],
+        "explain": "The devices token authenticated perfectly and was still refused the users\nquestion — that is authorization, not authentication, and your evidence files\nnow show both refusals side by side. And notice what the devices pull just\ncomputed: one laptop with disk_encrypted false. The same claim you checked on a\nsingle machine in earlier modules (\"this laptop's disk is encrypted\") just\nbecame a fleet-wide API question.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "Now the offline half — the bundled fixtures are byte-identical to what you just\npulled. Open `fixtures/users-page-1.json` and identify the field that holds the\ncontrol's truth and the field that says whether more pages exist: grep for each\n(`mfa_enabled`, `next_cursor`) so the locations are in your history.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "cat fixtures/users-page-1\\.json"
+          },
+          {
+            "check": "history_contains",
+            "regex": "grep .*mfa_enabled.* fixtures/users-page-1\\.json"
+          },
+          {
+            "check": "history_contains",
+            "regex": "grep .*next_cursor"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One boolean per user record answers the control claim; one field in the pagination block answers \"did I get everyone?\"."
+          },
+          {
+            "concept": "§5.1 — LOCATE: the endpoint and field that hold the claim's truth"
+          },
+          {
+            "reveal": "cat fixtures/users-page-1.json, then: grep -n mfa_enabled fixtures/users-page-1.json · grep -n next_cursor fixtures/users-page-1.json"
+          }
+        ],
+        "explain": "`mfa_enabled` decides the claim \"every workforce user has MFA enabled\";\n`pagination.next_cursor` (non-null!) warns that page 1 is not the whole truth.\nMapping claim → field before computing anything is what keeps the rest honest.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Feel the silent-incompleteness trap. Count users without MFA from page 1 alone\ninto `page1-count.txt`, then recompute over BOTH pages combined into\n`combined-count.txt` (compose `cat` and `grep -c` with a pipe). Compare the two\nnumbers — the API told you in advance they would differ.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/page1-count.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/combined-count.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/combined-count.txt",
+            "min_pipes": 1,
+            "required_commands": [
+              "grep"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`grep -c '\"mfa_enabled\": false'` counts matching records. For the combined number, `cat` both pages into one stream first."
+          },
+          {
+            "concept": "§4.4 — a pull that stops early doesn't error; it under-reports, confidently"
+          },
+          {
+            "reveal": "grep -c '\"mfa_enabled\": false' fixtures/users-page-1.json > page1-count.txt, then: cat fixtures/users-page-1.json fixtures/users-page-2.json | grep -c '\"mfa_enabled\": false' > combined-count.txt"
+          }
+        ],
+        "explain": "Page 1 alone said 2; the complete dataset says 4. No error, no warning — just a\nwrong number that looks right. The only advance notice was pagination metadata:\nnext_cursor was non-null and total was 8 when you'd only seen 5 records.\n"
+      },
+      {
+        "id": "t8",
+        "type": "action",
+        "objective": [
+          4,
+          2
+        ],
+        "instruction": "Run the lab's aggregator over BOTH pages and keep the audit-ready record:\n`aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json`,\nthen read it. Confirm `total_users` matches the total the pages advertise, and\nfind the line that explains why the report carries TWO no-MFA numbers — grep the\nreport for `u_004` and for `active_users_without_mfa`.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/mfa-report.json",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/mfa-report.json",
+            "required_commands": [
+              "aggregate-mfa"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "cat mfa-report\\.json"
+          },
+          {
+            "check": "history_contains",
+            "regex": "grep .*u_004.* mfa-report\\.json"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The aggregator takes every page as an argument — give it both. On your own machine this is `bun aggregate-mfa.ts …`; this box runs its byte-locked PATH port."
+          },
+          {
+            "concept": "§5.3 — aggregate across pages, THEN compute; the report surfaces both numbers and lets the control definition decide"
+          },
+          {
+            "reveal": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json, then: cat mfa-report.json · grep -n u_004 mfa-report.json · grep -n active_users_without_mfa mfa-report.json"
+          }
+        ],
+        "explain": "total_users is 8 — it matches the advertised total, so the completeness check\npassed and this number is trustworthy. The report says users_without_mfa: 4 but\nactive_users_without_mfa: 3, because u_004 (dave) is suspended. A good evidence\nrecord shows both and hides neither.\n"
+      },
+      {
+        "id": "t9",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Prove the tool refuses to lie. Run the aggregator over ONLY page 1, capturing its\ncomplaint into `incomplete-error.txt` (stderr — remember `2>`), then keep the\nexit code as evidence: `echo $? > truncated-exit.txt`. Read the complaint.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/incomplete-error.txt",
+            "regex": "incomplete pull: aggregated 5 users but API reported total=8"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/truncated-exit.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/incomplete-error.txt",
+            "required_commands": [
+              "aggregate-mfa"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "echo .*\\$\\?.*> *truncated-exit\\.txt"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "stdout and stderr are different channels: `2>` captures the complaint. `$?` still holds the exit code on the very next line you type."
+          },
+          {
+            "concept": "§5.4 — the failure that LOOKS like success, and the completeness check that refuses it"
+          },
+          {
+            "reveal": "aggregate-mfa fixtures/users-page-1.json 2> incomplete-error.txt, then: echo $? > truncated-exit.txt · cat incomplete-error.txt"
+          }
+        ],
+        "explain": "Five records, total=8 → the tool refused to emit a report at all and exited 1.\nFailing loud beats emitting a smaller number, because a wrong-but-plausible\nmetric would sail through review and become the control's official truth.\n"
+      },
+      {
+        "id": "t10",
+        "type": "action",
+        "objective": [
+          5,
+          6
+        ],
+        "instruction": "Map the exit codes — the machine-readable verdict. Re-run the full two-page\naggregation and keep its code (`echo $? > exit-fail.txt`). Then build a tiny\nall-pass page as `fixtures/users-allpass.json` (one user, `mfa_enabled` true,\ntotal 1, null cursor — same shape as the lab pages), run the aggregator on it as\n`allpass-report.json`, and keep that code as `exit-pass.txt`. You already hold\nthe tooling-error code in `truncated-exit.txt`. Three different numbers, three\ndifferent meanings.\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/exit-fail.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/exit-pass.txt",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/allpass-report.json",
+            "regex": "\"control_result\": \"PASS\""
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/allpass-report.json",
+            "required_commands": [
+              "aggregate-mfa"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "echo .*\\$\\?.*> *exit-fail\\.txt"
+          },
+          {
+            "check": "history_contains",
+            "regex": "echo .*\\$\\?.*> *exit-pass\\.txt"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "A control FAIL is not a broken tool: a monitoring system must react differently to \"the control failed\" vs \"the check itself broke\". One page with every user compliant makes the PASS path observable."
+          },
+          {
+            "concept": "§5.4 — exit-code discipline: 0 control PASS, 3 control FAIL, 1 tooling error"
+          },
+          {
+            "reveal": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > mfa-report.json · echo $? > exit-fail.txt · echo '{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ], \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }' > fixtures/users-allpass.json · aggregate-mfa fixtures/users-allpass.json > allpass-report.json · echo $? > exit-pass.txt"
+          }
+        ],
+        "explain": "0 = control PASS, 3 = control FAIL, 1 = tooling error. FAIL and broken-tool MUST\nbe different codes: a scheduler alerting on \"control failed\" when the truth is\n\"the pull broke\" pages the wrong team and buries the real defect — module 13\nbuilds its monitoring loop directly on this distinction.\n"
+      },
+      {
+        "id": "t11",
+        "type": "action",
+        "objective": [
+          2,
+          3
+        ],
+        "instruction": "Write the LOCATE plan — the §4.7 five-question docs summary for this vendor —\nas `LOCATE-plan.md` next to the fixtures (nano works here, or compose it with a\nheredoc). Cover: auth rung + how a token is obtained; endpoint + truth field;\npagination shape + stop signal; rate limit; error shape.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab06/LOCATE-plan.md"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "client[-_ ]credentials"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "/oauth/token"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "users:read"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "/api/v2/users"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "mfa_enabled"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "next_cursor"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "600"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "Retry-After"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab06/LOCATE-plan.md",
+            "regex": "[Ee]rror.*[Mm]essage"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Everything you need is in vendor-docs.md and in what you just did — five short lines answer it. §5.1 is the worked example of exactly this plan."
+          },
+          {
+            "concept": "§4.7/§5.1 — the five-question plan IS the LOCATE stage; the rest is mechanics"
+          },
+          {
+            "reveal": "nano LOCATE-plan.md (or cat > LOCATE-plan.md << 'EOF' … EOF) with one line each — auth: OAuth2 client-credentials at /oauth/token, scope users:read; truth: GET /api/v2/users, field mfa_enabled; pagination: cursor, stop at next_cursor null, total advertised; rate limit: 600 req/min, 429 carries Retry-After; errors: { \"error\": \"...\", \"message\": \"...\" }"
+          }
+        ],
+        "explain": "That plan is transferable: a GRC engineer who can produce it from cold docs can\npull evidence from a vendor they had never seen an hour earlier. It is also the\ndocument a reviewer audits when they ask \"why do you trust this pull?\"\n"
+      },
+      {
+        "id": "t12",
+        "type": "action",
+        "objective": [
+          6
+        ],
+        "instruction": "Make the evidence provably reproducible. Run the full aggregation twice, into\n`report-run-1.json` and `report-run-2.json`, then `diff` the two and record the\nverdict: if diff is silent, write `identical` into `repro-verdict.txt` (chain\nit: `diff … && echo identical > repro-verdict.txt`).\n",
+        "verify": [
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/repro-verdict.txt",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab06/repro-verdict.txt",
+            "required_commands": [
+              "diff"
+            ]
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab06/report-run-1.json",
+            "from": "generated"
+          },
+          {
+            "check": "history_contains",
+            "regex": "diff report-run-1\\.json report-run-2\\.json"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`diff a b` prints nothing and exits 0 when the files are byte-identical; `&&` runs the next command only on that success."
+          },
+          {
+            "concept": "§5.3/§6 task 8 — identical evidence on re-run is what makes a pull schedulable; the report pins collected_at for exactly this reason"
+          },
+          {
+            "reveal": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json · aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json · diff report-run-1.json report-run-2.json && echo identical > repro-verdict.txt"
+          }
+        ],
+        "explain": "Byte-identical reports on re-run — the property that turns a one-off pull into a\nschedulable control check. On your real machine the §6 step finishes this:\n`git init`, commit the fixtures, the aggregator, LOCATE-plan.md, and a README —\nthen the evidence has history as well as reproducibility.\n"
+      },
+      {
+        "id": "t13",
+        "type": "reflection",
+        "objective": [
+          1
+        ],
+        "instruction": "Explain, to a non-technical colleague, what just happened at the counter — using\n§3's service-counter model and tracing ONE of your requests end to end: the verb\nand address you asked at, how you proved who you were, what the three-digit\nverdict meant, and what shape the answer came back in. Include why your 401 and\nyour 403 were different sentences in that conversation.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 model: a deliberate, narrow counter in front of an interior you never touch — verb, address, credential, verdict, JSON answer."
+          },
+          {
+            "concept": "§3 — The Mental Model"
+          }
+        ]
+      },
+      {
+        "id": "t14",
+        "type": "reflection",
+        "objective": [
+          2
+        ],
+        "instruction": "Your report shows users_without_mfa: 4 and active_users_without_mfa: 3 — the gap\nis u_004, who is suspended. Citing the control claim (\"every workforce user has\nMFA enabled\"), decide which number you would put in front of an auditor and\ndefend it in 2–3 sentences. There is a defensible case for each — what matters\nis that the scoping decision is explicit, not silent.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Is a suspended account a \"workforce user\"? The report deliberately refuses to decide that for you."
+          },
+          {
+            "concept": "§5.3 — the report surfaces both numbers and lets the control definition decide"
+          }
+        ]
+      },
+      {
+        "id": "t15",
+        "type": "reflection",
+        "objective": [
+          4,
+          5
+        ],
+        "instruction": "Two failure modes, one sentence each. First: why is failing LOUD on an incomplete\npull (what you saw in the truncated run) better GRC behavior than emitting a\nsmaller, plausible number? Second: the vendor docs cap you at 600 requests/minute\nand answer excess with 429 + Retry-After — describe what your pull script should\nDO when that arrives mid-pagination, and what silently dropping the page would do\nto your evidence.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Both failure modes end the same way if mishandled: a complete-looking report that is quietly missing records."
+          },
+          {
+            "concept": "§4.5 — rate limits and pagination collide: the same pull that needs every page needs to wait politely to finish at all"
+          }
+        ]
+      },
+      {
+        "id": "t16",
+        "type": "reflection",
+        "objective": [
+          6
+        ],
+        "instruction": "In one or two sentences, connect \"the report is byte-identical on re-run\" and\n\"the whole thing lives in Git\" to continuous, audit-ready assurance. (On a real\nmachine, finish §6 task 8 for real: git init, commit the fixtures, the\naggregator, LOCATE-plan.md, and a short README stating the control and how to\nre-run — this box honestly has no git.)\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "An auditor's two favorite questions: \"can you produce this again?\" and \"what did it say last quarter?\" — which property answers which?"
+          },
+          {
+            "concept": "§6 task 8 — version-controlled, reproducible evidence is the bridge to module 13's continuous monitoring"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/lab06",
+        "dir": true
+      },
+      {
+        "path": "~/lab06/aggregate-mfa.ts",
+        "content": "#!/usr/bin/env bun\n// Module 06 lab core-logic harness (original lab asset).\n//\n// Proves the GRC-relevant CORE LOGIC of the §6 lab WITHOUT any network:\n// it reads one or more already-fetched paginated API response pages (JSON files\n// in cursor order), aggregates the `data` arrays ACROSS ALL pages, and computes\n// the control metric \"users without MFA\". This is exactly the evaluation step the\n// real lab performs after it has paginated a live SaaS API — but here the pages\n// are committed fixtures, so the logic is testable on a clean machine.\n//\n// Usage:  bun aggregate-mfa.ts page-1.json page-2.json [...]\n// Output: a single JSON object (the audit-ready record) on stdout.\n//\n// Exit codes (machine-readable verdict, per the curriculum's exit-code discipline):\n//   0  control PASS  (no users without MFA)\n//   3  control FAIL  (one or more users without MFA) — distinct from a tooling error\n//   1  tooling error (bad args, unreadable/!valid JSON, page-count mismatch)\n\ninterface UserRecord {\n  id: string;\n  email: string;\n  mfa_enabled: boolean;\n  status: string;\n}\n\ninterface Pagination {\n  page: number;\n  per_page: number;\n  total: number;\n  next_cursor: string | null;\n}\n\ninterface ApiPage {\n  data: UserRecord[];\n  pagination: Pagination;\n}\n\nfunction fail(msg: string): never {\n  console.error(`ERROR: ${msg}`);\n  process.exit(1);\n}\n\nconst pagePaths = process.argv.slice(2);\nif (pagePaths.length === 0) {\n  fail(\"usage: bun aggregate-mfa.ts <page-1.json> [page-2.json ...]\");\n}\n\n// LOCATE+QUERY are done (pages already fetched). This harness is the EVALUATE step:\n// read each page, validate its shape, and concatenate the records.\nconst allUsers: UserRecord[] = [];\nlet expectedTotal: number | null = null;\n\nfor (const path of pagePaths) {\n  const file = Bun.file(path);\n  let page: ApiPage;\n  try {\n    page = (await file.json()) as ApiPage;\n  } catch {\n    fail(`could not read or parse JSON page: ${path}`);\n  }\n  if (!Array.isArray(page.data)) fail(`page ${path} has no 'data' array`);\n  if (page.pagination && typeof page.pagination.total === \"number\") {\n    // Every honest page advertises the same grand total; capture it once.\n    expectedTotal = page.pagination.total;\n  }\n  for (const u of page.data) allUsers.push(u);\n}\n\n// COMPLETENESS CHECK: an evidence pull is only valid if it is COMPLETE.\n// If the aggregated record count does not match the total the API advertised,\n// pagination was truncated — the control result would be a lie. Fail loud.\nif (expectedTotal !== null && allUsers.length !== expectedTotal) {\n  fail(\n    `incomplete pull: aggregated ${allUsers.length} users but API reported total=${expectedTotal} ` +\n      `(missing pages? truncated pagination?)`,\n  );\n}\n\nconst withoutMfa = allUsers.filter((u) => u.mfa_enabled === false);\nconst activeWithoutMfa = withoutMfa.filter((u) => u.status === \"active\");\n\nconst record = {\n  control: \"MFA enforced for all workforce users\",\n  framework_ref: \"SOC 2 CC6.1 / CIS Control 6.5\",\n  collected_at: \"2026-05-28T00:00:00Z\", // fixed for reproducible fixtures; real lab uses now()\n  pages_aggregated: pagePaths.length,\n  total_users: allUsers.length,\n  users_without_mfa: withoutMfa.length,\n  active_users_without_mfa: activeWithoutMfa.length,\n  offending_users: withoutMfa.map((u) => ({ id: u.id, email: u.email, status: u.status })),\n  control_result: withoutMfa.length === 0 ? \"PASS\" : \"FAIL\",\n};\n\nconsole.log(JSON.stringify(record, null, 2));\nprocess.exit(record.control_result === \"PASS\" ? 0 : 3);\n"
+      },
+      {
+        "path": "~/lab06/fixtures",
+        "dir": true
+      },
+      {
+        "path": "~/lab06/fixtures/users-page-1.json",
+        "content": "{\n  \"data\": [\n    { \"id\": \"u_001\", \"email\": \"alice@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_002\", \"email\": \"bob@acme.example\",   \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_003\", \"email\": \"carol@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_004\", \"email\": \"dave@acme.example\",  \"mfa_enabled\": false, \"status\": \"suspended\" },\n    { \"id\": \"u_005\", \"email\": \"erin@acme.example\",  \"mfa_enabled\": true,  \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": \"eyJwYWdlIjoyfQ==\"\n  }\n}\n"
+      },
+      {
+        "path": "~/lab06/fixtures/users-page-2.json",
+        "content": "{\n  \"data\": [\n    { \"id\": \"u_006\", \"email\": \"frank@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_007\", \"email\": \"grace@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_008\", \"email\": \"heidi@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 2,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": null\n  }\n}\n"
+      },
+      {
+        "path": "~/lab06/happy-path.sh",
+        "content": "#!/usr/bin/env bash\n# CI lab-reproduction smoke test for Module 06.\n# Asserts the §6 guided lab's CORE LOGIC still reproduces on a clean machine\n# (bash + coreutils + bun; NO network, NO cloud creds, NO containers):\n#   - the aggregator concatenates the `data` arrays ACROSS BOTH pages (8 users, not 5)\n#   - the control metric \"users without MFA\" is computed correctly (= 4) over the\n#     COMPLETE, paginated dataset\n#   - the active-only sub-metric is correct (= 3; the suspended no-MFA user is excluded)\n#   - the completeness guard fails LOUD when a page is dropped (single-page pull != total)\n#   - the exit code is the machine-readable verdict (3 = control FAIL, 0 = PASS)\nset -euo pipefail\nHERE=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nWORK=\"$(mktemp -d)\"\ntrap 'rm -rf \"$WORK\"' EXIT\n\ncommand -v bun >/dev/null 2>&1 || { echo \"FAIL: bun is required for this lab harness\"; exit 1; }\n\n# Regenerate the fixtures from clean (proves setup.sh is self-contained).\nbash \"$HERE/setup.sh\" \"$WORK/fixtures\" >/dev/null\ntest -f \"$WORK/fixtures/users-page-1.json\" || { echo \"FAIL: setup did not create page 1\"; exit 1; }\ntest -f \"$WORK/fixtures/users-page-2.json\" || { echo \"FAIL: setup did not create page 2\"; exit 1; }\n\n# --- Assertion 1: COMPLETE pull over BOTH pages -> control FAIL (exit 3), metric = 4 ---\nset +e\nREPORT=\"$(bun \"$HERE/aggregate-mfa.ts\" \"$WORK/fixtures/users-page-1.json\" \"$WORK/fixtures/users-page-2.json\")\"\nRC=$?\nset -e\ntest \"$RC\" -eq 3 || { echo \"FAIL: expected control-FAIL exit 3, got $RC\"; exit 1; }\n\n# Pull scalar fields out of the JSON record with coreutils only (no jq dependency).\nfield() { printf '%s\\n' \"$REPORT\" | grep \"\\\"$1\\\"\" | head -1 | grep -oE '[0-9]+' | head -1; }\n\nTOTAL=\"$(field total_users)\"\nNOMFA=\"$(field users_without_mfa)\"\nACTIVE_NOMFA=\"$(field active_users_without_mfa)\"\nPAGES=\"$(field pages_aggregated)\"\n\ntest \"$TOTAL\" = \"8\" || { echo \"FAIL: expected 8 aggregated users (both pages), got '$TOTAL'\"; exit 1; }\ntest \"$NOMFA\" = \"4\" || { echo \"FAIL: expected 4 users without MFA, got '$NOMFA'\"; exit 1; }\ntest \"$ACTIVE_NOMFA\" = \"3\" || { echo \"FAIL: expected 3 ACTIVE users without MFA, got '$ACTIVE_NOMFA'\"; exit 1; }\ntest \"$PAGES\" = \"2\" || { echo \"FAIL: expected 2 pages aggregated, got '$PAGES'\"; exit 1; }\nprintf '%s\\n' \"$REPORT\" | grep -q '\"control_result\": \"FAIL\"' || { echo \"FAIL: control_result should be FAIL\"; exit 1; }\n\n# --- Assertion 2: the COMPLETENESS guard catches a truncated pull (page 2 dropped) ---\n# If pagination stops early, the answer would be a LIE; the harness must refuse it.\nset +e\nbun \"$HERE/aggregate-mfa.ts\" \"$WORK/fixtures/users-page-1.json\" >/dev/null 2>\"$WORK/err.log\"\nTRUNC_RC=$?\nset -e\ntest \"$TRUNC_RC\" -eq 1 || { echo \"FAIL: truncated pull should error (exit 1), got $TRUNC_RC\"; exit 1; }\ngrep -q \"incomplete pull\" \"$WORK/err.log\" || { echo \"FAIL: completeness guard did not fire on truncated pull\"; exit 1; }\n\n# --- Assertion 3: a PASS scenario returns exit 0 (every user has MFA) ---\nmkdir -p \"$WORK/all-pass\"\ncat > \"$WORK/all-pass/page-1.json\" <<'JSON'\n{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ],\n  \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }\nJSON\nset +e\nbun \"$HERE/aggregate-mfa.ts\" \"$WORK/all-pass/page-1.json\" >/dev/null 2>&1\nPASS_RC=$?\nset -e\ntest \"$PASS_RC\" -eq 0 || { echo \"FAIL: all-MFA dataset should PASS (exit 0), got $PASS_RC\"; exit 1; }\n\necho \"PASS: Module 06 lab reproduces (aggregated=$TOTAL across $PAGES pages, no-MFA=$NOMFA, active-no-MFA=$ACTIVE_NOMFA; completeness guard fires; PASS path exits 0)\"\n"
+      },
+      {
+        "path": "~/lab06/setup.sh",
+        "content": "#!/usr/bin/env bash\n# Module 06 lab fixture generator (original lab asset).\n# Usage: setup.sh [DEST_DIR]   (default ./fixtures, alongside this script)\n#\n# Writes a TWO-PAGE simulated SaaS \"list users\" API response. The pages model a\n# real cursor-paginated endpoint: page 1 carries a non-null next_cursor, page 2\n# carries next_cursor=null (the stop signal). Each page advertises the same grand\n# total so a completeness check is possible. Eight users; four have mfa_enabled=false\n# (one of those is suspended), so the control metric is unambiguous and verifiable.\nset -euo pipefail\nDEST=\"${1:-$(cd \"$(dirname \"$0\")\" && pwd)/fixtures}\"\nmkdir -p \"$DEST\"\n\ncat > \"$DEST/users-page-1.json\" <<'JSON'\n{\n  \"data\": [\n    { \"id\": \"u_001\", \"email\": \"alice@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_002\", \"email\": \"bob@acme.example\",   \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_003\", \"email\": \"carol@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_004\", \"email\": \"dave@acme.example\",  \"mfa_enabled\": false, \"status\": \"suspended\" },\n    { \"id\": \"u_005\", \"email\": \"erin@acme.example\",  \"mfa_enabled\": true,  \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": \"eyJwYWdlIjoyfQ==\"\n  }\n}\nJSON\n\ncat > \"$DEST/users-page-2.json\" <<'JSON'\n{\n  \"data\": [\n    { \"id\": \"u_006\", \"email\": \"frank@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_007\", \"email\": \"grace@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_008\", \"email\": \"heidi@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 2,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": null\n  }\n}\nJSON\n\necho \"Module 06 fixture written: $DEST/users-page-1.json, $DEST/users-page-2.json\"\n"
+      },
+      {
+        "path": "~/lab06/vendor-docs.md",
+        "content": "# acme.example — API Reference (v2)\n\n> Developer documentation for the Acme workforce platform's REST API. This is the\n> document the LOCATE stage reads: every answer your evidence pull needs is on this\n> page. (Simulated vendor — this host exists only inside the lab.)\n\n## Authentication\n\nTwo rungs are supported. Use the lowest-risk rung your tooling allows, with the\nnarrowest scope your job needs.\n\n- **API key (legacy):** send `Authorization: Api-Key 9f8c4e21b6a94d3f8c7e5a1029384756`\n  on every request. Keys do not expire — prefer OAuth2 below.\n- **OAuth2 client-credentials (recommended):** exchange your client credentials for a\n  short-lived bearer token at the token endpoint, then send\n  `Authorization: Bearer <access_token>` on every API call.\n\n```\nPOST /oauth/token\nContent-Type: application/x-www-form-urlencoded\n\ngrant_type=client_credentials&client_id=<id>&client_secret=<secret>&scope=<scope>\n```\n\nLab credentials: `client_id=grc_evidence_bot`,\n`client_secret=cs_4d2b9e7f1a8c6053b4e2d9f7c1a08e35`.\n\nResponse: `{ \"access_token\": \"...\", \"token_type\": \"Bearer\", \"expires_in\": 3600, \"scope\": \"...\" }`.\nTokens live one hour. Requests with no credential answer `401`; a valid token that\nlacks the endpoint's scope answers `403`.\n\n### Scopes (least privilege)\n\n| Scope | Grants |\n|---|---|\n| `users:read` | read access to `/api/v2/users` |\n| `devices:read` | read access to `/api/v2/devices` |\n\n## Endpoints\n\n### `GET /api/v2/users`\n\nLists workforce users. Requires scope `users:read`. Each record carries `id`,\n`email`, `mfa_enabled` (boolean), and `status` (`active` or `suspended`).\n\n### `GET /api/v2/devices`\n\nLists managed endpoint devices. Requires scope `devices:read`. Each record carries\n`id`, `user_id`, `hostname`, `disk_encrypted` (boolean), and `os`.\n\n## Pagination\n\nList endpoints are cursor-paginated. Every response carries:\n\n```\n\"pagination\": { \"page\": N, \"per_page\": 5, \"total\": T, \"next_cursor\": \"...\" }\n```\n\nPass `?cursor=<next_cursor>` to fetch the next page. **Stop when `next_cursor` is\n`null`.** Every page advertises the same grand `total` — verify your accumulated\nrecord count against it before trusting any number you compute.\n\n## Rate limits\n\n600 requests per minute per credential. Exceeding the window answers\n`429 Too Many Requests` with a `Retry-After` header (seconds). Wait that long, then\nretry the same request — do not drop the page and do not hammer the endpoint.\n\n## Errors\n\nEvery non-2xx response body has the shape:\n\n```\n{ \"error\": \"<machine-readable code>\", \"message\": \"<human-readable explanation>\" }\n```\n\nRead the status code before the body: `2xx` parse, `401` authenticate, `403` fix the\nscope, `404` fix the address, `429` honor `Retry-After`, `5xx` retry with backoff.\n"
+      }
+    ],
+    "tools": {
+      "aggregate-mfa": "#!/usr/bin/env bash\n# Lab tool (module 06 §6 tasks 3-6): the lab box's PATH port of the repo's\n# labs/aggregate-mfa.ts core logic. This box has no bun runtime (pinned-container\n# negative space), so the aggregator ships as this bash+awk port. The report bytes,\n# the completeness guard, and the exit codes (0 control PASS / 3 control FAIL /\n# 1 tooling error) are byte-locked to the real `bun aggregate-mfa.ts` output over\n# the lab's committed page shape (one user record per line, `\"key\": value` single-\n# space style, as labs/setup.sh writes and the mock vendor serves) — the docker\n# capture m06-aggregate-both asserts the equality against a fixture diffed with\n# the real tool's output. Re-shaped/arbitrary JSON is outside this port's surface:\n# run the real `bun aggregate-mfa.ts` on your own machine for that.\n\nif [ \"$#\" -eq 0 ]; then\n  echo \"ERROR: usage: aggregate-mfa <page-1.json> [page-2.json ...]\" >&2\n  exit 1\nfi\n\nfor p in \"$@\"; do\n  if ! test -f \"$p\"; then\n    echo \"ERROR: could not read or parse JSON page: $p\" >&2\n    exit 1\n  fi\n  if ! grep -q '\"data\"' \"$p\"; then\n    echo \"ERROR: page $p has no 'data' array\" >&2\n    exit 1\n  fi\ndone\n\n# Aggregate ACROSS ALL pages (the .ts concatenates every page's data array).\nTOTAL=$(awk '/\"id\":/ { n++ } END { print n + 0 }' \"$@\")\nHAVETOTAL=$(awk '/\"total\":/ { h = 1 } END { print h + 0 }' \"$@\")\nEXPECTED=$(awk '/\"total\":/ { i = index($0, \"\\\"total\\\":\"); t = substr($0, i + 8) + 0 } END { print t + 0 }' \"$@\")\n\n# COMPLETENESS CHECK (same rule, same message, same exit code as the .ts):\n# an evidence pull is only valid if it is COMPLETE. Fail loud, refuse to report.\nif [ \"$HAVETOTAL\" -eq 1 ]; then\n  if [ \"$TOTAL\" -ne \"$EXPECTED\" ]; then\n    echo \"ERROR: incomplete pull: aggregated $TOTAL users but API reported total=$EXPECTED (missing pages? truncated pagination?)\" >&2\n    exit 1\n  fi\nfi\n\nNOMFA=$(awk '/\"mfa_enabled\": false/ { n++ } END { print n + 0 }' \"$@\")\n\n# Emit the audit-ready record — byte-identical to JSON.stringify(record, null, 2)\n# from the real tool (collected_at pinned for reproducible evidence, as in the .ts).\nawk -v npages=\"$#\" '\n  /\"id\":/ { n++ }\n  /\"mfa_enabled\": false/ {\n    i = index($0, \"\\\"id\\\": \\\"\");     r = substr($0, i + 7);  q = index(r, \"\\\"\"); id = substr(r, 1, q - 1)\n    i = index($0, \"\\\"email\\\": \\\"\");  r = substr($0, i + 10); q = index(r, \"\\\"\"); em = substr(r, 1, q - 1)\n    i = index($0, \"\\\"status\\\": \\\"\"); r = substr($0, i + 11); q = index(r, \"\\\"\"); st = substr(r, 1, q - 1)\n    item = \"    {\\n      \\\"id\\\": \\\"\" id \"\\\",\\n      \\\"email\\\": \\\"\" em \"\\\",\\n      \\\"status\\\": \\\"\" st \"\\\"\\n    }\"\n    if (buf == \"\") buf = item\n    else buf = buf \",\\n\" item\n    nomfa++\n    if (st == \"active\") an++\n  }\n  END {\n    nv = n + 0\n    mv = nomfa + 0\n    av = an + 0\n    print \"{\"\n    print \"  \\\"control\\\": \\\"MFA enforced for all workforce users\\\",\"\n    print \"  \\\"framework_ref\\\": \\\"SOC 2 CC6.1 / CIS Control 6.5\\\",\"\n    print \"  \\\"collected_at\\\": \\\"2026-05-28T00:00:00Z\\\",\"\n    print \"  \\\"pages_aggregated\\\": \" npages \",\"\n    print \"  \\\"total_users\\\": \" nv \",\"\n    print \"  \\\"users_without_mfa\\\": \" mv \",\"\n    print \"  \\\"active_users_without_mfa\\\": \" av \",\"\n    if (mv == 0) {\n      print \"  \\\"offending_users\\\": [],\"\n      print \"  \\\"control_result\\\": \\\"PASS\\\"\"\n    } else {\n      print \"  \\\"offending_users\\\": [\"\n      print buf\n      print \"  ],\"\n      print \"  \\\"control_result\\\": \\\"FAIL\\\"\"\n    }\n    print \"}\"\n  }\n' \"$@\"\n\nif [ \"$NOMFA\" -eq 0 ]; then\n  exit 0\nfi\nexit 3\n"
+    }
+  },
+  "expectations": {
+    "t4:1": "{\n  \"data\": [\n    { \"id\": \"u_001\", \"email\": \"alice@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_002\", \"email\": \"bob@acme.example\",   \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_003\", \"email\": \"carol@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_004\", \"email\": \"dave@acme.example\",  \"mfa_enabled\": false, \"status\": \"suspended\" },\n    { \"id\": \"u_005\", \"email\": \"erin@acme.example\",  \"mfa_enabled\": true,  \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": \"eyJwYWdlIjoyfQ==\"\n  }\n}",
+    "t4:2": "{\n  \"data\": [\n    { \"id\": \"u_006\", \"email\": \"frank@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" },\n    { \"id\": \"u_007\", \"email\": \"grace@acme.example\", \"mfa_enabled\": true,  \"status\": \"active\" },\n    { \"id\": \"u_008\", \"email\": \"heidi@acme.example\", \"mfa_enabled\": false, \"status\": \"active\" }\n  ],\n  \"pagination\": {\n    \"page\": 2,\n    \"per_page\": 5,\n    \"total\": 8,\n    \"next_cursor\": null\n  }\n}",
+    "t5:3": "{\n  \"data\": [\n    { \"id\": \"d_101\", \"user_id\": \"u_001\", \"hostname\": \"wkst-alice-01\", \"disk_encrypted\": true,  \"os\": \"macos\" },\n    { \"id\": \"d_102\", \"user_id\": \"u_002\", \"hostname\": \"wkst-bob-01\",   \"disk_encrypted\": false, \"os\": \"windows\" },\n    { \"id\": \"d_103\", \"user_id\": \"u_003\", \"hostname\": \"wkst-carol-01\", \"disk_encrypted\": true,  \"os\": \"linux\" },\n    { \"id\": \"d_104\", \"user_id\": \"u_005\", \"hostname\": \"wkst-erin-01\",  \"disk_encrypted\": true,  \"os\": \"macos\" },\n    { \"id\": \"d_105\", \"user_id\": \"u_007\", \"hostname\": \"wkst-grace-01\", \"disk_encrypted\": true,  \"os\": \"macos\" }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"per_page\": 5,\n    \"total\": 5,\n    \"next_cursor\": null\n  }\n}",
+    "t5:4": "1",
+    "t7:0": "2",
+    "t7:1": "4",
+    "t8:0": "{\n  \"control\": \"MFA enforced for all workforce users\",\n  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\",\n  \"collected_at\": \"2026-05-28T00:00:00Z\",\n  \"pages_aggregated\": 2,\n  \"total_users\": 8,\n  \"users_without_mfa\": 4,\n  \"active_users_without_mfa\": 3,\n  \"offending_users\": [\n    {\n      \"id\": \"u_002\",\n      \"email\": \"bob@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_004\",\n      \"email\": \"dave@acme.example\",\n      \"status\": \"suspended\"\n    },\n    {\n      \"id\": \"u_006\",\n      \"email\": \"frank@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_008\",\n      \"email\": \"heidi@acme.example\",\n      \"status\": \"active\"\n    }\n  ],\n  \"control_result\": \"FAIL\"\n}",
+    "t9:1": "1",
+    "t10:0": "3",
+    "t10:1": "0",
+    "t12:0": "identical",
+    "t12:2": "{\n  \"control\": \"MFA enforced for all workforce users\",\n  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\",\n  \"collected_at\": \"2026-05-28T00:00:00Z\",\n  \"pages_aggregated\": 2,\n  \"total_users\": 8,\n  \"users_without_mfa\": 4,\n  \"active_users_without_mfa\": 3,\n  \"offending_users\": [\n    {\n      \"id\": \"u_002\",\n      \"email\": \"bob@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_004\",\n      \"email\": \"dave@acme.example\",\n      \"status\": \"suspended\"\n    },\n    {\n      \"id\": \"u_006\",\n      \"email\": \"frank@acme.example\",\n      \"status\": \"active\"\n    },\n    {\n      \"id\": \"u_008\",\n      \"email\": \"heidi@acme.example\",\n      \"status\": \"active\"\n    }\n  ],\n  \"control_result\": \"FAIL\"\n}"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

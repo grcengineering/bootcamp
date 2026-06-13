@@ -1,0 +1,41 @@
+{
+  "id": "m05-lab-setup",
+  "module": "05",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m05",
+  "cwd": "/home/analyst/lab05",
+  "pre": [],
+  "cmd": "bash labs/setup.sh evidence/",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "setup.sh is the module's own committed lab asset (seeded byte-identical); the echo line and all five fixture files are the script's real output, not authored strings.\n",
+  "stdout": "Module 05 fixtures written to evidence/ (5 files: 2 pass, 1 fail, 1 missing-field, 1 malformed)\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "cat evidence/lt-01.json",
+      "stdout": "{\"host\": \"lt-01\", \"encrypted\": true, \"checked_at\": \"2026-05-28\"}\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "cmd": "cat evidence/lt-05.json",
+      "stdout": "{\"host\": \"lt-05\", \"encrypted\": tr\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T19:49:01.899Z",
+    "captured_with": "capture.ts v1"
+  }
+}

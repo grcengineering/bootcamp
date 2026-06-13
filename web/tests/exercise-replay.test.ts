@@ -100,6 +100,7 @@ describe("exercise transcript replay (golden passes, anti fails its target)", ()
       parse(readFileSync(join(MODULES, dir, "exercises/exercise.yaml"), "utf8")),
     );
     if (!["shell-linux", "shell-macos"].includes(spec.engine)) continue; // other engines: own suites
+    if (spec.seed.profile === "m02") continue; // booted admin-lab session — replayed by exercise-replay-02.test.ts
 
     test(`${dir}: golden transcript satisfies every action task`, () => {
       const session = newSession(spec);

@@ -1,0 +1,225 @@
+id: lab-08
+module: 08-iac-and-scanning-in-ci
+title: The gate that blocks the bad change
+owner: Justin Pagano
+volatility: C
+review_due: 2026-08-28
+engine: builder
+claim_thread: laptop-encryption
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: m08
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+builder:
+  surface: workspace
+  validator: gate
+  validator_args: [lab08/scan-under-gate.json, lab08/control-map.csv, HIGH]
+
+intro: |
+  Module 01 asked a live machine "is this disk encrypted?" and kept the answer. This lab
+  asks the same claim-class question — is storage encrypted at rest, and never public —
+  against the CODE that will create the storage, before anything exists. Your workspace
+  is the CI pipeline's working directory, staged exactly as `bash labs/setup.sh ./lab08`
+  leaves it: the proposed Terraform change, the scanner's structured result for it, the
+  control map you own, and the gate. The "Run validator" button IS the pipeline's gate
+  step — it runs `gate.sh lab08/scan-under-gate.json lab08/control-map.csv HIGH`, a port
+  of the committed gate.sh verified byte-for-byte in CI against real bash runs of the
+  same script, so the record and exit code you see here are the ones a real machine
+  produces. `lab08/scan-under-gate.json` is the scan step's output for the change under
+  review; this pipeline pins its severity floor at HIGH (one owned value in its config —
+  the MEDIUM-floor exploration runs on your own machine with the lab's setup script).
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 2]
+    instruction: |
+      Before running anything, read `lab08/main-noncompliant.tf` and predict which of the
+      three control questions (encryption / public access / versioning) the declared
+      resources fail. Then open `lab08/checkov-noncompliant.json` and reconcile your
+      prediction with the scanner's failed checks. Record the result in section 1 of
+      `lab08/findings-worksheet.md` — one line per question, in the worksheet's format,
+      with the scanner's check id and severity.
+    verify:
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^encryption: *FAIL +CKV_AWS_19 +HIGH *$"
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^public-access: *FAIL +CKV_AWS_20 +HIGH *$"
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^versioning: *FAIL +CKV_AWS_21 +MEDIUM *$"
+    hints:
+      - nudge: "The violation is what the declaration is MISSING. The .tf declares a bucket and a public-read ACL — which question does each line answer, and which questions are answered by silence?"
+      - concept: "§4.1 — absence in the declaration is the violation; §4.2 — every rule has a stable identifier and a severity"
+      - reveal: "encryption: FAIL CKV_AWS_19 HIGH · public-access: FAIL CKV_AWS_20 HIGH · versioning: FAIL CKV_AWS_21 MEDIUM"
+    explain: |
+      You answered a control question by reading text — no cloud account, no console,
+      nothing provisioned. All three rules fail, including the MEDIUM versioning gap the
+      worked example's summary tends to overshadow. That is the whole opening of this
+      module: the bucket-that-will-exist is a file you can check at the speed of opening it.
+
+  - id: t2
+    type: action
+    objective: [4, 5]
+    instruction: |
+      Run the gate: click "Run validator" — the pipeline's gate step, evaluating the scan
+      result at the HIGH floor. Confirm the decision is FAIL with exit code 1: that
+      non-zero exit is the entire enforcement — the build system refuses the merge. Then
+      keep the verdict: copy the gate's complete output into `lab08/gate-block-record.txt`,
+      replacing the placeholder line.
+    verify:
+      - check: history_contains
+        regex: "^validator:gate lab08/scan-under-gate\\.json lab08/control-map\\.csv HIGH$"
+      - check: validator_passes
+        exit: 1
+        stdout_matches: "^GATE_DECISION: FAIL"
+      - check: file_content_matches
+        path: ~/lab08/gate-block-record.txt
+        regex: "^blocking_at_or_above_HIGH: 2$"
+      - check: file_content_matches
+        path: ~/lab08/gate-block-record.txt
+        regex: "^GATE_DECISION: FAIL  \\(build blocked — 2 control\\(s\\) violated at/above HIGH\\)$"
+    hints:
+      - nudge: "Run validator IS `bash gate.sh lab08/scan-under-gate.json lab08/control-map.csv HIGH`. Watch the exit code under the output — 1 means blocked. The record itself is evidence: keep all of it."
+      - concept: "§4.5 — any blocking finding ⇒ non-zero exit ⇒ no merge"
+      - reveal: "Click Run validator (decision: FAIL, exit 1), then copy its full output into lab08/gate-block-record.txt in place of the placeholder line"
+    explain: |
+      Two HIGH findings blocked; the MEDIUM one was recorded but did not block. Nothing
+      was created wrong, because the wrongness was caught while it was still text. A
+      detection sits in a report; this exit code physically refuses to let the bad change
+      exist — that is the difference between detection and enforcement.
+
+  - id: t3
+    type: action
+    objective: [3]
+    instruction: |
+      Read your block record as an auditor: each blocking FAILED line names both the
+      scanner's rule id and the control it enforces. In section 2 of the worksheet, map
+      each blocking finding to its named control. Then open `lab08/control-map.csv` —
+      the file that performed that translation — and notice it is yours: versioned,
+      reviewable, and independent of the scanner vendor.
+    verify:
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^CKV_AWS_19 *-> *SC-28 *$"
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^CKV_AWS_20 *-> *AC-3 *$"
+      - check: file_content_matches
+        path: ~/lab08/gate-block-record.txt
+        regex: "^FAILED  CKV_AWS_19  \\[HIGH\\]  -> SC-28 \\(Protection of Information at Rest\\)  : BLOCK$"
+      - check: file_content_matches
+        path: ~/lab08/gate-block-record.txt
+        regex: "^FAILED  CKV_AWS_20  \\[HIGH\\]  -> AC-3 \\(Access Enforcement\\)  : BLOCK$"
+    hints:
+      - nudge: "The block record already speaks both languages on each FAILED line: tool-speak (CKV_…) to the left of the arrow, auditor-speak (SC-… / AC-…) to the right. The bridge is one CSV you own."
+      - concept: "§4.3 — the control map is policy-as-data: the map is yours, the scanner is just the sensor"
+      - reveal: "Worksheet section 2: CKV_AWS_19 -> SC-28 and CKV_AWS_20 -> AC-3 — both mappings appear verbatim in the gate's block record"
+    explain: |
+      `CKV_AWS_19` is a vendor's rule name; "SC-28, Protection of Information at Rest" is
+      a control with an owner an auditor recognises. The one-row-per-rule CSV that joins
+      them is the most GRC-specific artifact in this pipeline — when the catalogue changes,
+      you change that file, in version control, with a reviewer.
+
+  - id: t4
+    type: action
+    objective: [5]
+    instruction: |
+      Diagnose the fix before shipping it: read `lab08/main-compliant.tf` and, in section 3
+      of the worksheet, point to what remediates each blocking finding — which block or
+      setting answers the encryption question, and which clears public access.
+    verify:
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^CKV_AWS_19 fixed by: .*server_side_encryption"
+      - check: file_content_matches
+        path: ~/lab08/findings-worksheet.md
+        regex: "^CKV_AWS_20 fixed by: .*private"
+    hints:
+      - nudge: "Diff the two .tf files in your head: which blocks exist only in main-compliant.tf? One declares encryption at rest; one line changes who can read the bucket."
+      - concept: "§5.3 — remediation makes the scanner's questions answerable with yes, in the declaration itself"
+      - reveal: "CKV_AWS_19 fixed by: the aws_s3_bucket_server_side_encryption_configuration block (sse_algorithm aws:kms) · CKV_AWS_20 fixed by: acl = \"private\" in aws_s3_bucket_acl"
+    explain: |
+      Diagnosing a blocked build is exactly this walk: the gate names the finding, the map
+      names the control, and the fix is a visible diff in the declaration. The author
+      doesn't negotiate with the gate — they change the text until the questions answer yes.
+
+  - id: t5
+    type: action
+    objective: [4, 6]
+    instruction: |
+      Ship the remediation. The scanner's re-run against the fixed change is the committed
+      `lab08/checkov-compliant.json` — make the pipeline's scan step reflect it by replacing
+      the ENTIRE contents of `lab08/scan-under-gate.json` with that file's contents
+      (copy the whole file). Run the gate again and confirm the decision is PASS with exit
+      code 0. Then capture the evidence: copy the complete PASS record into
+      `lab08/evidence-storage-controls.txt`, replacing the placeholder.
+    verify:
+      - check: file_content_matches
+        path: ~/lab08/scan-under-gate.json
+        regex: "\"failed_checks\": \\[\\]"
+      - check: file_content_equals
+        path: ~/lab08/scan-under-gate.json
+        from: generated
+      - check: validator_passes
+        exit: 0
+        stdout_matches: "^GATE_DECISION: PASS"
+      - check: file_content_matches
+        path: ~/lab08/evidence-storage-controls.txt
+        regex: "^failed_checks_evaluated: 0$"
+      - check: file_content_matches
+        path: ~/lab08/evidence-storage-controls.txt
+        regex: "^blocking_at_or_above_HIGH: 0$"
+      - check: file_content_matches
+        path: ~/lab08/evidence-storage-controls.txt
+        regex: "^GATE_DECISION: PASS"
+    hints:
+      - nudge: "The gate evaluates whatever the scan step last produced — scan-under-gate.json. Replace its whole contents with checkov-compliant.json's (select all, copy, paste), run, and keep the gate's own PASS record."
+      - concept: "§4.6 — the evidence is generated by the control, not asserted about it; a record the gate emits cannot drift from what the gate did"
+      - reveal: "Copy ALL of lab08/checkov-compliant.json into lab08/scan-under-gate.json, click Run validator (PASS, exit 0), then copy the full output into lab08/evidence-storage-controls.txt"
+    explain: |
+      The same gate that blocked the bad change just emitted the proof that SC-28 and AC-3
+      were evaluated and held on this one — failed_checks_evaluated: 0, nothing at or above
+      the floor. Because the record is a byproduct of the enforcement, it cannot lie about
+      what happened: that file is the EVALUATE stage's output handed forward to EVIDENCE.
+
+  - id: t6
+    type: reflection
+    objective: [4]
+    instruction: |
+      The severity floor is a risk decision written as one value. This pipeline pins its
+      floor at HIGH; on your own machine, run the lab's gate with the floor lowered —
+      `bash labs/setup.sh ./lab08`, then `bash lab08/gate.sh lab08/checkov-noncompliant.json
+      lab08/control-map.csv MEDIUM` — or reason it through from the block record you kept.
+      In 2–4 sentences: what changes in the decision at a MEDIUM floor, why, and where in
+      your owned files a real organisation would record that risk-appetite change so it is
+      reviewable.
+    hints:
+      - nudge: "At HIGH, CKV_AWS_21 (CP-9, versioning) was recorded but did not block. Rank the severities: what crosses the line when the line moves to MEDIUM?"
+      - concept: "§4.4 — the floor is risk appetite expressed as code, and changing it is itself a reviewable diff"
+
+  - id: t7
+    type: reflection
+    objective: [1, 2, 3, 6]
+    instruction: |
+      The lab's written deliverable, in 4–6 sentences for a colleague who has never written
+      Terraform: what declaring infrastructure as text made checkable, and when; why the
+      non-compliant change was blocked and what the exit code meant to the build system
+      (enforcement, not detection); why mapping each finding to a named control matters and
+      why the control map — not the scanner — is the artifact a GRC engineer owns; and why
+      the gate-emitted PASS record cannot drift from reality. If you do the optional
+      real-environment task, describe where the scanner and the gate sit in the workflow
+      so a non-zero gate exit blocks the merge.
+    hints:
+      - nudge: "Walk the five parts of §3 in order: declare → scan → map → gate → evidence. The bucket is never created wrong, because the wrongness was caught while it was still text."
+      - concept: "§3 — The Mental Model: where, exactly, does a control fail?"
+
+completion:
+  evidence_pack: true

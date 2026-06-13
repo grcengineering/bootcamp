@@ -1,0 +1,35 @@
+{
+  "id": "m09-lab-setup",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [],
+  "cmd": "bash labs/setup.sh ./lab09",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "setup.sh is the module's own committed lab asset (seeded byte-identical; drift vs modules/09-policy-as-code/labs/ caught by this capture's replay); the echo line and every staged fixture byte are the script's real output, not authored strings.\n",
+  "stdout": "lab09 fixtures copied to ./lab09/ (evidence-store/ ready)\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "0\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:27:35.162Z",
+    "captured_with": "capture.ts v1"
+  }
+}

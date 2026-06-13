@@ -1,0 +1,513 @@
+{
+  "spec": {
+    "id": "lab-09",
+    "module": "09-policy-as-code",
+    "title": "The verdict is a function",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-01",
+    "engine": "shell-linux",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "m09",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You own the control \"access changes must never grant the legacy-admin role.\" In this\nlab you take the verdict out of a human's head and make it executable: the control as\npolicy in two languages, a verdict-function a machine can run, a CI gate that blocks\nthe bad change, and evidence records that fall out of every run for free. The terminal\nis a real simulation: the scripts you write here genuinely execute, and their outputs\nare CI-verified against a real Linux machine. One honest boundary: the staged reference\nsolutions (check.sh, run-policy-gate.sh) use awk features beyond this simulation's\ntaught subset — read them any time, but run them on your own machine; the versions you\nauthor here produce the same verdicts, the same gate lines, and the same records.\nThe policy engines themselves (Cedar CLI, OPA) are optional in this lab by design —\nthe module's point is that the lab's core logic is engine-agnostic.\n",
+    "walkthrough_first_input": "pwd",
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1
+        ],
+        "instruction": "Provision the lab and meet the inputs. Run `bash labs/setup.sh ./lab09`, enter\n`lab09`, and read both access exports: `access-clean.csv` and\n`access-violation.csv`. They differ by one row — find it. Then look harder at the\n*clean* file: one row mentions `legacy-admin` and is still clean. Why?\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^bash labs/setup\\.sh \\./lab09$"
+          },
+          {
+            "check": "file_exists",
+            "path": "~/lab09/access-violation.csv"
+          },
+          {
+            "check": "cwd_is",
+            "path": "~/lab09"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cat access-clean\\.csv$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cat access-violation\\.csv$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The setup line is in §6 of the module. Each export row is one access change: row, principal, action, resource_role."
+          },
+          {
+            "concept": "§4.1 — a policy is a function: the input is a fact you can fetch, the decision is what a human used to pronounce"
+          },
+          {
+            "reveal": "bash labs/setup.sh ./lab09, then: cd lab09 · cat access-clean.csv · cat access-violation.csv"
+          }
+        ],
+        "explain": "Row 4 of the violating export is carol being GRANTED legacy-admin — the change the\ncontrol forbids. Row 3 of the clean export is dave having legacy-admin REVOKED —\nsame role, opposite action, perfectly fine. Hold on to that row: it is the trap\nthis whole lab is built around.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          2
+        ],
+        "instruction": "Write the control in two policy languages, in your own files: `my-policy.cedar`\nas a Cedar `forbid` statement, and `my-policy.rego` as a Rego `deny` rule\n(package `access`, `import rego.v1`). The reference `policy.cedar` and\n`policy.rego` are sitting right next to you — author yours first, then compare.\nThe checker reads your files, and it knows the reference headers when it sees them.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.cedar",
+            "regex": "forbid\\("
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.cedar",
+            "regex": "action == Action::\"grantRole\""
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.cedar",
+            "regex": "resource\\.role == \"legacy-admin\""
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab09/my-policy.cedar",
+            "regex": "^// Control AC-6"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "package access"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "import rego\\.v1"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "deny contains msg if"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "input\\.action == \"grantRole\""
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "input\\.resource\\.role == \"legacy-admin\""
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "msg :="
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab09/my-policy.rego",
+            "regex": "^# Control AC-6"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Cedar asks: may this principal do this action on this resource? Rego asks: does this condition hold over this JSON? Same verdict, two question shapes. `nano my-policy.cedar` opens the editor."
+          },
+          {
+            "concept": "§4.2 + §4.3 — Cedar's forbid always wins; Rego's deny collects a message when every clause in the body holds"
+          },
+          {
+            "reveal": "nano my-policy.cedar — forbid(principal, action == Action::\"grantRole\", resource) when { resource.role == \"legacy-admin\" }; — then nano my-policy.rego — package access … import rego.v1 … deny contains msg if { input.action == \"grantRole\" … input.resource.role == \"legacy-admin\" … msg := \"granting the legacy-admin role is forbidden\" }"
+          }
+        ],
+        "explain": "Two files, one verdict. Cedar made you name a principal, an action, and a resource\nwhether you wanted to or not; Rego let you write any condition over any JSON shape\nand enforced nothing. That difference is not cosmetic — it is the next reflection.\n"
+      },
+      {
+        "id": "t3",
+        "type": "reflection",
+        "objective": [
+          2
+        ],
+        "instruction": "One sentence each, as you would say it to a colleague: what did Cedar force you to\nspecify that Rego didn't? And what did Rego let you do that Cedar's grammar can't\neven describe? (If you compared your files against the references, say whether the\nlanguages — not the answers — pushed you to think differently.)\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Cedar's grammar IS the principal/action/resource model. Rego's freedom is that `input` can be any JSON — a pod spec, a config, a CSV row."
+          },
+          {
+            "concept": "§5.1 — the language shapes the question; pick the language whose shape matches the control"
+          }
+        ]
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Make the verdict executable. Write `my-check.sh`: it takes an access export as\n`$1`, prints one `DENY` line per violating row, prints a `RESULT` line, and exits\n`1` if and only if there is at least one violation (`0` clean, `2` usage error).\nThe trap from t1 is live here: a row violates ONLY when the action is `grantRole`\nAND the role is `legacy-admin` — dave's revoke must pass. Make it executable, then\ncapture its verdict on the violating export: run it with `> check-violation.out`.\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab09/my-check.sh"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-check.sh",
+            "regex": "grantRole"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-check.sh",
+            "regex": "legacy-admin"
+          },
+          {
+            "check": "script_reproducible",
+            "path": "~/lab09/my-check.sh",
+            "args": [
+              "/home/analyst/lab09/access-clean.csv"
+            ],
+            "expect_stdout": "RESULT  control=AC-6-legacy-admin  decision=allow  violations=0"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab09/check-violation.out",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab09/check-violation.out",
+            "required_commands": [
+              "./my-check.sh"
+            ],
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "tee",
+              "nano"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Both columns, one condition. A check that fires on `legacy-admin` alone will deny dave's REVOKE in the clean export — green-looking, silently wrong. awk can test `$3` and `$4` together; grep -c can count rows matching the full `,grantRole,legacy-admin` tail."
+          },
+          {
+            "concept": "§4.1 + §4.3 — decision = policy(input), and the easiest way to be wrong is to encode half the condition"
+          },
+          {
+            "reveal": "nano my-check.sh — guard $1 (usage to stderr, exit 2 when empty or missing), print violations with awk -F, the pattern NR == 1 skips the header and $3 == \"grantRole\" && $4 == \"legacy-admin\" prints \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\", count with COUNT=$(grep -c invocation on the ,grantRole,legacy-admin$ tail), then RESULT  control=AC-6-legacy-admin  decision=deny  violations=$COUNT with exit 1 when the count is above zero, else the allow line with violations=0 and exit 0 — then chmod +x my-check.sh and ./my-check.sh access-violation.csv > check-violation.out"
+          }
+        ],
+        "explain": "The checker just re-ran your script twice in a clean environment — with the clock\nand entropy deliberately perturbed between runs — and against the clean export it\nhad to say `allow` both times. That clean export contains dave's legacy-admin\nrevoke, so passing this check means your verdict reads BOTH columns. The §4.1\nfunction is now a real program with a real exit code.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          3
+        ],
+        "instruction": "Read the verdict the way a CI system will: by exit code, not by output. Run\n`./my-check.sh access-clean.csv` and then `echo $?`. Run\n`./my-check.sh access-violation.csv` and `echo $?` again. Two runs, two numbers —\nthose numbers are the entire interface between your judgment and the pipeline.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^\\./my-check\\.sh access-clean\\.csv$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^\\./my-check\\.sh access-violation\\.csv$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^echo \\$\\?$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "`$?` holds the previous command's exit code. Predict both numbers before you look."
+          },
+          {
+            "concept": "§4.5 — output is for people; the exit code is what fails the build"
+          },
+          {
+            "reveal": "./my-check.sh access-clean.csv, then echo $? — repeat with access-violation.csv: the clean run reports 0, the violating run reports 1, a usage mistake reports 2"
+          }
+        ],
+        "explain": "`0` and `1`. Nothing about that pair is decorative: CI systems treat non-zero as\n\"fail the build,\" so `exit 1` on a violation is the exact mechanism by which a\nnon-compliant change physically cannot merge. That is what gives the gate teeth.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          3,
+          4
+        ],
+        "instruction": "Build the gate a pipeline would call. Write `my-gate.sh` taking the export (`$1`)\nand an evidence-store directory (`$2`): it announces the evaluation (`EVAL` line),\nruns `./my-check.sh` on the input, and — on EVERY run, regardless of verdict —\nwrites one JSON evidence record named\n`<store>/AC-6-legacy-admin-<run-id>-<timestamp-digits>.json` carrying all eight\nfields: control_id, policy_engine, decision, passed, violations, input_ref,\nevaluated_at, run. Honor `GATE_FAKE_TIME` (timestamp) and `CI_RUN_ID` (run id) so\nruns are reproducible, echo `EVIDENCE` and `GATE` lines, and exit with the\ncheck's code. Then simulate the CI run on the violating input:\n`GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store`\n",
+        "verify": [
+          {
+            "check": "file_exists",
+            "path": "~/lab09/my-gate.sh"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/my-gate.sh",
+            "regex": "my-check\\.sh"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 \\./my-gate\\.sh access-violation\\.csv evidence-store$"
+          },
+          {
+            "check": "file_exists",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json",
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "tee",
+              "cat",
+              "nano"
+            ]
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The gate is a wrapper: run the check, capture CODE=$? immediately, map 0 to allow/true/PASS and 1 to deny/false/FAIL, write the record, exit with CODE. The timestamp digits for the filename are the GATE_FAKE_TIME with its punctuation deleted."
+          },
+          {
+            "concept": "§4.6 — the gate already computed a verdict, so capture it: proof as a by-product, not a separate chore"
+          },
+          {
+            "reveal": "nano my-gate.sh — guard $1 and $2 (usage + exit 2), mkdir -p the store, RUN_ID from CI_RUN_ID, NOW from GATE_FAKE_TIME (fall back to date -u only if unset), echo the EVAL line, run ./my-check.sh on the input and capture CODE=$?, branch 0 to allow/true/PASS else deny/false/FAIL, recount with grep -c, STAMP=$(echo the NOW value | tr -d the TZ:- characters), write the one-line JSON record with > into evidence-store/AC-6-legacy-admin-$RUN_ID-$STAMP.json, echo the EVIDENCE and GATE lines, exit with CODE — then chmod +x my-gate.sh and GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"
+          }
+        ],
+        "explain": "The gate failed (exit 1), the bad change is blocked — and the proof wrote itself:\na passed:false record with the §4.6 shape, produced by the run, not by you. The\nchecker verified the record's provenance: it had to fall out of your gate\nexecuting, not out of an echo. One declared divergence from §5.3's worked example:\nyour input_ref is the input filename rather than a cksum-derived hash — the record\nSHAPE is the contract, and the reference's hash trick needs awk features this\nsimulation honestly doesn't carry.\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Now the passing half of the audit trail. Run the gate on the clean input as a\nlater CI run:\n`GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 ./my-gate.sh access-clean.csv evidence-store`\nThen inspect the store: `ls evidence-store` and `cat` the ci-1804 record. Two\nruns, two records — one passed:false, one passed:true — written by the gate.\n",
+        "verify": [
+          {
+            "check": "history_contains",
+            "regex": "^GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 \\./my-gate\\.sh access-clean\\.csv evidence-store$"
+          },
+          {
+            "check": "file_exists",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json",
+            "from": "generated"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json",
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "tee",
+              "cat",
+              "nano"
+            ]
+          },
+          {
+            "check": "history_contains",
+            "regex": "^ls evidence-store/?$"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^cat evidence-store/AC-6-legacy-admin-ci-1804-20260528172200\\.json$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Same gate, different input, different run id and timestamp — the store accumulates one record per evaluation, pass or fail."
+          },
+          {
+            "concept": "§5.3 — two commits, two records, a complete before/after audit trail produced by the act of judging"
+          },
+          {
+            "reveal": "GATE_FAKE_TIME=2026-05-28T17:22:00Z CI_RUN_ID=ci-1804 ./my-gate.sh access-clean.csv evidence-store, then ls evidence-store and cat evidence-store/AC-6-legacy-admin-ci-1804-20260528172200.json"
+          }
+        ],
+        "explain": "An auditor asking \"prove this control was enforced on every change\" now gets a\ndirectory listing, not a scramble: deny/passed:false at 17:04, allow/passed:true\nat 17:22, each naming its input, engine, and run. EVIDENCE and MONITOR just fell\nout of EVALUATE at zero marginal toil.\n"
+      },
+      {
+        "id": "t8",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Prove the gate judges the change, not the text. First flip the verdict to PASS:\nbuild `access-tampered.csv` from the violating export with carol's row turned\ninto a REVOKE (keep the other rows: `grep -v` the forbidden row into the new\nfile, then append the revoke row with `>>`). Gate it with run id `ci-tamper` and\ntime `2026-05-28T18:00:00Z` — predict the result before you run it. Then flip the\nother way: copy the clean export to `access-injected.csv`, append the row\n`5,frank,grantRole,legacy-admin`, and gate it with run id `ci-inject` at\n`2026-05-28T18:05:00Z`.\n",
+        "verify": [
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/access-tampered.csv",
+            "regex": "^4,carol,revokeRole,legacy-admin$"
+          },
+          {
+            "check": "file_not_matches",
+            "path": "~/lab09/access-tampered.csv",
+            "regex": "grantRole,legacy-admin"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^GATE_FAKE_TIME=2026-05-28T18:00:00Z CI_RUN_ID=ci-tamper \\./my-gate\\.sh access-tampered\\.csv evidence-store$"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-tamper-20260528180000.json",
+            "from": "generated"
+          },
+          {
+            "check": "file_content_matches",
+            "path": "~/lab09/access-injected.csv",
+            "regex": ",grantRole,legacy-admin$"
+          },
+          {
+            "check": "file_content_equals",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json",
+            "from": "generated"
+          },
+          {
+            "check": "history_contains",
+            "regex": "^GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject \\./my-gate\\.sh access-injected\\.csv evidence-store$"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "One word changes — grantRole becomes revokeRole — and the gate must flip FAIL to PASS, because the control forbids the GRANT, not the role. If your gate still fails, your verdict is ignoring the action column."
+          },
+          {
+            "concept": "§4.3 — the difference between a verdict and a pattern-match is exactly this pair of flips"
+          },
+          {
+            "reveal": "grep -v ',grantRole,legacy-admin$' access-violation.csv > access-tampered.csv, then echo '4,carol,revokeRole,legacy-admin' >> access-tampered.csv and GATE_FAKE_TIME=2026-05-28T18:00:00Z CI_RUN_ID=ci-tamper ./my-gate.sh access-tampered.csv evidence-store — for the inverse, cp access-clean.csv access-injected.csv, echo '5,frank,grantRole,legacy-admin' >> access-injected.csv, then GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject ./my-gate.sh access-injected.csv evidence-store"
+          }
+        ],
+        "explain": "FAIL flipped to PASS when the grant became a revoke, and PASS flipped to FAIL when\na forbidden grant was injected — your verdict bites on the actual change in both\ndirections, and the store now holds the records to prove it. A check that can't\nflip is not a control; it's a decoration.\n"
+      },
+      {
+        "id": "t9",
+        "type": "reflection",
+        "objective": [
+          5
+        ],
+        "instruction": "The policy-rot drill. Read the staged fixture: `cat rotted-policy.txt` — a Rego\nrule for control VR-3 that has passed every run for a year. In three or four\nsentences: why is it green-but-meaningless (what does it actually test, and what\nstamps that field)? What ownership gap let it rot? And what is the fix — name the\nstructural part, not just \"rewrite the rule.\"\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Follow the field: who sets last_reviewed, and on what trigger? Then read the OWNER and REVIEW CADENCE lines."
+          },
+          {
+            "concept": "§4.7 — worse than a noisy broken rule is a quietly meaningless one; the structural fix is ownership, not syntax"
+          }
+        ]
+      },
+      {
+        "id": "t10",
+        "type": "reflection",
+        "objective": [
+          1,
+          6
+        ],
+        "instruction": "The judgment that outranks the syntax. Two short paragraphs. First: was\npolicy-as-code the right tool for the legacy-admin control? Defend the yes using\n§4.8's three tests (objective verdict? high-frequency? ownable?) and name an\nowner and a review cadence. Second: is it the right tool for the rotted VR-3\nrisk-acceptance control from t9? Defend the no, name the manual alternative, and\nsay in one sentence what your gate's exit code moved out of human hands — and\nwhat it deliberately left behind.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "Yes-cases are objective, high-frequency, and ownable. VR-3 fails the first test: re-justifying a risk acceptance is a human judgment a function would lie about."
+          },
+          {
+            "concept": "§4.8 + §5.4 — choosing NOT to encode a control, in writing, is a senior move, not a failure"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [
+      {
+        "path": "~/labs",
+        "dir": true
+      },
+      {
+        "path": "~/labs/fixtures",
+        "dir": true
+      },
+      {
+        "path": "~/labs/fixtures/access-clean.csv",
+        "content": "row,principal,action,resource_role\n1,alice,grantRole,reader\n2,bob,grantRole,editor\n3,dave,revokeRole,legacy-admin\n4,erin,grantRole,viewer\n"
+      },
+      {
+        "path": "~/labs/fixtures/access-violation.csv",
+        "content": "row,principal,action,resource_role\n1,alice,grantRole,reader\n2,bob,grantRole,editor\n3,dave,revokeRole,legacy-admin\n4,carol,grantRole,legacy-admin\n"
+      },
+      {
+        "path": "~/labs/fixtures/check.sh",
+        "content": "#!/usr/bin/env bash\n# check.sh — the verdict-function of the §6 lab, isolated for testing.\n#\n# This is the policy from §4.1 made real: decision = policy(input). It is the\n# engine-agnostic encoding of control AC-6-legacy-admin:\n#\n#   \"access changes must never grant the legacy-admin role.\"\n#\n# It reads an access-export CSV (one access change per row: row,principal,\n# action,resource_role) and applies the SAME verdict the Cedar `forbid` and the\n# Rego `deny` rule encode — deny any row whose action is grantRole AND whose\n# resource_role is legacy-admin. It prints one DENY line per violation and\n# exits non-zero IF AND ONLY IF there is at least one violation. That exit code\n# is what gives the CI gate teeth.\n#\n# It checks BOTH the action and the role on purpose: revoking legacy-admin is\n# fine; only GRANTING it is forbidden. A check that fired on the role alone\n# would be subtly, silently wrong — the §4.3 failure mode in miniature.\n#\n# This is the EVALUATE step expressed as code, free of any policy engine: the\n# real lab can swap in Cedar's or OPA's CLI and read the same exit code. Here we\n# prove the verdict against committed fixtures with bash + coreutils + awk only.\n#\n# Usage:   check.sh <access-export.csv>\n# Exit:    0 = no violation (control PASSES)\n#          1 = >=1 violation (control FAILS — gate should block)\n#          2 = usage / input error\nset -euo pipefail\n\nINPUT=\"${1:-}\"\nif [ -z \"$INPUT\" ]; then\n  echo \"usage: check.sh <access-export.csv>\" >&2\n  exit 2\nfi\n[ -f \"$INPUT\" ] || { echo \"ERROR: access export not found: $INPUT\" >&2; exit 2; }\n\nCONTROL_ID=\"AC-6-legacy-admin\"\nFORBIDDEN_ACTION=\"grantRole\"\nFORBIDDEN_ROLE=\"legacy-admin\"\n\n# One awk pass over the CSV. Skip the header (NR==1). A row violates the control\n# only when BOTH the action column equals grantRole AND the role column equals\n# legacy-admin. Print a DENY line per violation; report the count via exit status.\nVIOLATIONS=\"$(\n  awk -F, -v act=\"$FORBIDDEN_ACTION\" -v role=\"$FORBIDDEN_ROLE\" '\n    NR == 1 { next }\n    NF < 4  { next }\n    {\n      a = $3; r = $4\n      gsub(/^[ \\t\\r]+|[ \\t\\r]+$/, \"\", a)\n      gsub(/^[ \\t\\r]+|[ \\t\\r]+$/, \"\", r)\n      if (a == act && r == role) {\n        printf \"DENY  row %s: %s -> %s  (forbidden by %s)\\n\", $1, $2, r, \"AC-6\"\n        n++\n      }\n    }\n    END { print \"::count::\" (n + 0) }\n  ' \"$INPUT\"\n)\"\n\nCOUNT=\"$(printf '%s\\n' \"$VIOLATIONS\" | sed -n 's/^::count:://p')\"\nprintf '%s\\n' \"$VIOLATIONS\" | grep '^DENY' || true\n\nif [ \"${COUNT:-0}\" -gt 0 ]; then\n  echo \"RESULT  control=$CONTROL_ID  decision=deny  violations=$COUNT\"\n  exit 1\nfi\necho \"RESULT  control=$CONTROL_ID  decision=allow  violations=0\"\nexit 0\n"
+      },
+      {
+        "path": "~/labs/fixtures/policy.cedar",
+        "content": "// Control AC-6-legacy-admin: access changes must never grant the legacy-admin role.\n// Cedar frames the verdict as authorization: principal / action / resource / context.\n// forbid always wins over any permit, so this denial is non-overridable.\nforbid(\n  principal,\n  action == Action::\"grantRole\",\n  resource\n)\nwhen { resource.role == \"legacy-admin\" };\n"
+      },
+      {
+        "path": "~/labs/fixtures/policy.rego",
+        "content": "# Control AC-6-legacy-admin: access changes must never grant the legacy-admin role.\n# Rego frames the same verdict as a query that collects denials over arbitrary JSON.\n# A request is rejected when deny is non-empty.\npackage access\n\nimport rego.v1\n\ndeny contains msg if {\n    input.action == \"grantRole\"\n    input.resource.role == \"legacy-admin\"\n    msg := \"granting the legacy-admin role is forbidden\"\n}\n"
+      },
+      {
+        "path": "~/labs/fixtures/rotted-policy.txt",
+        "content": "CONTROL: VR-3 — vendor risk acceptances must be re-justified when the vendor's\nrisk tier changes.\n\nENCODED (Rego, authored ~1 year ago, has passed every run since):\n\n  package vendor\n  import rego.v1\n\n  deny contains msg if {\n      not input.risk_acceptance.last_reviewed\n      msg := \"risk acceptance is missing a last_reviewed date\"\n  }\n\nOWNER: (none recorded)\nREVIEW CADENCE: (none recorded)\n\nNOTE FROM THE TICKETING SYSTEM: the `last_reviewed` field is auto-stamped with\nthe current date on ANY edit to the risk-acceptance ticket — a comment, a label\nchange, an attachment. No human risk decision is required for the field to be set.\n\nThis is the policy-rot fixture for the §6 task-6 drill. The rule is green on every\nrun, but it checks only that a date EXISTS, never that a human re-evaluated the\nrisk. With no owner and no cadence, the verdict drifted from the control's intent\nwhile staying green. Diagnose it, name the ownership gap, state the fix — then\ndecide (task 7) whether this control should have been policy-as-code at all.\n"
+      },
+      {
+        "path": "~/labs/fixtures/run-policy-gate.sh",
+        "content": "#!/usr/bin/env bash\n# run-policy-gate.sh — the CI gate of the §6 lab.\n#\n# Wraps check.sh (the verdict-function) so a pipeline can call ONE thing per\n# pull request. It does two jobs the loop demands:\n#\n#   1. EVALUATE: run the verdict-function against the input and propagate its\n#      exit code, so a violation EXITS NON-ZERO and the build is blocked. The\n#      non-compliant change physically cannot merge.\n#   2. EVIDENCE: on EVERY run, regardless of verdict, append one structured,\n#      versioned JSON evidence record to the evidence store. Proof is a\n#      by-product of judging, not a separate manual chore.\n#\n# Usage:   run-policy-gate.sh <access-export.csv> <evidence-store-dir>\n# Exit:    0 = control PASSES (build proceeds)   1 = control FAILS (blocked)\n#          2 = usage / input error\n# Deps:    bash + coreutils + awk + check.sh. No engine, no network, no jq.\nset -uo pipefail\n\nINPUT=\"${1:-}\"\nSTORE=\"${2:-}\"\nHERE=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nCHECK=\"$HERE/check.sh\"\n\nif [ -z \"$INPUT\" ] || [ -z \"$STORE\" ]; then\n  echo \"usage: run-policy-gate.sh <access-export.csv> <evidence-store-dir>\" >&2\n  exit 2\nfi\n[ -f \"$INPUT\" ] || { echo \"ERROR: access export not found: $INPUT\" >&2; exit 2; }\n[ -f \"$CHECK\" ] || { echo \"ERROR: check.sh not found next to gate: $CHECK\" >&2; exit 2; }\nmkdir -p \"$STORE\"\n\nCONTROL_ID=\"AC-6-legacy-admin\"\nENGINE=\"${POLICY_ENGINE:-cedar}\"\nRUN_ID=\"${CI_RUN_ID:-ci-local}\"\nNOW=\"${GATE_FAKE_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)}\"\n\n# Stable, content-addressed-ish input reference (8 hex chars) so the evidence\n# record names which input was judged. Falls back gracefully if no checksum tool\n# is present; the record shape is the contract, the exact hash bytes are not.\ninput_ref() {\n  local base sum\n  base=\"$(basename \"$INPUT\")\"\n  sum=\"$(cksum \"$INPUT\" 2>/dev/null | awk '{printf \"%08x\", $1}')\"\n  [ -n \"$sum\" ] && printf '%s@%s' \"${base%.*}\" \"${sum:0:8}\" || printf '%s@nohash' \"${base%.*}\"\n}\n\necho \"EVAL  control=$CONTROL_ID engine=$ENGINE input=$(basename \"$INPUT\")\"\n\n# Run the verdict-function. Capture its DENY output and exit code; the exit code\n# IS the gate decision.\nset +e\nCHECK_OUT=\"$(bash \"$CHECK\" \"$INPUT\")\"\nCHECK_CODE=$?\nset -e 2>/dev/null || true\n\nprintf '%s\\n' \"$CHECK_OUT\" | grep '^DENY' || true\nVIOLATIONS=\"$(printf '%s\\n' \"$CHECK_OUT\" | sed -n 's/.*violations=\\([0-9][0-9]*\\).*/\\1/p' | tail -n1)\"\nVIOLATIONS=\"${VIOLATIONS:-0}\"\n\nif [ \"$CHECK_CODE\" -eq 0 ]; then\n  DECISION=\"allow\"; PASSED=\"true\"; GATE=\"PASS\"\nelif [ \"$CHECK_CODE\" -eq 1 ]; then\n  DECISION=\"deny\";  PASSED=\"false\"; GATE=\"FAIL\"\nelse\n  echo \"ERROR: verdict-function errored (exit $CHECK_CODE)\" >&2\n  exit 2\nfi\n\n# EVIDENCE: one record per run, regardless of verdict. This is the §4.6 shape.\nREF=\"$(input_ref)\"\nRECORD=\"$STORE/${CONTROL_ID}-${RUN_ID}-$(printf '%s' \"$NOW\" | tr -dc '0-9').json\"\nprintf '%s\\n' \"{\\\"control_id\\\": \\\"$CONTROL_ID\\\", \\\"policy_engine\\\": \\\"$ENGINE\\\", \\\"decision\\\": \\\"$DECISION\\\", \\\"passed\\\": $PASSED, \\\"violations\\\": $VIOLATIONS, \\\"input_ref\\\": \\\"$REF\\\", \\\"evaluated_at\\\": \\\"$NOW\\\", \\\"run\\\": \\\"$RUN_ID\\\"}\" > \"$RECORD\"\n\necho \"EVIDENCE  wrote $RECORD\"\necho \"GATE  result=$GATE  (violations=$VIOLATIONS)  exit=$CHECK_CODE\"\nexit \"$CHECK_CODE\"\n"
+      },
+      {
+        "path": "~/labs/setup.sh",
+        "content": "#!/usr/bin/env bash\n# Module 09 lab fixture generator (original lab asset).\n# Usage: setup.sh [DEST_DIR]   (default ./lab09)\n#\n# Recreates the bundled fixtures in a working directory so the lab is fully\n# self-contained and offline:\n#   - access-clean.csv      : a clean access export (no legacy-admin grant)\n#   - access-violation.csv  : an export with a forbidden legacy-admin grant\n#   - policy.cedar          : the control as a Cedar forbid statement\n#   - policy.rego           : the same control as a Rego deny rule\n#   - check.sh              : the engine-agnostic verdict-function (EVALUATE core)\n#   - run-policy-gate.sh    : the CI gate (runs check.sh + emits evidence)\n#   - rotted-policy.txt     : the policy-rot drill fixture\n#   - evidence-store/       : the starter versioned evidence store\n#\n# No network, no policy-engine install, no cloud. bash + coreutils only.\nset -euo pipefail\n\nDEST=\"${1:-./lab09}\"\nHERE=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nmkdir -p \"$DEST\"\n\n# Prefer copying the committed fixtures (single source of truth); fall back to\n# erroring loudly if this script is run detached from the repo.\nif [ -d \"$HERE/fixtures\" ]; then\n  cp \"$HERE/fixtures/access-clean.csv\"     \"$DEST/\"\n  cp \"$HERE/fixtures/access-violation.csv\" \"$DEST/\"\n  cp \"$HERE/fixtures/policy.cedar\"         \"$DEST/\"\n  cp \"$HERE/fixtures/policy.rego\"          \"$DEST/\"\n  cp \"$HERE/fixtures/check.sh\"             \"$DEST/\"\n  cp \"$HERE/fixtures/run-policy-gate.sh\"   \"$DEST/\"\n  cp \"$HERE/fixtures/rotted-policy.txt\"    \"$DEST/\"\n  chmod +x \"$DEST/check.sh\" \"$DEST/run-policy-gate.sh\"\n  mkdir -p \"$DEST/evidence-store\"\n  echo \"lab09 fixtures copied to $DEST/ (evidence-store/ ready)\"\n  exit 0\nfi\n\necho \"ERROR: fixtures directory not found next to setup.sh ($HERE/fixtures)\" >&2\nexit 1\n"
+      }
+    ],
+    "tools": {}
+  },
+  "expectations": {
+    "t4:4": "DENY  row 4: carol -> legacy-admin  (forbidden by AC-6)\nRESULT  control=AC-6-legacy-admin  decision=deny  violations=1\n",
+    "t6:4": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-violation.csv\", \"evaluated_at\": \"2026-05-28T17:04:00Z\", \"run\": \"ci-1789\"}\n",
+    "t7:2": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"allow\", \"passed\": true, \"violations\": 0, \"input_ref\": \"access-clean.csv\", \"evaluated_at\": \"2026-05-28T17:22:00Z\", \"run\": \"ci-1804\"}\n",
+    "t8:3": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"allow\", \"passed\": true, \"violations\": 0, \"input_ref\": \"access-tampered.csv\", \"evaluated_at\": \"2026-05-28T18:00:00Z\", \"run\": \"ci-tamper\"}\n",
+    "t8:5": "{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-injected.csv\", \"evaluated_at\": \"2026-05-28T18:05:00Z\", \"run\": \"ci-inject\"}\n"
+  },
+  "epoch": "2026-06-01T09:00:00Z"
+}

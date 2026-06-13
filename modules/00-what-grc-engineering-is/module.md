@@ -117,6 +117,8 @@ A team proudly automates its encryption check: a script that, once a quarter, em
 
 **Scenario.** You are about to spend months learning to engineer controls. Before any of that, you will commit — in writing — to the *before* picture of one real control, so the program has a baseline to measure itself against.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 00 → Interactive lab) as a guided document builder: you write the same one-page analysis against the module's own structural rubric check — the exact validator this curriculum's CI runs — and watch it reject, then genuinely accept, your document.
+
 **Setup (no tooling).** Pick **one real control your organization actually owns.** Not a hypothetical, not the easiest one — pick one you privately suspect is run the legacy way. Write its claim as a single falsifiable sentence (§4.1). If you can't phrase it as "X is true of system Y," you've picked a policy, not a control; pick again.
 
 **Tasks.** Produce a **one-page** analysis (roughly 350–600 words, structured exactly as below). You are filling in a fixed shape so the capstone can diff against it.

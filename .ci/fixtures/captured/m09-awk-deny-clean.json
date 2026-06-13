@@ -1,0 +1,31 @@
+{
+  "id": "m09-awk-deny-clean",
+  "module": "09",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m09",
+  "cwd": "/home/analyst",
+  "pre": [
+    "bash labs/setup.sh ./lab09",
+    "cd lab09"
+  ],
+  "cmd": "awk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' access-clean.csv",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "empty output on the clean export — dave's REVOKE of legacy-admin is not a violation.\n",
+  "stdout": "",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:17:38.441Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,6 @@
+{"anti_for": "t5", "reason": "the §5.3 trap — a naive grep ships the commented decoy as evidence; sshd's parse rules (comments stripped, last directive wins) were never applied"}
+{"input": "mkdir evidence"}
+{"input": "sudo true\nlabpass"}
+{"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}
+{"input": "sudo grep PasswordAuthentication /etc/ssh/sshd_config > evidence/effective-passwordauth.txt"}
+{"input": "sudo grep PermitRootLogin /etc/ssh/sshd_config > evidence/effective-permitrootlogin.txt"}

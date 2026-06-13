@@ -1,0 +1,26 @@
+{
+  "id": "m03-grep-verdict-unknown",
+  "module": "03",
+  "source": "macos-host",
+  "match": "byte-exact",
+  "cwd": "/tmp",
+  "pre": [
+    "mkdir -p /tmp/grcb-m03",
+    "printf 'CONTROL: Encryption at rest (CC6.1) | SUBSYSTEM: FileVault | VERDICT: PASS | RAW: FileVault is On.\\nCONTROL: Profile query (sample gap) | SUBSYSTEM: MDM/profiles | VERDICT: UNKNOWN | RAW: <query returned nothing>\\n' > /tmp/grcb-m03/packet.txt"
+  ],
+  "cmd": "grep 'VERDICT: UNKNOWN' /tmp/grcb-m03/packet.txt",
+  "citation": null,
+  "notes": "§6 task 7 — surfacing the gap line from the packet",
+  "holes": null,
+  "stdout": "CONTROL: Profile query (sample gap) | SUBSYSTEM: MDM/profiles | VERDICT: UNKNOWN | RAW: <query returned nothing>\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "provenance": {
+    "contract": "macos-host",
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.1\nBuildVersion:\t\t25F80",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:03:43.174Z",
+    "captured_with": "capture.ts v1"
+  }
+}

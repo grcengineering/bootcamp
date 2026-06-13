@@ -206,6 +206,8 @@ $ systemctl status evidence-collector
 
 **Scenario.** You have been handed a freshly provisioned Linux host and a three-line hardening standard. You must implement each control, then produce a one-page evidence writeup that *proves* each control from the host's own commands — the kind of artifact an auditor accepts because it is reproducible, not a screenshot.
 
+> **Interactive lab.** This lab runs in your browser on the bootcamp site (Module 02 → Interactive lab) on a simulated Ubuntu host (`web-01`) whose command outputs are CI-verified against a real systemd-enabled Linux machine — the same commands on a real box give the same answers.
+
 **The standard (your three controls):**
 1. Administration is done by a named non-root user with `sudo`; direct root login is not used.
 2. SSH accepts key-based authentication only — no passwords, no root login.

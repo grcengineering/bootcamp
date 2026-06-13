@@ -1,0 +1,3 @@
+{"anti_for": "t2", "reason": "near-miss: all three new rows silently labeled exact — structurally legal (the validator would pass them) but it is the false-equivalence defect industrialized (§4.6); the semantic gate requires honest labels"}
+{"input": "save-reflection t1\nThe spine file lists the twenty valid 800-53 families; a crosswalk row maps one profile requirement to a spine control with a relationship label."}
+{"input": "edit work/crosswalk.csv\nprofile,profile_control,spine_control,relationship\nSOC2,CC6.1,AC-2,broader\nISO27001,A.5.15,AC-2,exact\nCSF2,PR.DS-01,SC-28,partial\nPCI4,6.3.2,,orphan\nSOC2,CC7.2,AU-6,exact\nISO27001,A.8.15,AU-2,exact\nCIS8,8.2,AU-2,exact\n"}

@@ -1,0 +1,5 @@
+profile,profile_control,spine_control,relationship
+SOC2,CC6.1,AC-2,broader
+ISO27001,A.5.15,AC-2,exact
+CSF2,PR.DS-01,SC-28,partial
+PCI4,6.3.2,,orphan

@@ -1,0 +1,37 @@
+{
+  "id": "m06-aggregate-allpass",
+  "module": "06",
+  "source": "docker-linux-userland",
+  "match": "byte-exact",
+  "seed": "m06",
+  "cwd": "/home/analyst/lab06",
+  "pre": [
+    "echo '{ \"data\": [ { \"id\": \"u_x\", \"email\": \"x@acme.example\", \"mfa_enabled\": true, \"status\": \"active\" } ], \"pagination\": { \"page\": 1, \"per_page\": 5, \"total\": 1, \"next_cursor\": null } }' > fixtures/users-allpass.json"
+  ],
+  "cmd": "aggregate-mfa fixtures/users-allpass.json",
+  "tty_equiv": null,
+  "citation": null,
+  "notes": "the §6 task-6 all-pass scenario (mirrors labs/happy-path.sh Assertion 3) — exit 0 = control PASS",
+  "stdout": "{\n  \"control\": \"MFA enforced for all workforce users\",\n  \"framework_ref\": \"SOC 2 CC6.1 / CIS Control 6.5\",\n  \"collected_at\": \"2026-05-28T00:00:00Z\",\n  \"pages_aggregated\": 1,\n  \"total_users\": 1,\n  \"users_without_mfa\": 0,\n  \"active_users_without_mfa\": 0,\n  \"offending_users\": [],\n  \"control_result\": \"PASS\"\n}\n",
+  "stderr": "",
+  "exit": 0,
+  "stderr_interactive": "",
+  "post": [
+    {
+      "cmd": "echo $?",
+      "stdout": "0\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "provenance": {
+    "contract": "docker-linux-userland",
+    "image": "grc-bootcamp-capture:linux",
+    "base_digest": "sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54",
+    "dockerfile": "env/Dockerfile.userland",
+    "arch": "arm64",
+    "epoch": "2026-06-01T09:00:00Z",
+    "captured_at": "2026-06-12T20:00:10.145Z",
+    "captured_with": "capture.ts v1"
+  }
+}

@@ -1,0 +1,6 @@
+{"anti_for": "t2", "reason": "right bytes, wrong provenance — the evidence file was retyped with echo instead of pulled from the record; artifact_produced_by rejects fabricated evidence"}
+{"input": "cd lab07"}
+{"input": "bash labs/setup.sh"}
+{"input": "cat fixtures/posture-findings.json"}
+{"input": "echo '  { \"resourceId\": \"audit-logs\",  \"control\": \"encryption\", \"status\": \"PASS\" },' > encryption-verdict.json"}
+{"input": "cat encryption-verdict.json"}

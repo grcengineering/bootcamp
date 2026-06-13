@@ -1,0 +1,4 @@
+{
+  "_provenance": "real `bun modules/10-standards-spine/labs/validate-crosswalk.ts` run (host capture, 2026-06-12) against the golden's resolved 7-row crosswalk — summary + PASS line byte-identical to the ported validator (web/src/engines/builders/validate-crosswalk.ts, itself byte-accepted against builder-captures.json m10); regenerated + asserted equal by tests/exercise-replay-10.test.ts replaying golden.jsonl through the BuilderHost (root ISA ISC-60)",
+  "t5:2": "profiles: 5 | rows: 7 | spine families referenced: 4/20\nPASS: every profile requirement maps to a real spine family; no orphans; all relationships valid."
+}

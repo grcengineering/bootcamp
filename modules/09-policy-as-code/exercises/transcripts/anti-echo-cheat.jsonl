@@ -1,0 +1,12 @@
+{"anti_for": "t6", "reason": "echo-cheat: a sham gate plus a hand-echoed byte-perfect evidence record \u2014 content matches, but the record's provenance is echo, not a gate run"}
+{"input": "bash labs/setup.sh ./lab09"}
+{"input": "cd lab09"}
+{"input": "cat > my-check.sh << 'EOF'\n#!/usr/bin/env bash\n# my-check.sh \u2014 the verdict-function: decision = policy(input).\n# Denies a row only when BOTH the action is grantRole AND the role is legacy-admin.\nINPUT=\"${1:-}\"\nif [ -z \"$INPUT\" ]; then\n  echo \"usage: my-check.sh <access-export.csv>\" >&2\n  exit 2\nfi\nif [ ! -f \"$INPUT\" ]; then\n  echo \"ERROR: access export not found: $INPUT\" >&2\n  exit 2\nfi\nawk -F, 'NR == 1 { next } $3 == \"grantRole\" && $4 == \"legacy-admin\" { print \"DENY  row \" $1 \": \" $2 \" -> \" $4 \"  (forbidden by AC-6)\" }' \"$INPUT\"\nCOUNT=$(grep -c ',grantRole,legacy-admin$' \"$INPUT\")\nif [ \"$COUNT\" -gt 0 ]; then\n  echo \"RESULT  control=AC-6-legacy-admin  decision=deny  violations=$COUNT\"\n  exit 1\nfi\necho \"RESULT  control=AC-6-legacy-admin  decision=allow  violations=0\"\nexit 0\nEOF"}
+{"input": "chmod +x my-check.sh"}
+{"input": "./my-check.sh access-violation.csv > check-violation.out"}
+{"input": "cat > my-gate.sh << 'EOF'\n#!/usr/bin/env bash\n# pretends to wrap my-check.sh but runs nothing and writes no record\necho \"EVAL  control=AC-6-legacy-admin engine=cedar input=$1\"\necho \"GATE  result=FAIL  (violations=1)  exit=1\"\nexit 1\nEOF"}
+{"input": "chmod +x my-gate.sh"}
+{"input": "GATE_FAKE_TIME=2026-05-28T17:04:00Z CI_RUN_ID=ci-1789 ./my-gate.sh access-violation.csv evidence-store"}
+{"input": "mkdir -p evidence-store"}
+{"input": "echo '{\"control_id\": \"AC-6-legacy-admin\", \"policy_engine\": \"cedar\", \"decision\": \"deny\", \"passed\": false, \"violations\": 1, \"input_ref\": \"access-violation.csv\", \"evaluated_at\": \"2026-05-28T17:04:00Z\", \"run\": \"ci-1789\"}' > evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"}
+{"input": "cat evidence-store/AC-6-legacy-admin-ci-1789-20260528170400.json"}
