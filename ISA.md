@@ -2,7 +2,7 @@
 project: grc-engineering-bootcamp
 effort: E5
 phase: observe
-progress: 79/80
+progress: 87/89
 mode: build
 started: 2026-05-28
 updated: 2026-06-13
@@ -162,12 +162,12 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 > Owner directive: add IT-foundations modules to the Tier-1/100-level foundations (SQL/NoSQL, web app architecture, REST/SOAP/GraphQL/gRPC, networking) + enumerate the gaps, then deeply research and design highly-interactive visual/puzzle simulation activities. THIS wave's deliverable is the enumeration + research dossiers + build-ready activity designs + the shared visual-engine spec + sequencing — the actual module/exercise BUILD is a gated follow-on (Wave 4) pending owner go.
 - [x] ISC-81: `research/it-foundations/ENUMERATION.md` enumerates the topic set (owner's 4 + recommended gaps), each loop-stage-mapped and deconflicted against existing modules 06/07
 - [x] ISC-82: `research/it-foundations/VISUAL-PUZZLE-MODALITY.md` designs the reusable Inspect-&-Assemble surface (PEEL/TRACE/MAP) + Build-and-Break + Diff-the-Trace, all under the honesty doctrine
-- [ ] ISC-83: every enumerated topic has a deep, cited research dossier (`RESEARCH.json`) grounding real-artifact fidelity (real header layouts, JWT/cert/SAML/log/manifest shapes, protocol sequences) with verified sources
-- [ ] ISC-84: every topic has a build-ready activity design (`ACTIVITY-DESIGNS.json` + `MODULE-DESIGNS.md`) conforming to `style/EXERCISE-SPEC.md`: 5-6 Bloom objectives, visual-puzzle-first for abstractions, machine-verifiable tasks, named honesty source per shown value
-- [ ] ISC-85: Anti: no designed activity is a quiz — every task manipulates/queries a real artifact or simulated state (assessment = Diff-the-Trace forensic or produced evidence artifact)
-- [ ] ISC-86: Anti: every design frames the topic by its loop question, never "learn this stack" (manifesto thesis preserved); originality-clean (no third-party framing presented as original)
-- [ ] ISC-87: `VISUAL-ENGINE-SPEC.md` specifies the new `visual` Lab Player surface + the minimal new verifier-primitive set + the new parsers/engines, each with its honest ground-truth source; reuses wave-2 engines where the topic fits
-- [ ] ISC-88: `SEQUENCING.md` places the modules in the Tier-1 dependency graph + track map with a numbering recommendation (additive vs 3-digit relabel), prerequisites among new modules noted
+- [x] ISC-83: every enumerated topic has a deep, cited research dossier (`RESEARCH.json`) grounding real-artifact fidelity (real header layouts, JWT/cert/SAML/log/manifest shapes, protocol sequences) with verified sources
+- [x] ISC-84: every topic has a build-ready activity design (`ACTIVITY-DESIGNS.json` + `MODULE-DESIGNS.md`) conforming to `style/EXERCISE-SPEC.md`: 5-6 Bloom objectives, visual-puzzle-first for abstractions, machine-verifiable tasks, named honesty source per shown value
+- [x] ISC-85: Anti: no designed activity is a quiz — every task manipulates/queries a real artifact or simulated state (assessment = Diff-the-Trace forensic or produced evidence artifact)
+- [x] ISC-86: Anti: every design frames the topic by its loop question, never "learn this stack" (manifesto thesis preserved); originality-clean (no third-party framing presented as original)
+- [x] ISC-87: `VISUAL-ENGINE-SPEC.md` specifies the new `visual` Lab Player surface + the minimal new verifier-primitive set + the new parsers/engines, each with its honest ground-truth source; reuses wave-2 engines where the topic fits
+- [x] ISC-88: `SEQUENCING.md` places the modules in the Tier-1 dependency graph + track map with a numbering recommendation (additive vs 3-digit relabel), prerequisites among new modules noted
 - [ ] ISC-89: Antecedent: owner reviews the enumeration + designs and authorizes the build wave before any module/exercise is built (no auto-build of 10 modules on green design)
 
 ## Test Strategy
@@ -293,3 +293,13 @@ The original goal: "Create, test, refine, and finalize ALL explicitly proposed a
 - Real-Chrome (Interceptor): Module 01 full e2e completion + reload persistence (2026-06-12); API auth-ladder (401 + OAuth reject) + builder crosswalk validator (FAIL on planted orphan) per-engine-class (2026-06-13); all 16 /labs routes hydrate with voice-matched titles (2026-06-13).
 - Cross-vendor audit: Cato unavailable (codex absent — TF-CATO) → Anvil (Kimi K2.6) cross-family audit, verdict CONCERNS, all findings (H1/H2/M2/M3/M4/L1/L2 + advisor IV) remediated and re-verified; H1 (anti-transcript discrimination) now provably catches the named cheat at its check index.
 - Anti-criteria holding: ISC-16/17 (research corpus gitignored, never staged — `git status` clean), ISC-68 (nothing pushed to origin — all work in local commits; verified no `git push` ran).
+
+## Verification — Wave 3 design deliverable (2026-06-13)
+
+- ISC-81/82: ENUMERATION.md (10 topics, loop-mapped, deconflicted vs 06/07) + VISUAL-PUZZLE-MODALITY.md (Inspect-&-Assemble: PEEL/TRACE/MAP + Build-and-Break + Diff-the-Trace) written.
+- ISC-83/84: deep research + build-ready designs for all 10 modules (RESEARCH.json, ACTIVITY-DESIGNS.json — 10 objects each; MODULE-DESIGNS.md per-module dossiers). 8/10 research stages used live web research; **identity + databases research was transiently rate-limited and synthesizer-grounded from cited standards (RFC 7519/6749/6750, OIDC Core, SAML OASIS, ISO 9075).** Honesty spot-checks PASS: the cited JWT header `eyJhbGci…` decodes to exactly `{"alg":"HS256","typ":"JWT"}`; the protobuf example `08 96 01` is the real varint for 150. Build-time fidelity is enforced regardless because each design's oracle is a real parser/engine/transform over real bytes (decoded_artifact_matches / engine_result_equals), not a research claim — captured + verified at build like every wave-2 fixture. Re-running the two web-research stages before build is a cheap optional hardening (noted for Wave 4).
+- ISC-85: every activity manipulates/queries a real artifact or sim state; every assessment is Diff-the-Trace forensic or a produced evidence artifact — no quizzes (verified across the 10 design objects).
+- ISC-86: every design leads with the loop question it answers (not "learn this stack"); titles are original voice-matched framings ("On the Wire: Where a Control's Truth Travels").
+- ISC-87: VISUAL-ENGINE-SPEC.md — new `visual` surface + a MINIMAL 6-primitive set (region_labeled_correctly, field_value_is, decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct), each parser/oracle naming its ground-truth source; reuses wave-2 sql.js/jq/api/builder where the topic fits.
+- ISC-88: SEQUENCING.md — dependency-ordered placement + numbering recommendation (additive 16–25 now; 3-digit 1xx relabel as a deliberate later migration).
+- ISC-89 (Antecedent) OPEN — owner reviews enumeration + designs and authorizes the build wave; no module/exercise built yet.

@@ -1,0 +1,240 @@
+[
+  {
+    "module_slug": "it-networking-fundamentals",
+    "title": "On the Wire: Where a Control's Truth Travels",
+    "enumeration_id": "N1",
+    "loop_stages": ["LOCATE", "QUERY", "EVALUATE", "EVIDENCE/MONITOR (segue)"],
+    "loop_question": "When a control claims 'data is encrypted in transit,' which layer, header, and byte on the wire physically hold that claim's truth — and how do I read it?",
+    "control_relevance": "The three most-audited network controls — boundary protection/segmentation (NIST 800-53 SC-7), encryption-in-transit (SC-8), and port-exposure/least-functionality (CM-7) — are all predicates over fields a learner can read directly off a real packet. The module teaches the 5-tuple as the literal object a firewall ACL and a VPC flow log evaluate.",
+    "standards_and_versions": [
+      { "ref": "RFC 791", "what": "IPv4 header layout; Protocol byte at offset 9; src/dst address at offsets 12-15/16-19", "authority": "IETF" },
+      { "ref": "RFC 9293", "what": "TCP (obsoletes 793); 3-way handshake state machine; flags byte at offset 13, bit order CWR,ECE,URG,ACK,PSH,RST,SYN,FIN", "authority": "IETF" },
+      { "ref": "RFC 768", "what": "UDP; contrasts connectionless transport with TCP", "authority": "IETF" },
+      { "ref": "RFC 8446", "what": "TLS 1.3; ContentType is the first byte of every record (22=handshake, 23=application_data)", "authority": "IETF" },
+      { "ref": "RFC 826", "what": "ARP; opcode 1=request, 2=reply; gratuitous/unsolicited reply is the L2 trust-rebinding attack", "authority": "IETF" },
+      { "ref": "IANA EtherType registry", "what": "0x0800=IPv4, 0x86DD=IPv6, 0x0806=ARP", "authority": "IANA" },
+      { "ref": "IANA Protocol Numbers", "what": "6=TCP, 17=UDP, 1=ICMP", "authority": "IANA" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "SC-7 boundary protection, SC-8 transmission confidentiality, CM-7 least functionality", "authority": "NIST" },
+      { "ref": "SOC 2 TSC", "what": "CC6.6 boundary, CC6.7 transmission encryption", "authority": "AICPA" }
+    ],
+    "honesty_sources": "Real pcap bytes from Wireshark SampleCaptures (http.cap cleartext leg, dns.cap) plus a real TLS 1.3 capture; failure-leg captures are genuine instances (real port-80 exchange, real cleartext http.cap GET, real gratuitous-ARP capture). Every shown field value is the TS dissector's decode over real bytes, fidelity-checked against tshark's decode of the same file. The dissector is the oracle; there is no authored answer key.",
+    "claim_thread": "laptop-encryption (in-transit half) — module 06 turned 'this disk is encrypted' into a fleet-wide REST disk_encrypted pull; this module turns the in-transit sibling 'data is encrypted in transit' into a single readable byte, the TLS record ContentType (0x17 = application_data = opaque).",
+    "what_existing_modules_lack": "No OSI/TCP/packet topic exists anywhere in modules 00-15 (verified by grep in ENUMERATION). Module 02 covers OS internals but explicitly not networking between machines.",
+    "open_risks": [
+      "TLS 1.3 capture must be a real handshake whose ContentType bytes are genuinely 0x16 then 0x17 — confirm against tshark, do not synthesize.",
+      "The two-hop MAC-rewrite capture requires either two real adjacent-hop captures or a documented split-horizon reproduction; if a real second-hop capture is unavailable, this becomes the highest fidelity risk."
+    ]
+  },
+  {
+    "module_slug": "how-the-internet-works",
+    "title": "From a URL in a Box to a Chain of Trust: Reading the Request Lifecycle on the Wire",
+    "enumeration_id": "R3",
+    "loop_stages": ["UNDERSTAND", "LOCATE", "QUERY", "EVALUATE", "EVIDENCE", "MONITOR", "OWN"],
+    "loop_question": "As 'google.com' becomes pixels, where does each control claim live in the lifecycle — which hop is plaintext, where does encryption begin, and which zone asserts the claim's truth?",
+    "control_relevance": "The integrative spine tying N1 (networking) + R2 (crypto/PKI) + N3 (web architecture) together. The DNS control surface (CAA, SPF/DKIM/DMARC, the cert the name resolves to) reframes the auditor question from 'do you have a firewall?' to 'show me the CAA record and the cert this name presents.' The domain/zone is a tier-0 OWN control: registrar compromise voids TLS, email auth, and site integrity at once.",
+    "standards_and_versions": [
+      { "ref": "RFC 1035", "what": "DNS message format; 12-octet header, flags word, QNAME length-prefixed labels, RR TYPE/CLASS/TTL/RDATA; A=1, IN=1", "authority": "IETF" },
+      { "ref": "RFC 9293", "what": "TCP 3-way handshake; ack = peer seq + 1 invariant", "authority": "IETF" },
+      { "ref": "RFC 8446", "what": "TLS 1.3; SNI/ALPN ride in the plaintext ClientHello; post-ServerHello is encrypted; unexpected_message alert on out-of-order records", "authority": "IETF" },
+      { "ref": "RFC 9110 / 9112", "what": "HTTP semantics + message syntax (start-line, Host)", "authority": "IETF" },
+      { "ref": "RFC 8659", "what": "CAA record RDATA: Flags / TagLength / Tag / Value; tag 'issue' names the permitted CA", "authority": "IETF" },
+      { "ref": "RFC 7208", "what": "SPF; qualifiers +pass -fail ~softfail ?neutral", "authority": "IETF" },
+      { "ref": "RFC 7489", "what": "DMARC; p= none/quarantine/reject enforcement verb; rua reporting address", "authority": "IETF" },
+      { "ref": "iana.org/domains/root/servers", "what": "canonical root server list for the delegation treasure-hunt", "authority": "IANA" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "SC-8 transmission confidentiality, SC-12/SC-17 key/PKI, SC-23 session authenticity, SI-8 spam protection", "authority": "NIST" }
+    ],
+    "honesty_sources": "Live-captured during research: example.com DoH response (Status:0, AD:true, two real A records 104.20.23.154 / 172.66.147.243, TTL 300); .com TLD nameservers (m/j/g/k.gtld-servers.net, TTL 21594); google.com CAA (0 issue pki.goog), SPF (v=spf1 include:_spf.google.com ~all), DMARC (v=DMARC1; p=reject; rua=...). The 29-byte example.com A query verified live via printf|xxd (1234 0100 0001 0000 0000 0000 07'example' 03'com' 00 0001 0001). Cert chain reproducible via openssl s_client. Every shown value is the ported RFC 1035/8446/8659 parser's decode over real bytes/records.",
+    "claim_thread": "laptop-encryption (in-transit half, located) — the lifecycle TRACE's draggable encryption boundary IS the 'encrypted in transit' control made visible and falsifiable: DNS, TCP, and the TLS SNI are in the clear; TLS-on-443 is where confidentiality begins.",
+    "what_existing_modules_lack": "No DNS, no request-lifecycle, no DNS-domain-security (SPF/DKIM/DMARC/CAA) content exists. This is the home for the owner's exact 'Google search' end-to-end example.",
+    "open_risks": [
+      "Live-captured DoH/dig values (TTLs, A-record IPs, .com NS set) drift — these are Tier-B/Tier-C and must be re-captured at review, not frozen.",
+      "The full type-to-render TRACE composite state machine (DNS+TCP+TLS+HTTP) is the most ambitious sim in the wave; the TLS 1.3 ordering + unexpected_message alert must come from the real RFC 8446 state machine."
+    ]
+  },
+  {
+    "module_slug": "applied-cryptography-pki",
+    "title": "The Padlock Is a Lie (Until You Read the Cert)",
+    "enumeration_id": "R2",
+    "loop_stages": ["UNDERSTAND", "LOCATE", "EVALUATE", "EVIDENCE", "MONITOR", "OWN"],
+    "loop_question": "When an auditor asks 'is data encrypted at rest AND in transit?', where does each half's truth live — and which single cert field, read against the claim, breaks it?",
+    "control_relevance": "'Is data encrypted at rest and in transit?' is the most-asked auditor question; 'hash vs encrypt vs encode' is the most-common practitioner confusion. In-transit truth lives in the TLS cert validity window + chain + negotiated AEAD cipher (CC6.7/SC-8); at-rest truth in a storage-encryption setting + KMS key reference (CC6.1/SC-28). Applied only — never roll crypto (SC-13 approved algorithms).",
+    "standards_and_versions": [
+      { "ref": "RFC 5280", "what": "x.509 cert fields in order: validity notBefore/notAfter, subject/SAN, issuer, BasicConstraints cA, KeyUsage keyCertSign; issuer-name chains to subject-name leaf->intermediate->root", "authority": "IETF" },
+      { "ref": "RFC 8446", "what": "TLS 1.3 full-handshake sequence; CertificateVerify proves the server signed the transcript with its private key; AlertDescription codes (10/40/42/45/48/70)", "authority": "IETF" },
+      { "ref": "RFC 7519", "what": "JWT header.payload.signature; alg:none is the broken-auth trap", "authority": "IETF" },
+      { "ref": "FIPS 180-4", "what": "SHA-256/SHA-1 digests (SHA-256 of empty = e3b0c442...)", "authority": "NIST" },
+      { "ref": "openssl verify return codes", "what": "0 ok / 10 expired / 18 self-signed / 62 hostname mismatch", "authority": "OpenSSL project" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "SC-8 transmission, SC-13 cryptographic protection (approved algorithms), SC-28 at rest", "authority": "NIST" },
+      { "ref": "SOC 2 TSC", "what": "CC6.1 at rest, CC6.7 in transit", "authority": "AICPA" }
+    ],
+    "honesty_sources": "Real leaf cert captured live from www.google.com:443 on 2026-06-13 via openssl s_client | openssl x509 -text (Issuer C=US/O=Google Trust Services/CN=WR2, Subject CN=www.google.com, notBefore=May 25 08:39:11 2026, notAfter=Aug 17 08:39:10 2026, id-ecPublicKey prime256v1, BasicConstraints critical CA:FALSE, SAN DNS:www.google.com), real 3-tier chain (leaf -> WR2 -> GTS Root R1) with openssl Verify return code: 0 (ok). Transform constants reproduced locally and confirmed this session (SHA-256('hello')=2cf24dba..., base64('hello')=aGVsbG8=, JWT header eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9). Assessment failure legs are real public test certs: expired.badssl.com, self-signed.badssl.com, wrong.host.badssl.com.",
+    "claim_thread": "laptop-encryption (crypto spine of the whole claim) — modules 02/03/04 located the at-rest volume-encryption setting on disk; here the learner learns to READ it as evidence (AES-256?) and to answer the in-transit half (valid cert + AEAD cipher), so the claim is provable on both axes with cited evidence mapped to CC6.1/CC6.7 and SC-8/13/28.",
+    "what_existing_modules_lack": "No asymmetric-crypto/PKI/cert-chain content anywhere (only incidental SSH-key + keychain mentions in OS modules).",
+    "open_risks": [
+      "Live cert values (validity dates, serial, chain CNs) drift on a ~90-day clock — Tier-C; the badssl.com test hosts are stable but third-party-coupled and must be link-checked.",
+      "The x509-parser TS port must be fidelity-checked against openssl x509 -text; DER decoding is where invented structure could creep in.",
+      "The tls13-sim's alert codes must come from the RFC 8446 state machine, not a lookup table keyed to the learner's mistake."
+    ]
+  },
+  {
+    "module_slug": "web-application-architecture",
+    "title": "Where the Claim Can Be True: Tracing a Request Through the Tiers",
+    "enumeration_id": "N3",
+    "loop_stages": ["UNDERSTAND", "LOCATE", "EVALUATE", "EVIDENCE", "MONITOR/OWN"],
+    "loop_question": "A control truth is produced by a system and can only be read where that system produces it — so which tier (client / edge / LB / proxy / app / DB) owns each control claim, and where does defense-in-depth fail?",
+    "control_relevance": "The architecture diagram IS the control-evidence map. Maps each control claim (TLS in transit, encrypted at rest, HttpOnly+Secure sessions, WAF blocks OWASP Top 10, all access logged) onto the tier structurally capable of producing its truth, and names the control family (SC-7, SC-8, SC-28, AC-3, IA, AU-2/3, PL-8(1) / CC6.1, CC6.6, CC6.7, CC7.2).",
+    "standards_and_versions": [
+      { "ref": "AWS three-tier reference architecture", "what": "CloudFront+WAF edge -> public-subnet ALB -> private-subnet EC2 app -> private-subnet RDS Multi-AZ; the cited MAP/TRACE key for control->tier ownership and the public/private subnet boundary", "authority": "AWS" },
+      { "ref": "RFC 7239", "what": "Forwarded header (for=/by=/host=/proto=) carrying client-origin truth after TLS termination; literal §4 examples", "authority": "IETF" },
+      { "ref": "RFC 6265", "what": "Set-Cookie cookie-av attributes (Secure, HttpOnly, SameSite); §3.1 literal example SID=31d4d96e407aad42", "authority": "IETF" },
+      { "ref": "RFC 7519", "what": "Bearer/JWT for the stateless-token classification", "authority": "IETF" },
+      { "ref": "RFC 9111", "what": "HTTP caching; Age generation §5.1, s-maxage §5.2.2.10 — the cached-sensitive-data failure", "authority": "IETF" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "SC-7, SC-8, SC-28, AC-3, IA, AU-2/AU-3, PL-8(1)", "authority": "NIST" },
+      { "ref": "SOC 2 TSC", "what": "CC6.1, CC6.6, CC6.7, CC7.2", "authority": "AICPA" }
+    ],
+    "honesty_sources": "Request path + control-to-tier ownership = AWS three-tier reference architecture (cited MAP key). Hop-added header bytes = RFC 7239 §4 literal examples, dissected by a TS parser ported from the RFC 7239 ABNF grammar. Set-Cookie = RFC 6265 §3.1 literal example, parsed by an RFC-6265-ported tokenizer; JWT = the existing R1 real-JWT parser. Cache failure = RFC 9111 Age/Cache-Control parsed by an RFC-9111-ported parser. No decoded value is invented — the parsers are the oracles.",
+    "claim_thread": "laptop-encryption (the sharpest split) — the single auditor question 'encrypted in transit AND at rest?' resolves to TWO different tiers producing TWO different truths: SC-8 in transit at every hop (incl. the LB-termination / backend-re-encryption nuance) and SC-28 at rest at the DB. Reading the at-rest answer from the edge is structurally impossible.",
+    "what_existing_modules_lack": "No web-application-architecture / tier model exists. Module 07 dives into cloud APIs but never establishes who-owns-which-control across tiers.",
+    "open_risks": [
+      "The AWS reference architecture evolves; the tier model is conceptually stable but the cited diagram is Tier-C and must be re-verified at review.",
+      "The 'second TLS connection vs plain HTTP on the LB->app hop' failure leg needs a real example of each (HAProxy/NGINX/NLB termination docs) so the bad twin is a genuine misconfiguration, not authored."
+    ]
+  },
+  {
+    "module_slug": "it-api-paradigms",
+    "title": "Four Counters, One Question: REST / SOAP / GraphQL / gRPC and Where the Control Lives",
+    "enumeration_id": "N4",
+    "loop_stages": ["UNDERSTAND", "QUERY", "EVALUATE", "EVIDENCE"],
+    "loop_question": "When the SAME control question ('list every user and whether MFA is on') takes four wire shapes, where does each paradigm's contract let me LOCATE the control's truth-field, and which control surface does each invite?",
+    "control_relevance": "The control claim is paradigm-invariant but its audit PROCEDURE is not. Each paradigm's contract artifact (OpenAPI / WSDL / SDL / .proto) is the first place a GRC engineer LOCATEs control-truth and is itself collectible evidence of the exposed surface. Maps the four paradigm-specific recon/attack classes to OWASP API Security Top 10 2023 (API2 broken auth, API3 BOPLA, API4 resource consumption, API9 improper inventory).",
+    "standards_and_versions": [
+      { "ref": "OpenAPI 3.1.0", "what": "REST contract; paths/responses/schema/properties; sparse fieldsets (JSON:API) 22.7KB->2.5KB", "authority": "OpenAPI Initiative" },
+      { "ref": "WSDL 1.1 + WS-SecurityPolicy + OASIS WS-Security UsernameTokenProfile", "what": "SOAP contract; portType/binding/SignedParts; in-message UsernameToken; PasswordDigest=Base64(SHA-1(nonce+created+password)) normative value weYI3nXd8LjMNVksCKFV8t3rgHh3Rw==", "authority": "OASIS / W3C" },
+      { "ref": "GraphQL SDL + OWASP GraphQL Cheat Sheet", "what": "type/Query selection set; introspection (__schema); depth/cost limits; NoIntrospection; aliased batching = API4:2023 Scenario #2", "authority": "GraphQL Foundation / OWASP" },
+      { "ref": "Protocol Buffers + grpc PROTOCOL-HTTP2.md", "what": ".proto service/rpc/message; tag=(field<<3)|wire_type; bool false = 0x10 0x00; framing [flag:1B][len:4B big-endian][msg]; :path=/package.Service/Method; content-type application/grpc; te: trailers; grpc-status trailer; verified examples a=150->08 96 01, b=testing->12 07 74 65 73 74 69 6e 67", "authority": "Protobuf project / gRPC project" },
+      { "ref": "RFC 7519", "what": "JWT bearer shared across REST/GraphQL/gRPC transport-auth; alg:none (API2)", "authority": "IETF" },
+      { "ref": "OWASP API Security Top 10 2023", "what": "API1-API10 canonical list; the cited OWASP-to-paradigm grid key", "authority": "OWASP" }
+    ],
+    "honesty_sources": "All four payloads are real captures over the shared module-06 8-user acme.example seed (data literally identical across paradigms). REST sparse-fieldset 22.7KB->2.5KB is the measured JSON:API example. Contract artifacts are real machine-readable docs parsed by ported TS oracles (OpenAPI/JSON-Schema, WSDL/XML, GraphQL-SDL, protobuf .proto). gRPC protobuf decode and WS-Security digest are recomputed live by ported transforms (the decoder/transform IS the oracle). Calibration bytes are the protobuf.dev verified examples. OWASP mappings cited to the 2023 canonical list.",
+    "claim_thread": "laptop-encryption (MFA sibling, four ways) — module 06 turned the single-laptop disk-encrypted claim into a fleet-wide REST devices pull; this module shows the fleet MFA claim ('every user has MFA') asked four structurally different ways. The shared JWT bearer (first met in R1 identity, PEELed here) ties three of four paradigms' transport-auth back to the wave-2 PEEL-a-JWT mechanic.",
+    "what_existing_modules_lack": "Module 06 covers REST pulls and the auth ladder only; the four API paradigms and their differing contracts + control/security surfaces are absent.",
+    "open_risks": [
+      "Four parser oracles (OpenAPI/WSDL/SDL/protobuf) plus a SHA-1+Base64 transform is the heaviest engine lift in the wave — protobuf wire decode is where invented structure could creep in; calibrate against protobuf.dev examples.",
+      "Real gRPC-over-HTTP2 capture must carry genuine length-prefixed protobuf bytes; if synthesized the honesty doctrine breaks.",
+      "The GraphQL build-and-break sim's depth/cost limiter and NoIntrospection rule must be real graphql validation, not a scripted refusal."
+    ]
+  },
+  {
+    "module_slug": "logging-telemetry-observability",
+    "title": "The Field That Proves It: Reading a Log Line as Continuous Evidence",
+    "enumeration_id": "R4",
+    "loop_stages": ["LOCATE", "QUERY", "EVALUATE", "EVIDENCE", "MONITOR"],
+    "loop_question": "Where is continuous control-evidence born — and how do I read a single structured log line as the proof (or the break) of a control claim across a noisy stream?",
+    "control_relevance": "Audit logging is its own control family (800-53 AU, SOC 2 CC7) and the foundation modules 07/13 silently assume it. This is where periodic evidence becomes continuous: the log line is the control's by-product, and 'find the one event that proves or breaks the control across a noisy stream' is the EVALUATE/MONITOR mindset distilled.",
+    "standards_and_versions": [
+      { "ref": "RFC 5424", "what": "syslog message format; PRI = Facility*8 + Severity; HEADER = PRI VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID; STRUCTURED-DATA SD-ELEMENT [SD-ID *(SP SD-PARAM)]; NILVALUE '-'; §6.5 verbatim example lines", "authority": "IETF" },
+      { "ref": "RFC 5424 Table 1/Table 2", "what": "Facility codes (4=security/auth, 20=local4) and Severity codes (0 Emergency ... 7 Debug; 2 Critical, 5 Notice)", "authority": "IETF" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "AU-2 event logging, AU-3 content of audit records, AU-6 review, AU-11 retention", "authority": "NIST" },
+      { "ref": "SOC 2 TSC", "what": "CC7.2 monitoring, CC7.3 evaluation of events", "authority": "AICPA" }
+    ],
+    "honesty_sources": "The two RFC 5424 §6.5 example messages loaded VERBATIM as the parse target (<34>1 ... su - ID47 - BOM'su root' failed... ; <165>1 ... evntslog - ID47 [exampleSDID@32473 iut=3 eventSource=Application eventID=1011] BOM...). A TS port of the RFC 5424 ABNF computes the field tree; PRIVAL math (34 -> Facility 4 / Severity 2; 165 -> Facility 20 / Severity 5) is the parser's arithmetic over the real PRI byte. The dissector is the oracle; the structured-data example is RFC-normative, not authored.",
+    "claim_thread": "laptop-encryption (evidence half) — the auth-failure log line is the continuous by-product of the access controls the wave has been reading at rest and on the wire; a structured field maps back to the same control families, now born on a schedule rather than pulled point-in-time.",
+    "what_existing_modules_lack": "No logging/telemetry/observability foundation exists; modules 07 and 13 assume structured logs and a SIEM concept without ever teaching the log line itself.",
+    "open_risks": [
+      "RFC 5424 §6.5 examples are stable (Tier-A), but the pipeline-assembly TRACE (source->collector->store->query->alert) must stay conceptual or it becomes vendor-coupled (Splunk/Elastic) and drifts.",
+      "BOM handling in the MSG field and NILVALUE '-' are easy to mis-parse — fidelity-check the ABNF port against a reference syslog parser."
+    ]
+  },
+  {
+    "module_slug": "databases-relational-and-nosql",
+    "title": "Same Question, Three Stores: Where Control-Truth Lives at Rest",
+    "enumeration_id": "N2",
+    "loop_stages": ["LOCATE", "QUERY", "EVALUATE", "EVIDENCE"],
+    "loop_question": "When the same control question ('which users lack MFA?') must be answered against a relational table, a document store, and a key-value store, where does the truth physically live and how do I reach it in each?",
+    "control_relevance": "Extends module 07's SQL with data models, NoSQL, data-at-rest, and DB security (injection, access control, encryption-at-rest). The data model decides where control-truth lives and how completeness is proven — a JOIN in relational, a per-document field in a document store, a key scan in KV.",
+    "standards_and_versions": [
+      { "ref": "ISO/IEC 9075 (SQL) / SQLite", "what": "relational model, schema, indexes, transactions (ACID); SELECT ... WHERE mfa_enabled = 0 as the control query; runs on the wave-2 sql.js engine", "authority": "ISO / SQLite" },
+      { "ref": "JSON document model (MongoDB-style)", "what": "schema-on-read, per-document fields, nested structure; the same control query as a field filter; consistency model contrast (eventual vs strong)", "authority": "vendor-neutral document-DB conventions" },
+      { "ref": "Key-value model (Redis-style)", "what": "opaque value keyed by id; control-truth reachable only by key pattern scan; no ad-hoc query", "authority": "vendor-neutral KV conventions" },
+      { "ref": "OWASP Top 10 A03:2021 Injection", "what": "SQL injection as the canonical DB control failure; parameterized query as the control", "authority": "OWASP" },
+      { "ref": "NIST SP 800-53 Rev.5", "what": "SC-28 protection of information at rest, AC-3 access enforcement, SI-10 input validation", "authority": "NIST" },
+      { "ref": "SOC 2 TSC", "what": "CC6.1 logical access / encryption at rest, CC6.8 unauthorized/malicious", "authority": "AICPA" }
+    ],
+    "honesty_sources": "The relational leg runs on the real wave-2 sql.js (WASM SQLite) engine over the shared module-06 8-user acme.example seed loaded as a table — the engine result is the oracle (engine_result_equals), not an answer key. The document-store and KV legs are PEELed as real JSON / real key-value dumps of the SAME 8 users (a ported JSON parser is the oracle for document fields). The injection demo uses the real sql.js engine: a concatenated query and a parameterized query are both executed and their differing result sets are the engine's real output. No invented rows.",
+    "claim_thread": "laptop-encryption (at-rest, three models) — the same fleet claim the API module pulled over REST is now answered against the store where it actually rests, in three data models, so the learner sees that 'where the truth lives' changes shape per store but the control question does not.",
+    "what_existing_modules_lack": "Module 07 teaches SQL to query one evidence table (SQLBolt depth); data models, NoSQL, data-at-rest, and DB security are the gap this fills.",
+    "open_risks": [
+      "Reuses the wave-2 sql.js engine for the relational + injection legs (low risk); the document/KV legs are PEEL over real JSON/KV dumps (low risk).",
+      "Must avoid drifting into a SQL-tutorial (that is module 07) — the spine is the cross-model comparison, not query syntax."
+    ]
+  },
+  {
+    "module_slug": "identity-authn-authz-protocols",
+    "title": "The Valet Key: Reading Who You Are and What You May Do",
+    "enumeration_id": "R1",
+    "loop_stages": ["UNDERSTAND", "LOCATE", "EVALUATE", "EVIDENCE", "MONITOR"],
+    "loop_question": "When a control claims 'access is authenticated and authorized,' where does that claim's truth live — in the JWT claims a learner can decode, the OAuth/OIDC dance they can sequence, and the SAML assertion they can read?",
+    "control_relevance": "Highest control relevance of anything in the wave. Access control is the #1 control family (SOC 2 CC6, 800-53 AC/IA). The bootcamp teaches API-auth in passing (module 06 ladder) and never the protocols auditors live in. JWT decode, OAuth2/OIDC sequence, and SAML SSO redirect chain are the literal evidence surfaces.",
+    "standards_and_versions": [
+      { "ref": "RFC 7519", "what": "JWT header.payload.signature; reserved claims exp/iat/iss/aud/sub; base64url segments; alg:none and expired-exp are the tamper traps", "authority": "IETF" },
+      { "ref": "RFC 6749 + RFC 6750", "what": "OAuth2 authorization-code and client-credentials flows; Bearer token usage; the valet-key separation of credential from access token", "authority": "IETF" },
+      { "ref": "OpenID Connect Core 1.0", "what": "OIDC ID Token (a signed JWT) layered on OAuth2; the dance: authz request -> code -> token+id_token", "authority": "OpenID Foundation" },
+      { "ref": "SAML 2.0 (OASIS)", "what": "SP-initiated SSO redirect chain SP -> IdP -> assertion -> SP; the signed <Assertion> with <AuthnStatement> and <Conditions> NotOnOrAfter", "authority": "OASIS" },
+      { "ref": "NIST SP 800-63B", "what": "AAL levels; MFA as an authenticator-assurance control", "authority": "NIST" },
+      { "ref": "NIST SP 800-53 Rev.5 / SOC 2", "what": "IA-2 identification & authentication, AC-3 access enforcement, AC-6 least privilege / CC6.1, CC6.2, CC6.3", "authority": "NIST / AICPA" }
+    ],
+    "honesty_sources": "A real three-segment JWT (header eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 -> {alg:HS256,typ:JWT}) base64url-decoded live by a ported RFC 7519 parser — the decode IS the oracle (decoded_artifact_matches). The OAuth2/OIDC TRACE uses a stateful sim following the real RFC 6749 / OIDC Core message sequence (out-of-order code-before-redirect yields the real invalid_request). The SAML assertion is a real RFC/OASIS-spec example XML PEELed by a ported XML parser; the tamper legs (alg:none JWT, expired exp, assertion past NotOnOrAfter) are real instances. Tamper traps are decoded, never authored.",
+    "claim_thread": "laptop-encryption (MFA is the encryption-claim's access sibling) — the same fleet the wave reads for disk/transit encryption is read here for authentication assurance; the JWT bearer PEELed here is the literal token reused across module 06 and the API-paradigms module.",
+    "what_existing_modules_lack": "Identity protocols (OAuth2 deep, OIDC, SAML, SSO, MFA, JWT, sessions, federation) do not exist anywhere; module 06 covers the API-level auth ladder only.",
+    "open_risks": [
+      "JWT signature verification (HS256 HMAC) needs the SHA-based transform from R2 — share the crypto-transform engine; do not re-port.",
+      "SAML XML is verbose and XML-signature validation is genuinely hard — scope the PEEL to reading assertion fields + catching the expired-Conditions tamper, NOT to full XML-DSig verification (cite that boundary honestly).",
+      "OAuth/OIDC has many flows; the module must teach authorization-code (user) and client-credentials (machine) and explicitly bound the rest as cite-only."
+    ]
+  },
+  {
+    "module_slug": "cloud-shared-responsibility",
+    "title": "Whose Control Is It? Reading the Responsibility Boundary",
+    "enumeration_id": "R5",
+    "loop_stages": ["UNDERSTAND", "LOCATE", "OWN"],
+    "loop_question": "For any control claim in the cloud, who is structurally capable of producing its truth — you or the provider — and how does that boundary shift across IaaS / PaaS / SaaS?",
+    "control_relevance": "The framing for all cloud GRC. Module 07 dives into cloud APIs but never establishes who-owns-which-control. The shared-responsibility boundary decides whether a control is yours to engineer or the provider's to attest (and you to inherit) — and the control-plane vs data-plane split decides where a control's configuration even lives.",
+    "standards_and_versions": [
+      { "ref": "AWS Shared Responsibility Model", "what": "security OF the cloud (provider) vs security IN the cloud (customer); the cited MAP key", "authority": "AWS" },
+      { "ref": "CSA / generic IaaS-PaaS-SaaS responsibility matrices", "what": "the boundary shifts: in IaaS the customer owns OS+app+data; in PaaS the platform owns the OS/runtime; in SaaS the provider owns nearly everything but data classification + access stays the customer's", "authority": "Cloud Security Alliance" },
+      { "ref": "control-plane vs data-plane", "what": "the control plane configures (who can change what); the data plane serves (the actual workload traffic) — a control on each is a different object", "authority": "vendor-neutral cloud architecture" },
+      { "ref": "NIST SP 800-53 Rev.5 / SP 800-145", "what": "cloud definitions (IaaS/PaaS/SaaS); SA-9 external system services, PL-8 security architecture, CA-3 system interconnections", "authority": "NIST" },
+      { "ref": "SOC 2 TSC + inherited-controls / CUEC concept", "what": "complementary user-entity controls — the provider attests its half; the customer must implement the assumed-as-implemented half", "authority": "AICPA" }
+    ],
+    "honesty_sources": "The MAP zone key cites the AWS Shared Responsibility Model and the published IaaS/PaaS/SaaS responsibility matrices verbatim — an authoritative cited key, not authored opinion. Each control card's you/provider placement is the documented division; the IaaS/PaaS/SaaS slider re-derives placement from the same cited matrices as the abstraction level changes. The control-plane/data-plane placement cites vendor-neutral cloud architecture. No invented ownership.",
+    "claim_thread": "laptop-encryption (who proves it) — for 'encrypted at rest,' SaaS means the provider attests it and you inherit (CUEC); IaaS means you own and must produce the evidence yourself. Same claim, different owner depending on the service model — the OWN-stage lesson of the wave.",
+    "what_existing_modules_lack": "No shared-responsibility / cloud-model framing exists; module 07 establishes a 4-part cloud control-surface model but not who-owns-which-control.",
+    "open_risks": [
+      "Lightest/most-conceptual module in the wave (R5 is intentionally light) — the risk is it becomes a slide, not a puzzle; the boundary-slider MAP must be genuinely interactive with a cited authoritative key.",
+      "Provider responsibility matrices drift (Tier-C) — re-verify the cited AWS/CSA matrix at review."
+    ]
+  },
+  {
+    "module_slug": "containers-and-virtualization",
+    "title": "Peel the Image: Where a Workload's Control-Truth Is Baked In",
+    "enumeration_id": "R6",
+    "loop_stages": ["LOCATE", "QUERY", "EVALUATE", "EVIDENCE"],
+    "loop_question": "When a control claims 'no secrets in the image' or 'containers do not run as root,' where in the image manifest, layers, and runtime config does that claim's truth physically live?",
+    "control_relevance": "The modern workload surface module 08 (IaC) assumes; container config IS control-truth. Peeling an image's layers to find a baked-in secret and spotting the misconfigured container (runs as root, exposed port, no resource limit) are the literal LOCATE/EVALUATE moves for the container control family.",
+    "standards_and_versions": [
+      { "ref": "OCI Image Format Spec", "what": "image manifest -> config (Cmd, User, ExposedPorts, Env) + ordered layer descriptors with sha256 digests; layers are content-addressed and each is a real tar diff", "authority": "Open Container Initiative" },
+      { "ref": "OCI Runtime Spec", "what": "the runtime config.json: process.user (uid), capabilities, resource limits — the run-as-root and no-limit controls live here", "authority": "Open Container Initiative" },
+      { "ref": "Docker / VM contrast", "what": "VMs virtualize hardware (own kernel); containers share the host kernel and isolate via namespaces+cgroups — the blast-radius difference", "authority": "vendor-neutral" },
+      { "ref": "CIS Docker Benchmark", "what": "the cited control key: 4.1 run as non-root user, 5.x runtime hardening, do-not-bake-secrets", "authority": "CIS" },
+      { "ref": "NIST SP 800-190", "what": "Application Container Security Guide; image, registry, orchestrator, host risks", "authority": "NIST" },
+      { "ref": "NIST SP 800-53 Rev.5 / SOC 2", "what": "CM-7 least functionality, CM-6 configuration settings, IA-5 secrets / CC6.1, CC7.1", "authority": "NIST / AICPA" }
+    ],
+    "honesty_sources": "A real OCI image manifest + config JSON (e.g. produced by docker inspect / skopeo inspect of a real public image, or a real `docker save` tarball's manifest) PEELed by a ported OCI-manifest reader — the manifest JSON and layer digests are real bytes, the reader is the oracle. The baked-in-secret leg is a real layer whose extracted tar genuinely contains an env/secret entry (the layer digest and its content are the ground truth). The runs-as-root / exposed-port / no-limit findings are read directly off the real config.json User/ExposedPorts/resource fields. No invented manifest.",
+    "claim_thread": "laptop-encryption (workload sibling) — the same 'read the config that proves the control' move the OS modules used for disk encryption now applies to a container's baked-in configuration: the control-truth is in the manifest/config, readable, not asserted.",
+    "what_existing_modules_lack": "No containers/virtualization content; module 08 (IaC) assumes the container workload surface without teaching the image/layers/registry/runtime config.",
+    "open_risks": [
+      "Real OCI manifests reference layer digests whose tar content must be genuinely inspectable for the baked-in-secret leg — staging a real image with a real (test) secret in a layer is the key fidelity setup.",
+      "OCI spec versions evolve; the manifest shape is stable (Tier-B) but the ported reader must be fidelity-checked against skopeo/docker inspect output."
+    ]
+  }
+]
