@@ -2,7 +2,7 @@
 project: grc-bootcamp-web
 effort: E5
 phase: verify
-progress: 97/146
+progress: 146/146
 mode: build
 started: 2026-05-28
 updated: 2026-06-11
@@ -119,52 +119,52 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 ## Criteria
 
 ### Content pipeline (single source of truth)
-- [ ] ISC-1: `scripts/sync-content.ts` reads all 16 `modules/*/module.md` + `meta.yaml` and writes `src/content/modules/*.md` with frontmatter
-- [ ] ISC-2: sync also emits the 5 tracks + coverage matrix into `src/content/tracks/`
-- [ ] ISC-3: synced module frontmatter carries title, tier, loop_stages, tracks, owner, volatility, review_due, status, objectives
-- [ ] ISC-4: Anti: the app never hardcodes module data — every module page derives from synced content (grep: no module titles literal in pages)
-- [ ] ISC-5: `content.config.ts` defines `modules` + `tracks` collections with a Zod schema that validates the synced frontmatter
+- [x] ISC-1: `scripts/sync-content.ts` reads all 16 `modules/*/module.md` + `meta.yaml` and writes `src/content/modules/*.md` with frontmatter
+- [x] ISC-2: sync also emits the 5 tracks + coverage matrix into `src/content/tracks/`
+- [x] ISC-3: synced module frontmatter carries title, tier, loop_stages, tracks, owner, volatility, review_due, status, objectives
+- [x] ISC-4: Anti: the app never hardcodes module data — every module page derives from synced content (grep: no module titles literal in pages)
+- [x] ISC-5: `content.config.ts` defines `modules` + `tracks` collections with a Zod schema that validates the synced frontmatter
 
 ### Build & config
-- [ ] ISC-6: `bun install` resolves the dependency tree
-- [ ] ISC-7: `bun run build` (sync + astro build) exits 0 and emits `web/dist/`
-- [ ] ISC-8: `astro.config` sets `site: https://bootcamp.grc.engineering`, static output, base `/`
-- [ ] ISC-9: `public/CNAME` contains `bootcamp.grc.engineering` (emitted to dist for the custom domain)
-- [ ] ISC-10: typecheck/`astro check` is clean (no type errors in pages/islands)
-- [ ] ISC-11: `.github/workflows/pages.yml` builds `web/` and deploys to Pages (fires only on push; not triggered here)
+- [x] ISC-6: `bun install` resolves the dependency tree
+- [x] ISC-7: `bun run build` (sync + astro build) exits 0 and emits `web/dist/`
+- [x] ISC-8: `astro.config` sets `site: https://bootcamp.grc.engineering`, static output, base `/`
+- [x] ISC-9: `public/CNAME` contains `bootcamp.grc.engineering` (emitted to dist for the custom domain)
+- [x] ISC-10: typecheck/`astro check` is clean (no type errors in pages/islands)
+- [x] ISC-11: `.github/workflows/pages.yml` builds `web/` and deploys to Pages (fires only on push; not triggered here)
 
 ### Learner experience
-- [ ] ISC-12: `/` renders the inversion thesis, the irreducible loop, the 4 tiers, the 5 tracks, and a "start here"
-- [ ] ISC-13: `/modules/` lists all 16 modules grouped by tier with volatility + status + loop-stage badges
-- [ ] ISC-14: `/modules/[id]` renders a module's full §1–8 body from synced markdown, with code highlighting
-- [ ] ISC-15: a module page shows its objectives, lab, assessment, and §8 supplemental links distinctly
-- [ ] ISC-16: every module id has a generated static route (getStaticPaths over the collection)
-- [ ] ISC-17: `/tracks/` renders the 5 tracks + the coverage matrix (D/W/A per module)
-- [ ] ISC-18: a track selector lets a learner pick a track and see their module path/depth highlighted
+- [x] ISC-12: `/` renders the inversion thesis, the irreducible loop, the 4 tiers, the 5 tracks, and a "start here"
+- [x] ISC-13: `/modules/` lists all 16 modules grouped by tier with volatility + status + loop-stage badges
+- [x] ISC-14: `/modules/[id]` renders a module's full §1–8 body from synced markdown, with code highlighting
+- [x] ISC-15: a module page shows its objectives, lab, assessment, and §8 supplemental links distinctly
+- [x] ISC-16: every module id has a generated static route (getStaticPaths over the collection)
+- [x] ISC-17: `/tracks/` renders the 5 tracks + the coverage matrix (D/W/A per module)
+- [x] ISC-18: a track selector lets a learner pick a track and see their module path/depth highlighted
 
 ### Progress (localStorage)
-- [ ] ISC-19: a module page has a progress control (not-started / in-progress / complete / placed-out) persisted in localStorage
-- [ ] ISC-20: progress survives reload (read back from localStorage)
-- [ ] ISC-21: Anti: progress writes never leave the browser (no network calls; static site)
+- [x] ISC-19: a module page has a progress control (not-started / in-progress / complete / placed-out) persisted in localStorage
+- [x] ISC-20: progress survives reload (read back from localStorage)
+- [x] ISC-21: Anti: progress writes never leave the browser (no network calls; static site)
 
 ### Owner dashboard
-- [ ] ISC-22: `/dashboard` renders the curriculum rot table from module meta (volatility, review_due → green/amber/red)
-- [ ] ISC-23: dashboard shows the same rot semantics as the CLI dashboard (overdue=red, <30d=amber, else green)
-- [ ] ISC-24: dashboard shows the local learner's progress summary (overall % + per-track) from localStorage
-- [ ] ISC-25: Anti: dashboard does NOT claim cross-learner cohort telemetry (it cannot; v1 is local-only) — states the boundary
+- [x] ISC-22: `/dashboard` renders the curriculum rot table from module meta (volatility, review_due → green/amber/red)
+- [x] ISC-23: dashboard shows the same rot semantics as the CLI dashboard (overdue=red, <30d=amber, else green)
+- [x] ISC-24: dashboard shows the local learner's progress summary (overall % + per-track) from localStorage
+- [x] ISC-25: Anti: dashboard does NOT claim cross-learner cohort telemetry (it cannot; v1 is local-only) — states the boundary
 
 ### Design & a11y
-- [ ] ISC-26: a shared Layout (nav + footer) wraps every page; consistent design system (Tailwind tokens)
-- [ ] ISC-27: the reading experience matches the curriculum's technical/editorial voice (typography, spacing, code blocks)
-- [ ] ISC-28: headings are semantic and sequential; no color-only meaning (rot states pair emoji/text + color)
-- [ ] ISC-29: responsive (usable on mobile widths)
-- [ ] ISC-30: reading pages are usable with JS disabled (islands enhance, don't gate, reading)
+- [x] ISC-26: a shared Layout (nav + footer) wraps every page; consistent design system (Tailwind tokens)
+- [x] ISC-27: the reading experience matches the curriculum's technical/editorial voice (typography, spacing, code blocks)
+- [x] ISC-28: headings are semantic and sequential; no color-only meaning (rot states pair emoji/text + color)
+- [x] ISC-29: responsive (usable on mobile widths)
+- [x] ISC-30: reading pages are usable with JS disabled (islands enhance, don't gate, reading)
 
 ### Verification (Interceptor — mandatory for web output)
-- [ ] ISC-31: home, a module page, tracks, and dashboard verified via Interceptor screenshots on a local preview
-- [ ] ISC-32: console is free of errors on those pages (Interceptor network/console check)
-- [ ] ISC-33: a module page deep-link loads directly (static route works without client routing)
-- [ ] ISC-34: Anti: nothing is pushed/deployed without explicit owner "yes push/deploy"
+- [x] ISC-31: home, a module page, tracks, and dashboard verified via Interceptor screenshots on a local preview
+- [x] ISC-32: console is free of errors on those pages (Interceptor network/console check)
+- [x] ISC-33: a module page deep-link loads directly (static route works without client routing)
+- [x] ISC-34: Anti: nothing is pushed/deployed without explicit owner "yes push/deploy"
 
 ### Wave 2 — Shell engine core (pure TS, DOM-free; added 2026-06-11)
 - [x] ISC-35: tokenizer handles single/double quotes + backslash escapes (unit-tested edge set)
@@ -197,38 +197,38 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-60: module-02 Linux admin set green: systemctl status/enable/start (unit states), journalctl (taught filters), user mgmt (useradd/usermod/passwd as taught), apt scenario, ssh-keygen, sshd_config inspection
 - [x] ISC-61: module-03 macOS set green vs macos-host captures: sw_vers, csrutil status, spctl --status, fdesetup status, defaults read/write, profiles status, system_profiler SPConfigurationProfileDataType, log show (taught subset)
 - [x] ISC-62: macOS terminal variant: zsh prompt convention + taught BSD-flavor differences
-- [ ] ISC-63: module-04 PowerShell sim green: PS prompt, object pipeline → default Format-Table behavior, Get-BitLockerVolume, Get-MpComputerStatus, Get-WinEvent (4625 subset), gpresult /R, Get-LocalGroupMember — authored fixtures each carrying citations
-- [ ] ISC-64: PowerShell pipeline verbs taught-subset behaviorally correct (Select-Object, Where-Object, Sort-Object, Export-Csv, ConvertTo-Json), validated vs pwsh-in-docker captures where portable
+- [x] ISC-63: module-04 PowerShell sim green: PS prompt, object pipeline → default Format-Table behavior, Get-BitLockerVolume, Get-MpComputerStatus, Get-WinEvent (4625 subset), gpresult /R, Get-LocalGroupMember — authored fixtures each carrying citations
+- [x] ISC-64: PowerShell pipeline verbs taught-subset behaviorally correct (Select-Object, Where-Object, Sort-Object, Export-Csv, ConvertTo-Json), validated vs pwsh-in-docker captures where portable
 - [x] ISC-65: fictional GRC tools from module prose (e.g. collect-encryption-status) byte-match the module's §5 worked examples
 
 ### Wave 2 — Real engines (WASM, self-hosted)
-- [ ] ISC-66: git engine — **synthesized-porcelain-over-real-plumbing** (honest class, RedTeam finding 6): isomorphic-git provides real state semantics (init/status/add/commit/log/branch/switch/merge fast-forward + clean 3-way); a TS porcelain renderer is fixture-verified against scripted real-git captures with pinned identity+dates (deterministic SHAs); scripted reference flows byte-match, learner free-form flows are state-verified; `git diff` rendered via plumbing+diff-lib and labeled; conflicted merges descoped or simulated-with-citation
-- [ ] ISC-67: Python engine runs module-05 taught snippets with real CPython semantics; lazy-loaded on demand only
-- [ ] ISC-68: Python exercise flow — learner edits a script in-app, taught test assertions run in-browser against it
-- [ ] ISC-69: SQL console — real SQL engine with seeded evidence DB; module-07 taught queries return correct result sets
-- [ ] ISC-70: jq engine — real jq evaluation for taught filters (modules 01/06 bridge)
-- [ ] ISC-71: Rego — real OPA evaluation of **precompiled** policies (built by `opa build -t wasm` in CI; opa-wasm cannot compile learner source in-browser — RedTeam finding 5): exercises mutate input JSON against fixed policies + parsons/diff tasks on policy text, labeled honestly; free-form Rego authoring routed to the real-machine lab path; **Cedar is the live policy-authoring flagship** (cedar-wasm ships the full parser — matches teach-Cedar-first pedagogy)
-- [ ] ISC-72: Cedar — faithful Cedar evaluation for module-09 taught policies
-- [ ] ISC-73: Anti: all engines/WASM served same-origin (no CDN, no runtime third-party fetch)
+- [x] ISC-66: git engine — **synthesized-porcelain-over-real-plumbing** (honest class, RedTeam finding 6): isomorphic-git provides real state semantics (init/status/add/commit/log/branch/switch/merge fast-forward + clean 3-way); a TS porcelain renderer is fixture-verified against scripted real-git captures with pinned identity+dates (deterministic SHAs); scripted reference flows byte-match, learner free-form flows are state-verified; `git diff` rendered via plumbing+diff-lib and labeled; conflicted merges descoped or simulated-with-citation
+- [x] ISC-67: Python engine runs module-05 taught snippets with real CPython semantics; lazy-loaded on demand only
+- [x] ISC-68: Python exercise flow — learner edits a script in-app, taught test assertions run in-browser against it
+- [x] ISC-69: SQL console — real SQL engine with seeded evidence DB; module-07 taught queries return correct result sets
+- [x] ISC-70: jq engine — real jq evaluation for taught filters (modules 01/06 bridge)
+- [x] ISC-71: Rego — real OPA evaluation of **precompiled** policies (built by `opa build -t wasm` in CI; opa-wasm cannot compile learner source in-browser — RedTeam finding 5): exercises mutate input JSON against fixed policies + parsons/diff tasks on policy text, labeled honestly; free-form Rego authoring routed to the real-machine lab path; **Cedar is the live policy-authoring flagship** (cedar-wasm ships the full parser — matches teach-Cedar-first pedagogy)
+- [x] ISC-72: Cedar — faithful Cedar evaluation for module-09 taught policies
+- [x] ISC-73: Anti: all engines/WASM served same-origin (no CDN, no runtime third-party fetch)
 
 ### Wave 2 — API lab (module 06)
-- [ ] ISC-74: in-browser mock SaaS API with realistic users/devices endpoints + stable JSON shapes
-- [ ] ISC-75: auth ladder enforced — unauthenticated 401 → API key → bearer → OAuth2 client-credentials (token endpoint, expiry)
-- [ ] ISC-76: pagination — complete evidence pull requires walking all pages (stable ordering, cursor/param as designed)
-- [ ] ISC-77: rate limiting — 429 + Retry-After; honoring it is required for a complete pull
-- [ ] ISC-78: taught curl/HTTPie invocations work against the mock API inside the terminal sim with byte-stable responses
-- [ ] ISC-79: webhook exercise — simulated event delivery rendered in-app as taught
+- [x] ISC-74: in-browser mock SaaS API with realistic users/devices endpoints + stable JSON shapes
+- [x] ISC-75: auth ladder enforced — unauthenticated 401 → API key → bearer → OAuth2 client-credentials (token endpoint, expiry)
+- [x] ISC-76: pagination — complete evidence pull requires walking all pages (stable ordering, cursor/param as designed)
+- [x] ISC-77: rate limiting — 429 + Retry-After; honoring it is required for a complete pull
+- [x] ISC-78: taught curl/HTTPie invocations work against the mock API inside the terminal sim with byte-stable responses
+- [x] ISC-79: webhook exercise — simulated event delivery rendered in-app as taught
 
 ### Wave 2 — Structured simulations (non-terminal modules)
-- [ ] ISC-80: module 00 — guided inversion exercise builds the week-0 before/after one-pager (exportable artifact)
-- [ ] ISC-81: module 08 — IaC lab: seeded Terraform config, real-captured `terraform plan` output, real-captured scanner findings, CI-gate sim where the violation blocks and the fix unblocks
-- [ ] ISC-82: module 10 — crosswalk builder: match TSC/ISO/CSF items to 800-53 families, machine-scored vs answer key
-- [ ] ISC-83: module 11 — threat-coverage map: technique↔control mapping computes coverage + surfaces the zero-mitigation control
-- [ ] ISC-84: module 12 — OSCAL lab: real schema validation of learner-assembled catalog/profile; dangling-ref fails as taught
-- [ ] ISC-85: module 13 — CCM lab: scheduled checks, induced drift → evidence log + dashboard tile (current + 30-day history) + alert fires
-- [ ] ISC-86: module 14 — build-vs-buy memo builder: 7-loop-stage scoring grid generates the decision-memo artifact
-- [ ] ISC-87: module 15 — capstone assembler: 8-point contract checklist binds prior exercise artifacts into a portfolio view
-- [ ] ISC-88: Anti: structured-sim domain data is original (third-party limited to §8 quarantine; ATT&CK IDs used with attribution per MITRE terms)
+- [x] ISC-80: module 00 — guided inversion exercise builds the week-0 before/after one-pager (exportable artifact)
+- [x] ISC-81: module 08 — IaC lab: seeded Terraform config, real-captured `terraform plan` output, real-captured scanner findings, CI-gate sim where the violation blocks and the fix unblocks
+- [x] ISC-82: module 10 — crosswalk builder: match TSC/ISO/CSF items to 800-53 families, machine-scored vs answer key
+- [x] ISC-83: module 11 — threat-coverage map: technique↔control mapping computes coverage + surfaces the zero-mitigation control
+- [x] ISC-84: module 12 — OSCAL lab: real schema validation of learner-assembled catalog/profile; dangling-ref fails as taught
+- [x] ISC-85: module 13 — CCM lab: scheduled checks, induced drift → evidence log + dashboard tile (current + 30-day history) + alert fires
+- [x] ISC-86: module 14 — build-vs-buy memo builder: 7-loop-stage scoring grid generates the decision-memo artifact
+- [x] ISC-87: module 15 — capstone assembler: 8-point contract checklist binds prior exercise artifacts into a portfolio view
+- [x] ISC-88: Anti: structured-sim domain data is original (third-party limited to §8 quarantine; ATT&CK IDs used with attribution per MITRE terms)
 
 ### Wave 2 — Lab Player UX
 - [x] ISC-89: LabPlayer island renders any exercise spec: intro, tasks, engine surface, progress
@@ -236,13 +236,13 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-91: hint ladder per task (nudge → concept link → reveal); reveals recorded in local state
 - [x] ISC-92: reset-to-seed (confirmed) + state persists across reload (localStorage) + resume mid-exercise
 - [x] ISC-93: exercise completion feeds module progress store + dashboard summary
-- [ ] ISC-94: terminal is DOM-based and screen-reader accessible with announcement DECOUPLED from transcript (RedTeam finding 7): throttled summarizing aria-live region ("command completed, 42 lines of output") + a non-live `role=log` transcript navigable by virtual cursor with "load earlier output" pagination; real input element; fully keyboard operable; spot-tested with VoiceOver against the messy-CSV and 10k-line cases before any conformance claim
-- [ ] ISC-95: terminal feel — monospace, block cursor, scrollback, selectable/copyable text; stderr distinguishable without color alone
-- [ ] ISC-96: exercise layout usable at 375 px width — terminal output horizontally scrolls, NEVER re-wraps (would falsify fixtures); heavy-engine exercises declare a desktop-class recommendation in-UI (RedTeam finding 12)
-- [ ] ISC-97: prefers-reduced-motion respected; no flashing content
-- [ ] ISC-98: exercises work offline after first load via service-worker precache of engine assets (claim only as tested) (RedTeam finding 12)
-- [ ] ISC-99: Anti: zero runtime third-party network calls; learner state never leaves the browser
-- [ ] ISC-100: Anti: reading-page JS budget not regressed (engines load only on exercise interaction)
+- [x] ISC-94: terminal is DOM-based and screen-reader accessible with announcement DECOUPLED from transcript (RedTeam finding 7): throttled summarizing aria-live region ("command completed, 42 lines of output") + a non-live `role=log` transcript navigable by virtual cursor with "load earlier output" pagination; real input element; fully keyboard operable; spot-tested with VoiceOver against the messy-CSV and 10k-line cases before any conformance claim
+- [x] ISC-95: terminal feel — monospace, block cursor, scrollback, selectable/copyable text; stderr distinguishable without color alone
+- [x] ISC-96: exercise layout usable at 375 px width — terminal output horizontally scrolls, NEVER re-wraps (would falsify fixtures); heavy-engine exercises declare a desktop-class recommendation in-UI (RedTeam finding 12)
+- [x] ISC-97: prefers-reduced-motion respected; no flashing content
+- [x] ISC-98: exercises work offline after first load via service-worker precache of engine assets (claim only as tested) (RedTeam finding 12)
+- [x] ISC-99: Anti: zero runtime third-party network calls; learner state never leaves the browser
+- [x] ISC-100: Anti: reading-page JS budget not regressed (engines load only on exercise interaction)
 
 ### Wave 2 — Integration & build
 - [x] ISC-101: exercise specs flow through `sync-content.ts` from `modules/*/exercises/` (single source of truth)
@@ -250,17 +250,17 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-103: `/labs` index lists all 16 exercises with engine class + completion state
 - [x] ISC-104: `bun run build` exit 0; `astro check` 0 errors; all prior routes still render
 - [x] ISC-105: engine code ≥95% line/function coverage under `bun test`
-- [ ] ISC-106: module reading pages' initial JS within budget (measured before/after)
-- [ ] ISC-107: fidelity suite + exercise-lint wired into repo CI
+- [x] ISC-106: module reading pages' initial JS within budget (measured before/after)
+- [x] ISC-107: fidelity suite + exercise-lint wired into repo CI
 
 ### Wave 2 — Verification (Interceptor mandatory)
 - [x] ISC-108: Interceptor: Module 01 exercise completed end-to-end in real Chrome — commands typed, tasks check off, completion survives reload
-- [ ] ISC-109: Interceptor screenshots: one exercise per engine class (linux-terminal, macos-terminal, powershell, git, python, sql, api, policy, builder) rendering correctly
+- [x] ISC-109: Interceptor screenshots: one exercise per engine class (linux-terminal, macos-terminal, powershell, git, python, sql, api, policy, builder) rendering correctly
 - [x] ISC-110: console free of errors + no failed requests on all exercise pages
 - [x] ISC-111: lab route deep-link loads directly (static)
-- [ ] ISC-112: one full exercise completed keyboard-only (no pointer)
-- [ ] ISC-113: cross-family review (Anvil) of engine architecture + sampled exercise specs; findings triaged
-- [ ] ISC-114: Anti: no push/deploy without explicit owner "yes push" (standing)
+- [x] ISC-112: one full exercise completed keyboard-only (no pointer)
+- [x] ISC-113: cross-family review (Anvil) of engine architecture + sampled exercise specs; findings triaged
+- [x] ISC-114: Anti: no push/deploy without explicit owner "yes push" (standing)
 
 ### Wave 2 — IterativeDepth additions (2026-06-11: novice / boundary-honesty / maintenance / integrity lenses)
 - [x] ISC-115: Module 01 exercise opens with a dismissible guided first-input moment (e.g. "type `pwd`, press Enter") that never blocks typing
@@ -276,11 +276,11 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-125: completion records distinguish clean vs hint-revealed completion in local state + progress summary
 - [x] ISC-126: task verifier supports command-history constraint checks (e.g. pipes-only composition) beyond end-state checks
 - [x] ISC-127: verifier can re-run a learner's script in a clean sub-environment and diff outputs (reproducibility tasks) — deliberately perturbing sim clock/entropy between runs so determinism is a property of the learner's script, not the simulator; a `date`-contaminated anti-transcript must FAIL this check (RedTeam finding 8)
-- [ ] ISC-128: WASM engine versions pinned + recorded in provenance; engine outputs participate in the fidelity suite
+- [x] ISC-128: WASM engine versions pinned + recorded in provenance; engine outputs participate in the fidelity suite
 
 ### Wave 2 — Signature mechanics (BeCreative 2026-06-11)
 - [x] ISC-129: Evidence Pack — every exercise completion appends a hash-chained local evidence record (commands, artifacts, timestamps, clean/revealed); exportable as `evidence-pack.json` + readable report; chain verifies
-- [ ] ISC-130: the "one claim, sixteen ways" thread — exercise specs name their claim-thread connection where the module touches the laptop-encryption worked thread (≥10 modules); module 13's exercise re-runs the learner's (or reference) check script against drifted state
+- [x] ISC-130: the "one claim, sixteen ways" thread — exercise specs name their claim-thread connection where the module touches the laptop-encryption worked thread (≥10 modules); module 13's exercise re-runs the learner's (or reference) check script against drifted state
 - [x] ISC-131: cross-module learner artifacts persist (module-00's one-pager reaches module-15's capstone) via a local artifact store with export/import — survives the localStorage size budget
 
 ### Wave 2 — RedTeam amendments (2026-06-12, findings 8/10/12)
@@ -288,8 +288,8 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-133: verifier primitive registry at `web/src/verifiers/` — closed vocabulary, Zod-schema'd params, every primitive unit-tested; exercise-lint bans `expr:`/`js:`/`script:` fields in specs
 - [x] ISC-134: per-engine `payload_budget_bytes` declared in the manifest with a CI gate; Python wheels pinned to a stdlib+pytest allowlist
 - [x] ISC-135: heavy engines prefetch with a visible progress bar during intro dwell; one-heavy-engine-at-a-time teardown policy; VFS + editor buffers persist to IndexedDB on debounce (mobile jetsam protection)
-- [ ] ISC-136: build emits a third-party-notices page; CI check rejects any shipped engine with an empty/unknown license field
-- [ ] ISC-137: repo-owned lab validators (validate-crosswalk.ts, validate-coverage.ts, validate-oscal.ts, ccm-check.sh, expected_loss.ts, validate-capstone.sh) are ported client-side and verified equivalent against the same fixtures + expected outputs the CI lab-repro uses (byte-identical stdout + exit codes **for the seeded inputs** — i.e. the captured fixture cases, whose bucket/artifact names are whitespace-free; two known narrowings are deliberately NOT replicated and are out of scope: ccm-check.sh:130 `printf 'NONCOMPLIANT %s\n' $noncompliant` relies on bash unquoted word-splitting, which the port does not reproduce because the seeded bucket names contain no whitespace; and validate-capstone's no-argument path is pinned to exit 1 by the port, a behavior not present in the m15 captures and locked by a builder test)
+- [x] ISC-136: build emits a third-party-notices page; CI check rejects any shipped engine with an empty/unknown license field
+- [x] ISC-137: repo-owned lab validators (validate-crosswalk.ts, validate-coverage.ts, validate-oscal.ts, ccm-check.sh, expected_loss.ts, validate-capstone.sh) are ported client-side and verified equivalent against the same fixtures + expected outputs the CI lab-repro uses (byte-identical stdout + exit codes **for the seeded inputs** — i.e. the captured fixture cases, whose bucket/artifact names are whitespace-free; two known narrowings are deliberately NOT replicated and are out of scope: ccm-check.sh:130 `printf 'NONCOMPLIANT %s\n' $noncompliant` relies on bash unquoted word-splitting, which the port does not reproduce because the seeded bucket names contain no whitespace; and validate-capstone's no-argument path is pinned to exit 1 by the port, a behavior not present in the m15 captures and locked by a builder test)
 
 ### Wave 2 — Profile, gamification & encrypted cross-device sync (owner directive 2026-06-12)
 - [x] ISC-138: local learner profile (display name, optional) stored browser-local only, shown in UI, included in the sync payload
@@ -298,9 +298,9 @@ zero-terminal learner can complete Module 01's lab end-to-end in real Chrome (In
 - [x] ISC-141: encryption: WebCrypto AES-256-GCM; key from user passphrase via PBKDF2-SHA-256 (≥600k iterations); fresh random salt (16B) + IV (12B) per export; envelope records kdf params + version; any ciphertext tamper is rejected (GCM auth)
 - [x] ISC-142: Anti: the passphrase is never persisted anywhere; plaintext learner state never leaves the browser; the sync flow makes zero third-party network calls except the optional user-configured transport (ISC-144)
 - [x] ISC-143: transport A — encrypted file download/upload + copy-paste armored text blob; round-trip into a fresh browser profile restores state exactly
-- [ ] ISC-144: transport B (optional) — user's own private GitHub Gist via user-supplied fine-grained PAT (stored locally, never included in the payload): push/pull the same encrypted envelope; documented honestly as user-owned storage, not our service
+- [x] ISC-144: transport B (optional) — user's own private GitHub Gist via user-supplied fine-grained PAT (stored locally, never included in the payload): push/pull the same encrypted envelope; documented honestly as user-owned storage, not our service
 - [x] ISC-145: import merge semantics — per-module newest-wins with a visible summary; import never silently destroys local progress (confirmation + automatic pre-import local backup)
-- [ ] ISC-146: sync verified end-to-end in real Chrome (Interceptor): export → import into a fresh profile → identical progress; tampered ciphertext rejected with a clear, non-cryptic error
+- [x] ISC-146: sync verified end-to-end in real Chrome (Interceptor): export → import into a fresh profile → identical progress; tampered ciphertext rejected with a clear, non-cryptic error
 
 ## Test Strategy
 
@@ -414,3 +414,11 @@ Engine-honesty pass (ISC-63/64, ISC-74..78) — 2026-06-13 (cross-family audit H
 - Fix (honest structure): +23 manifest entries (8 `pwsh-authored` m04-err-*, 15 `authored` m06-err-*), each `authored-with-citation` with a real documentation citation (Microsoft Learn message shapes for PS; RFC 9110/6749/6750/6585 + module 06 §4/§5 for the API). Created 23 doc/RFC-cited fixtures at `.ci/fixtures/captured/{m04-err,m06-err}-*.json` with the authored string as stdout/body + the citation in provenance — so manifest-lint's citation gate (authored/pwsh-authored ⇒ citation required) now covers them. `powershell-fidelity.test.ts` auto-replays the m04-err fixtures (byte-assert engine vs fixture); new `api-error-fixtures.test.ts` asserts each m06-err fixture body == ERRORS.*() AND the live router emits it byte-equal — the FIXTURE is the source of truth, not the code.
 - Over-claim corrected: INTEGRATION-MATRIX module-06 row "byte-identical to committed fixtures" → "DATA payloads byte-identical to committed module fixtures; auth-ladder + error bodies are authored-with-citation (RFC/doc-sourced, acme.example is fictional), each locked by fixture + suite"; PowerShell "pinned to the module's committed fixtures" → "authored-with-citation from Microsoft Learn + module §5 prose, suite-locked." Code header comments in `cmdlets.ts` / `acme.ts` now point at the canonical fixtures, not a bare citation.
 - Gates green: `bun test` 949 pass / 0 fail across 37 files (4767 expect()); `manifest-lint` 273/273.
+
+## Verification — Wave 2 complete (2026-06-13)
+
+146/146 ISCs verified. Full evidence in the root ISA's Wave 2 Verification section. Summary:
+- All 16 module exercises render + run in the built static site; 11/11 engine classes have a green integration canary (research/exercise-design/INTEGRATION-MATRIX.md).
+- Encrypted cross-device sync (ISC-138..146): round-trip restores exactly; wrong passphrase + any ciphertext tamper rejected (GCM); IVs unique across 64 exports; merge newest-wins with pre-import backup + undo; optional user-owned Gist transport.
+- Engine honesty enforced structurally after the cross-family audit: authored strings carry lintable citations; ported validators' claims scoped to seeded inputs; anti-transcripts discriminate at the named check.
+- Owner steps remaining (not blockers): publish to GitHub Pages (ISC-11/34 hold — nothing deployed; needs owner "yes push" + DNS); full manual per-module QA pass before the team share.
