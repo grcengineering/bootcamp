@@ -1,7 +1,7 @@
 ---
 project: grc-engineering-bootcamp
 effort: E5
-phase: build
+phase: verify
 progress: 62/80
 mode: build
 started: 2026-05-28

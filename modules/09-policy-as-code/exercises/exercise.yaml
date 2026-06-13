@@ -297,6 +297,15 @@ tasks:
         from: generated
       - check: history_contains
         regex: '^GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject \./my-gate\.sh access-injected\.csv evidence-store$'
+      # Provenance guards appended (not interleaved) so the from:generated check indices
+      # above stay stable — each record must fall out of a gate run, never a hand-echo,
+      # mirroring the t6/t7 contract (web ISA ISC-126).
+      - check: artifact_produced_by
+        path: ~/lab09/evidence-store/AC-6-legacy-admin-ci-tamper-20260528180000.json
+        forbidden_commands: [echo, printf, tee, cat, nano]
+      - check: artifact_produced_by
+        path: ~/lab09/evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json
+        forbidden_commands: [echo, printf, tee, cat, nano]
     hints:
       - nudge: "One word changes — grantRole becomes revokeRole — and the gate must flip FAIL to PASS, because the control forbids the GRANT, not the role. If your gate still fails, your verdict is ignoring the action column."
       - concept: "§4.3 — the difference between a verdict and a pattern-match is exactly this pair of flips"

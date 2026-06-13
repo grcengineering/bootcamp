@@ -1,7 +1,7 @@
 ---
 project: grc-bootcamp-web
 effort: E5
-phase: build
+phase: verify
 progress: 97/146
 mode: build
 started: 2026-05-28

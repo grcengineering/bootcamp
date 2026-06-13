@@ -402,6 +402,28 @@
           {
             "check": "history_contains",
             "regex": "^GATE_FAKE_TIME=2026-05-28T18:05:00Z CI_RUN_ID=ci-inject \\./my-gate\\.sh access-injected\\.csv evidence-store$"
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-tamper-20260528180000.json",
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "tee",
+              "cat",
+              "nano"
+            ]
+          },
+          {
+            "check": "artifact_produced_by",
+            "path": "~/lab09/evidence-store/AC-6-legacy-admin-ci-inject-20260528180500.json",
+            "forbidden_commands": [
+              "echo",
+              "printf",
+              "tee",
+              "cat",
+              "nano"
+            ]
           }
         ],
         "hints": [
