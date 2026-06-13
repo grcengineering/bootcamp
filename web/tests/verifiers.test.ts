@@ -6,6 +6,9 @@
 import { describe, expect, test } from "bun:test";
 import { PRIMITIVES, registryDescriptor, runCheck, type VerifyContext } from "../src/verifiers/registry";
 import type { ShellSession, ExecResult, RunCleanResult } from "../src/engines/shell/types";
+import { dissectHex } from "../src/engines/visual/pkt";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
 
 /** Probe-API fake: a tiny world the verifiers can interrogate. */
 function fakeSession(world: {
@@ -273,5 +276,152 @@ describe("engine-dispatch primitives — pass case + mutation rejection", () => 
     expect(runCheck(s, { check: "repo_state_matches", head_subject_matches: "empty validator" }, state).pass).toBe(false);
     expect(runCheck(s, { check: "repo_state_matches", min_commits: 3 }, state).pass).toBe(false);
     expect(runCheck(s, { check: "repo_state_matches", branch: "main" }, ctx).pass).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wave-4 visual-engine primitives (region_labeled_correctly, field_value_is,
+// decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct):
+// pass case + a one-token / one-region perturbation rejection each (the H1 bar).
+// The parse tree comes from the REAL captured ClientHello — the oracle, not a fake.
+// ---------------------------------------------------------------------------
+describe("visual-engine primitives — pass case + one-token/one-region mutation rejection", () => {
+  const ASSETS = join(dirname(new URL(import.meta.url).pathname), "../../.ci/fixtures/assets/net");
+  const fx = JSON.parse(readFileSync(join(ASSETS, "google-search-clienthello.json"), "utf8"));
+  const tree = dissectHex(fx.hex, { linkType: "ethernet" });
+  const s = fakeSession({});
+
+  // The ground-truth ranges (from tshark / pkt-fidelity): EtherType 12-14 (L2),
+  // ipv4.protocol 23-24 (L3), tcp.dst_port 36-38 (L4), tls.content_type 66-67 (L6).
+  test("region_labeled_correctly — correct boundary + layer; adjacent-field & wrong-label mutations fail", () => {
+    const right: VerifyContext = { ...ctx, parseTree: tree, visual: { selectedRange: { start: 12, end: 14 }, enteredLayer: "L2" } };
+    expect(runCheck(s, { check: "region_labeled_correctly", node_id: "eth.ethertype", expect_layer: "L2" }, right).pass).toBe(true);
+    expect(runCheck(s, { check: "region_labeled_correctly", region: { start: 12, end: 14 } }, right).pass).toBe(true);
+    // mutation 1 (one-region near miss): selected the ADJACENT field (src MAC 6-12) — fails boundary
+    const adjacent: VerifyContext = { ...ctx, parseTree: tree, visual: { selectedRange: { start: 6, end: 12 }, enteredLayer: "L2" } };
+    const m1 = runCheck(s, { check: "region_labeled_correctly", node_id: "eth.ethertype", expect_layer: "L2" }, adjacent);
+    expect(m1.pass).toBe(false);
+    expect(m1.gap).toContain("byte boundary");
+    // mutation 2 (one-token label): right boundary, wrong layer (L3 not L2)
+    const wrongLayer: VerifyContext = { ...ctx, parseTree: tree, visual: { selectedRange: { start: 12, end: 14 }, enteredLayer: "L3" } };
+    expect(runCheck(s, { check: "region_labeled_correctly", node_id: "eth.ethertype", expect_layer: "L2" }, wrongLayer).pass).toBe(false);
+    // mutation 3: off-by-one byte range matches no region
+    const offByOne: VerifyContext = { ...ctx, parseTree: tree, visual: { selectedRange: { start: 12, end: 13 } } };
+    expect(runCheck(s, { check: "region_labeled_correctly", region: { start: 12, end: 13 } }, offByOne).pass).toBe(false);
+    // no tree at all → fails (not theater)
+    expect(runCheck(s, { check: "region_labeled_correctly", node_id: "eth.ethertype" }, ctx).pass).toBe(false);
+    // exactly one of region|node_id (Zod refine)
+    expect(() => runCheck(s, { check: "region_labeled_correctly" } as never, right)).toThrow();
+  });
+
+  test("field_value_is — correct read; wrong-value & wrong-region mutations fail", () => {
+    const ctxT: VerifyContext = { ...ctx, parseTree: tree, visual: { enteredValue: "443" } };
+    expect(runCheck(s, { check: "field_value_is", node_id: "tcp.dst_port", value: "443" }, ctxT).pass).toBe(true);
+    expect(runCheck(s, { check: "field_value_is", node_id: "ipv4.protocol", value: "TCP" }, { ...ctx, parseTree: tree, visual: { enteredValue: "0x06 = 6 = TCP" } }).pass).toBe(true);
+    // mutation 1 (one-token value): right region, mis-read value (444 not 443)
+    expect(runCheck(s, { check: "field_value_is", node_id: "tcp.dst_port", value: "444" }, ctxT).pass).toBe(false);
+    // mutation 2 (wrong region): src_port reads 55888, not 443
+    expect(runCheck(s, { check: "field_value_is", node_id: "tcp.src_port", value: "443" }, ctxT).pass).toBe(false);
+    // mutation 3 (learner mis-read but spec value is right): oracle says 443, learner typed 80
+    const misread: VerifyContext = { ...ctx, parseTree: tree, visual: { enteredValue: "80" } };
+    expect(runCheck(s, { check: "field_value_is", node_id: "tcp.dst_port", value: "443" }, misread).pass).toBe(false);
+    // generated path
+    const gen: VerifyContext = { expectations: { "t1:0": "443" }, expectationKey: "t1:0", parseTree: tree, visual: { enteredValue: "443" } };
+    expect(runCheck(s, { check: "field_value_is", node_id: "tcp.dst_port", from: "generated" }, gen).pass).toBe(true);
+    expect(() => runCheck(s, { check: "field_value_is", node_id: "x", value: "1", from: "generated" } as never, ctxT)).toThrow();
+  });
+
+  test("decoded_artifact_matches — live decode equals transform; one-token mutation fails", () => {
+    const ctxT: VerifyContext = { ...ctx, parseTree: tree, visual: { decodedValue: "0x16 = 22 = handshake" } };
+    expect(runCheck(s, { check: "decoded_artifact_matches", node_id: "tls.content_type", value: "handshake" }, ctxT).pass).toBe(true);
+    // mutation (one-token): learner decoded "application_data" — disagrees with the transform
+    const wrong: VerifyContext = { ...ctx, parseTree: tree, visual: { decodedValue: "0x17 = 23 = application_data" } };
+    expect(runCheck(s, { check: "decoded_artifact_matches", node_id: "tls.content_type", value: "handshake" }, wrong).pass).toBe(false);
+    // mutation (spec expects a value the oracle doesn't decode to)
+    expect(runCheck(s, { check: "decoded_artifact_matches", node_id: "tls.content_type", value: "application_data" }, ctxT).pass).toBe(false);
+  });
+
+  test("sequence_matches — canonical order + end-state; reorder, mis-route, no-end-state fail", () => {
+    const canonical = {
+      "tcp-handshake": [
+        { from: "client", to: "server", type: "SYN" },
+        { from: "server", to: "client", type: "SYN+ACK" },
+        { from: "client", to: "server", type: "ACK" },
+      ],
+    };
+    const good: VerifyContext = {
+      ...ctx,
+      trace: { canonical, reachedEndState: true, lastAlert: null, orderedMessages: canonical["tcp-handshake"].map((m) => ({ ...m })) },
+    };
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake" }, good).pass).toBe(true);
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake", check_routing: true }, good).pass).toBe(true);
+    // mutation 1 (reorder one message): ACK before SYN+ACK
+    const reordered: VerifyContext = { ...ctx, trace: { ...good.trace!, reachedEndState: false, orderedMessages: [
+      { from: "client", to: "server", type: "SYN" },
+      { from: "client", to: "server", type: "ACK" },
+      { from: "server", to: "client", type: "SYN+ACK" },
+    ] } };
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake" }, reordered).pass).toBe(false);
+    // mutation 2 (mis-route one message): correct order/types but SYN sent server→client
+    const misrouted: VerifyContext = { ...ctx, trace: { ...good.trace!, orderedMessages: [
+      { from: "server", to: "client", type: "SYN" },
+      { from: "server", to: "client", type: "SYN+ACK" },
+      { from: "client", to: "server", type: "ACK" },
+    ] } };
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake" }, misrouted).pass).toBe(true); // order ok without routing
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake", check_routing: true }, misrouted).pass).toBe(false); // routing catches it
+    // mutation 3 (right order, sim never reached end-state)
+    const noEnd: VerifyContext = { ...ctx, trace: { ...good.trace!, reachedEndState: false } };
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake" }, noEnd).pass).toBe(false);
+    expect(runCheck(s, { check: "sequence_matches", canonical_ref: "tcp-handshake" }, ctx).pass).toBe(false);
+  });
+
+  test("sim_alert_is — named RFC alert + code; wrong name/code/no-alert fail", () => {
+    const alerted: VerifyContext = { ...ctx, trace: { canonical: {}, reachedEndState: false, lastAlert: { name: "RST", code: undefined }, orderedMessages: [] } };
+    expect(runCheck(s, { check: "sim_alert_is", alert: "RST" }, alerted).pass).toBe(true);
+    const tls: VerifyContext = { ...ctx, trace: { canonical: {}, reachedEndState: false, lastAlert: { name: "unexpected_message", code: 10 }, orderedMessages: [] } };
+    expect(runCheck(s, { check: "sim_alert_is", alert: "unexpected_message", code: 10 }, tls).pass).toBe(true);
+    // mutation 1 (wrong code): right alert name, wrong code
+    expect(runCheck(s, { check: "sim_alert_is", alert: "unexpected_message", code: 70 }, tls).pass).toBe(false);
+    // mutation 2 (wrong name)
+    expect(runCheck(s, { check: "sim_alert_is", alert: "RST" }, tls).pass).toBe(false);
+    // mutation 3 (no alert raised — the learner skipped the break)
+    const quiet: VerifyContext = { ...ctx, trace: { canonical: {}, reachedEndState: true, lastAlert: null, orderedMessages: [] } };
+    expect(runCheck(s, { check: "sim_alert_is", alert: "RST" }, quiet).pass).toBe(false);
+  });
+
+  test("mapping_correct — all in authoritative zone; one-card mutation names the misplaced item", () => {
+    const key = [
+      { id: "src-ip", placedZone: "src-ip", keyZone: "src-ip", keyRef: "NIST 800-53 SC-7" },
+      { id: "dst-ip", placedZone: "dst-ip", keyZone: "dst-ip", keyRef: "NIST 800-53 SC-7" },
+      { id: "protocol", placedZone: "protocol", keyZone: "protocol", keyRef: "NIST 800-53 SC-7" },
+      { id: "src-port", placedZone: "src-port", keyZone: "src-port", keyRef: "NIST 800-53 SC-7" },
+      { id: "dst-port", placedZone: "dst-port", keyZone: "dst-port", keyRef: "NIST 800-53 CM-7" },
+    ];
+    const allRight: VerifyContext = { ...ctx, map: { items: key.map((i) => ({ ...i })) } };
+    expect(runCheck(s, { check: "mapping_correct" }, allRight).pass).toBe(true);
+    // mutation (one card wrong): dst-port placed in src-port's zone — gap NAMES dst-port
+    const oneWrong: VerifyContext = { ...ctx, map: { items: key.map((i) => (i.id === "dst-port" ? { ...i, placedZone: "src-port" } : { ...i })) } };
+    const m = runCheck(s, { check: "mapping_correct" }, oneWrong);
+    expect(m.pass).toBe(false);
+    expect(m.gap).toContain("dst-port");
+    // mutation (one card unplaced): names the unplaced item
+    const unplaced: VerifyContext = { ...ctx, map: { items: key.map((i) => (i.id === "protocol" ? { ...i, placedZone: null } : { ...i })) } };
+    const u = runCheck(s, { check: "mapping_correct" }, unplaced);
+    expect(u.pass).toBe(false);
+    expect(u.gap).toContain("protocol");
+    // partial-credit floor: 4/5 passes min_correct:4
+    expect(runCheck(s, { check: "mapping_correct", min_correct: 4 }, oneWrong).pass).toBe(true);
+    expect(runCheck(s, { check: "mapping_correct" }, ctx).pass).toBe(false);
+  });
+
+  test("registryDescriptor stays non-empty for the 6 new primitives (ZodObject .refine unwrap)", () => {
+    const desc = registryDescriptor();
+    for (const k of ["region_labeled_correctly", "field_value_is", "decoded_artifact_matches", "sequence_matches", "sim_alert_is", "mapping_correct"]) {
+      expect(desc[k]?.length, `${k} descriptor`).toBeGreaterThan(0);
+      expect(desc[k]).toContain("check");
+    }
+    expect(desc.sequence_matches).toEqual(expect.arrayContaining(["check", "canonical_ref", "check_routing"]));
+    expect(desc.mapping_correct).toEqual(expect.arrayContaining(["check", "min_correct", "min_fraction"]));
   });
 });

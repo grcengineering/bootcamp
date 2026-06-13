@@ -1,0 +1,10 @@
+{
+  "_comment": "Documentation of what the packet-dissector decodes from the REAL committed bytes (the oracle). No spec check uses from:generated — the visual primitives read the parse tree directly — so these keys (all underscore-prefixed) are documentation the replay test asserts against the dissector, never injected expectations.",
+  "_clean_ethertype": "0x0800 = IPv4",
+  "_clean_protocol": "0x06 = 6 = TCP",
+  "_clean_dst_ip": "142.251.152.119",
+  "_clean_dst_port": "443",
+  "_clean_tls_contenttype": "0x16 = 22 = handshake",
+  "_clean_tcp_flags": "0x18 = PSH+ACK",
+  "_broken_dst_port": "80"
+}

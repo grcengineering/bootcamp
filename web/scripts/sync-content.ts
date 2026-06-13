@@ -97,6 +97,19 @@ if (existsSync(TRACKS)) {
 // ---------------------------------------------------------------------------
 import { ExerciseSpecSchema, findBannedKeys } from "../src/lib/exercise-spec";
 import { buildM02Seed } from "../src/engines/linuxadmin";
+import { buildVisualOptions, type FixtureSet, type PacketFixture } from "../src/lib/visual-seed";
+
+/** Load every committed packet fixture under .ci/fixtures/assets/net/ as a FixtureSet. */
+function loadVisualFixtureSet(): FixtureSet {
+  const dir = join(FIXTURES, "assets", "net");
+  const set: FixtureSet = {};
+  if (!existsSync(dir)) return set;
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    set[name] = JSON.parse(readFileSync(join(dir, name), "utf8")) as PacketFixture;
+  }
+  return set;
+}
 
 interface SeedFileOut {
   path: string; content?: string; dir?: boolean; mode?: number;
@@ -245,6 +258,25 @@ for (const id of readdirSync(MODULES).sort()) {
     delete (windowsSeed as Record<string, unknown>).gpresultReportFile;
   }
 
+  // Visual engine seed (Wave-4): resolve the spec's visual.artifact.from against the
+  // committed packet fixtures and normalize to VisualHost panels (lib/visual-seed) — the
+  // SAME panels the replay test builds, so browser and test see identical real bytes.
+  let visual: ReturnType<typeof buildVisualOptions> | undefined;
+  if (spec.engine === "visual") {
+    if (!spec.visual) {
+      console.error(`sync-content: FAIL — ${id} (engine: visual) needs a visual: block`);
+      process.exit(1);
+    }
+    const set = loadVisualFixtureSet();
+    const fromFile = spec.visual.artifact.from.replace(/^assets\/net\//, "").replace(/^assets\//, "");
+    const primary = set[fromFile] ?? Object.values(set).find((f) => f.id === fromFile.replace(/\.json$/, ""));
+    if (!primary) {
+      console.error(`sync-content: FAIL — ${id} visual.artifact.from '${spec.visual.artifact.from}' not found under .ci/fixtures/assets/net`);
+      process.exit(1);
+    }
+    visual = buildVisualOptions(spec.visual.mode, spec.visual.oracle, primary, set);
+  }
+
   // Generated expectations (from: generated lookups), minus provenance keys.
   const expPath = join(MODULES, id, "exercises", "transcripts", "expectations.json");
   const expectations: Record<string, string> = {};
@@ -263,6 +295,7 @@ for (const id of readdirSync(MODULES).sort()) {
         spec, seed, expectations, epoch: bundleEpoch,
         ...(windowsSeed !== undefined ? { windowsSeed } : {}),
         ...(adminLab !== undefined ? { adminLab, host } : {}),
+        ...(visual !== undefined ? { visual } : {}),
       },
       null,
       2,

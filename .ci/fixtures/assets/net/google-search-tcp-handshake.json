@@ -1,0 +1,44 @@
+{
+  "id": "net-google-search-tcp-handshake",
+  "kind": "pcap-frame-set",
+  "linktype": "ETHERNET (LINKTYPE_ETHERNET, encap_type 1)",
+  "description": "The three real Ethernet II frames of the TCP 3-way handshake opening the same `curl https://www.google.com` connection — the TRACE exemplar's packet cards. The flags byte (TCP offset 13) reads 0x02 (SYN), 0x12 (SYN+ACK), 0x10 (ACK).",
+  "provenance": {
+    "captured_with": "tcpdump -i eth0 -c40 'tcp port 443' inside docker (ubuntu:24.04, --cap-add=NET_RAW), driven by `curl -s https://www.google.com`",
+    "captured_at": "2026-06-13T18:47Z",
+    "pcap": "eth.pcap (frames 1, 2, 3)",
+    "cross_checked_against": "tshark 4.x: frame 1 tcp.flags=0x0002 (SYN), frame 2 tcp.flags=0x0012 (SYN+ACK), frame 3 tcp.flags=0x0010 (ACK); the ack=seq+1 invariant holds (SYN-ACK ack 2651855669 = SYN seq_raw 2651855668 + 1).",
+    "honesty_note": "Real bytes off the wire; the flag decode and the canonical SYN→SYN+ACK→ACK order are the dissector's output + the RFC 9293 state machine, not an answer key."
+  },
+  "frames": [
+    {
+      "seq": 0,
+      "from": "client",
+      "to": "server",
+      "flags_byte": "0x02",
+      "flags": ["SYN"],
+      "hex": "e6d8e78845bfe6c96da1e03c08004500003ce86d40004006932fc0a8d7038efb9877da5001bb9e101b3400000000a002faf0bf4d0000020405b40402080add3b20b3000000000103030a"
+    },
+    {
+      "seq": 1,
+      "from": "server",
+      "to": "client",
+      "flags_byte": "0x12",
+      "flags": ["SYN", "ACK"],
+      "hex": "e6c96da1e03ce6d8e78845bf08004500003ccdcb00003e06efd18efb9877c0a8d70301bbda5065f087679e101b35a012ff80bf4d00000204ffc70101080a5909e663dd3b20b301030307"
+    },
+    {
+      "seq": 2,
+      "from": "client",
+      "to": "server",
+      "flags_byte": "0x10",
+      "flags": ["ACK"],
+      "hex": "e6d8e78845bfe6c96da1e03c080045000034e86e400040069336c0a8d7038efb9877da5001bb9e101b3565f087688010003fbf4500000101080add3b20bf5909e663"
+    }
+  ],
+  "rfc_field_truth": {
+    "tcp.flags_byte.offset": "TCP+13 (absolute 47 for these 14-byte-Ethernet/20-byte-IP frames)",
+    "bit_order": "CWR ECE URG ACK PSH RST SYN FIN (RFC 9293 §3.1, high bit first)",
+    "rfc": "RFC 9293 §3.1 (TCP header), §3.5 (3-way handshake)"
+  }
+}

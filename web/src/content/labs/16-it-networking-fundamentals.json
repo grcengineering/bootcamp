@@ -1,0 +1,330 @@
+{
+  "spec": {
+    "id": "lab-16",
+    "module": "16-it-networking-fundamentals",
+    "title": "Read the control on the wire",
+    "owner": "Justin Pagano",
+    "volatility": "B",
+    "review_due": "2026-12-13",
+    "engine": "visual",
+    "claim_thread": "encrypted-in-transit",
+    "payload_budget_bytes": 0,
+    "desktop_recommended": false,
+    "seed": {
+      "profile": "mnet",
+      "home": "/home/analyst",
+      "files": [],
+      "path_tools": []
+    },
+    "intro": "You are handed real captured network traffic and asked to read three control claims directly\noff the bytes — \"only 443 is exposed,\" \"encrypted in transit,\" \"the L2 trust assumption holds\" —\nthen diagnose the single byte where a real broken capture contradicts its claim.\n\nThis surface is the packet itself, rendered as nested byte-range regions. A layer stays closed\nuntil you read the selector byte that justifies opening the next one. Every value you reveal is\nthe dissector's real decode of the real bytes — the same value tshark produces. Nothing is\ninvented; the packet is the answer key. Start on the clean capture (Pair A · clean).\n",
+    "visual": {
+      "artifact": {
+        "kind": "pcap",
+        "from": "assets/net/diff-the-trace.json"
+      },
+      "oracle": "pkt",
+      "mode": "diff-the-trace"
+    },
+    "tasks": [
+      {
+        "id": "t1",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "On the clean capture, select the `EtherType` region (Ethernet bytes 12–13), label it with\nits OSI layer, and read the value that tells the dissector the payload is IPv4.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "eth.ethertype",
+            "expect_layer": "L2"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "eth.ethertype",
+            "value": "0x0800"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The frame begins with two MAC addresses (6 bytes each); the 2-byte type tag follows."
+          },
+          {
+            "concept": "§4.1 — the selector byte opens the next box; EtherType names the L3 payload"
+          },
+          {
+            "reveal": "Select bytes 12–13 (EtherType), label it L2; it reads 0x0800 = IPv4"
+          }
+        ],
+        "explain": "You just read the first selector. `0x0800` is the byte that *chose* the IPv4 parser — the\nsame choice the network made. Ethernet is L2; reading its EtherType earned you the right to\nopen the box inside.\n"
+      },
+      {
+        "id": "t2",
+        "type": "action",
+        "objective": [
+          1,
+          3
+        ],
+        "instruction": "Descend into IPv4 (now unlocked). Select the `Protocol` field (IPv4 offset 9), label the\nIPv4 region's layer, and read which L4 parser this byte selects.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "ipv4.protocol",
+            "expect_layer": "L3"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "ipv4.protocol",
+            "value": "TCP"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "RFC 791 fixes the IPv4 header; the L4 selector is one byte, nine in."
+          },
+          {
+            "concept": "§4.1 — Protocol field: 6=TCP, 17=UDP, 1=ICMP"
+          },
+          {
+            "reveal": "Select the Protocol byte (IPv4 offset 9), label it L3; it reads 0x06 = 6 = TCP"
+          }
+        ],
+        "explain": "The second selector. `0x06` chose the TCP parser. IPv4 is L3 — the end-to-end layer. Notice\nthe TCP region stayed gated until you read this byte: you cannot peel a layer you have not\nearned the selector for.\n"
+      },
+      {
+        "id": "t3",
+        "type": "action",
+        "objective": [
+          2,
+          4
+        ],
+        "instruction": "Select the IPv4 `Destination Address` region (L3) and read the end-to-end address. This —\nnot the MAC — is what attributes the host across a routed boundary.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "ipv4.dst",
+            "expect_layer": "L3"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "ipv4.dst",
+            "value": "142.251.152.119"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The IPv4 destination address sits at IP offset 16–19 (four bytes)."
+          },
+          {
+            "concept": "§4.2 — MAC is hop-truth (rewritten each hop); IP is end-to-end-truth (preserved)"
+          },
+          {
+            "reveal": "Select the Destination Address region (L3); it reads 142.251.152.119"
+          }
+        ],
+        "explain": "A router rewrites the MAC at every hop, so a logged MAC names only the last forwarder. The IP\nis preserved end-to-end — it is the address that attributes the originating host. Scope is\nwhich bytes change when the packet moves.\n"
+      },
+      {
+        "id": "t4",
+        "type": "action",
+        "objective": [
+          2,
+          3,
+          5
+        ],
+        "instruction": "Descend into TCP. Select the `Destination Port` region and read it. This field decides the\n\"only 443 is exposed\" claim (CM-7 / SC-7).\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "tcp.dst_port",
+            "expect_layer": "L4"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "tcp.dst_port",
+            "value": "443"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The TCP header opens with source then destination port (two bytes each)."
+          },
+          {
+            "concept": "§4.3 — the 5-tuple is the firewall's whole worldview; dst-port is exposure"
+          },
+          {
+            "reveal": "Select the Destination Port region (L4); it reads 443"
+          }
+        ],
+        "explain": "Destination port 443 satisfies \"only 443 is exposed.\" A packet to 80 here would be the\nfinding. This is one of the five fields a firewall rule decides on — you can now read any\nACL as a predicate over them.\n"
+      },
+      {
+        "id": "t5",
+        "type": "action",
+        "objective": [
+          2,
+          3
+        ],
+        "instruction": "Descend to the TLS record and select the `ContentType` byte (the record's first byte). Label\nits layer. This — not the port — is where \"encrypted in transit\" actually lives.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "tls.content_type",
+            "expect_layer": "L6"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "tls.content_type",
+            "value": "handshake"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "RFC 8446 puts the ContentType as the very first byte of every TLS record."
+          },
+          {
+            "concept": "§4.5 — 22=handshake (cleartext negotiation), 23=application_data (encrypted)"
+          },
+          {
+            "reveal": "Select the ContentType byte (TLS record byte 0), label it L6; 0x16 = 22 = handshake"
+          }
+        ],
+        "explain": "The port was a promise; the ContentType is the proof, and it lives at a different layer (L6).\n`0x16` is the still-cleartext handshake; `0x17` would be opaque application data. Reaching for\nthe port to prove encryption is the classic mistake — the ContentType is the fix.\n"
+      },
+      {
+        "id": "t6",
+        "type": "action",
+        "objective": [
+          4
+        ],
+        "instruction": "Select the TCP `Flags` region (offset 13) and read its decoded value. The connection's state\nis literally readable in this one byte — contrast it with the handshake's SYN/SYN+ACK/ACK.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "tcp.flags",
+            "expect_layer": "L4"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "tcp.flags",
+            "value": "ACK"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "The eight TCP control flags share one byte at TCP offset 13."
+          },
+          {
+            "concept": "§4.4 — the flags ARE the state: SYN opens, SYN+ACK accepts, ACK confirms"
+          },
+          {
+            "reveal": "Select the Flags region (L4); this established-connection segment reads PSH+ACK"
+          }
+        ],
+        "explain": "The flag bits carry the connection's state in one byte. The three-way handshake reads\n0x02 (SYN) → 0x12 (SYN+ACK) → 0x10 (ACK); this mid-stream segment has ACK set. Read the byte,\nread the state — and a real TCP counterpart answers a wrong order with a RST, not \"try again.\"\n"
+      },
+      {
+        "id": "t7",
+        "type": "action",
+        "objective": [
+          6
+        ],
+        "instruction": "Switch to the broken Pair-A capture (the tab labelled \"pair-a-port-exposure · broken\"). Select\nthe single field where this real capture contradicts the \"only 443 is exposed\" claim.\n",
+        "verify": [
+          {
+            "check": "region_labeled_correctly",
+            "node_id": "tcp.dst_port",
+            "expect_layer": "L4"
+          },
+          {
+            "check": "field_value_is",
+            "node_id": "tcp.dst_port",
+            "value": "80"
+          }
+        ],
+        "hints": [
+          {
+            "nudge": "Both captures are real and nearly identical — exactly one field carries the violation."
+          },
+          {
+            "concept": "§4.7 — a control is a predicate over bytes; exposure lives at the L4 dst-port"
+          },
+          {
+            "reveal": "On the broken tab, select the Destination Port (L4) — it reads 80, not 443"
+          }
+        ],
+        "explain": "The discriminating byte is the dissector's computed divergence over two real captures, not\nyour opinion: destination port 80 where the claim says 443 breaks CM-7 / SC-7. Your Wire\nEvidence Finding names the field, both values, the control, and the framework reference — and\nanyone can re-derive it from the same bytes.\n"
+      },
+      {
+        "id": "t8",
+        "type": "reflection",
+        "objective": [
+          1,
+          2
+        ],
+        "instruction": "In 4–6 sentences, for a non-technical colleague: explain encapsulation as nested boxes and how\none selector byte opens the next; why \"encrypted in transit\" lives at the TLS ContentType and\nnot the port; and why the IP — not the MAC — attributes a host across a routed hop. Use the\n§3 mailing-the-letter model, not jargon.\n",
+        "verify": [],
+        "hints": [
+          {
+            "nudge": "The §3 model: a crate inside a box inside a letter — each layer reads only its own label."
+          },
+          {
+            "concept": "§3 — The Mental Model"
+          }
+        ]
+      }
+    ],
+    "completion": {
+      "evidence_pack": true
+    }
+  },
+  "seed": {
+    "files": [],
+    "tools": {}
+  },
+  "expectations": {},
+  "epoch": "2026-06-01T09:00:00Z",
+  "visual": {
+    "mode": "diff-the-trace",
+    "oracle": "pkt",
+    "panels": [
+      {
+        "id": "pair-a-port-exposure-clean",
+        "label": "pair-a-port-exposure · clean: TLS to 443",
+        "hex": "e6d8e78845bfe6c96da1e03c080045000239e86f400040069130c0a8d7038efb9877da5001bb9e101b3565f087688018003fc14a00000101080add3b20c25909e6631603010200010001fc0303cceda1fc8599ee1947c7487b64fc593ec950cc03fe1c441fe7cc0b4ec659c89a205fa3e1575fb8ddfbf6ddd6d6e247437401e79ff97612428ad22d371de82d5e80003e130213031301c02cc030009fcca9cca8ccaac02bc02f009ec024c028006bc023c0270067c00ac0140039c009c0130033009d009c003d003c0035002f00ff0100017500000013001100000e7777772e676f6f676c652e636f6d000b000403000102000a00160014001d0017001e00190018010001010102010301040010000e000c02683208687474702f312e31001600000017000000310000000d002a0028040305030603080708080809080a080b080408050806040105010601030303010302040205020602002b00050403040303002d00020101003300260024001d00200953819e68c6ccba73b7b8b7f39202070fd40c4ecdc535d2475eb4d5860c846e001500b30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "linkType": "ethernet"
+      },
+      {
+        "id": "pair-a-port-exposure-broken",
+        "label": "pair-a-port-exposure · broken: cleartext SYN to 80",
+        "hex": "e6d8e78845bf9e023667945f08004500003c93c0400040067043c0a8d70322df7c2d84bc00503181032100000000a002faf036e70000020405b40402080a366e2ac9000000000103030a",
+        "linkType": "ethernet"
+      },
+      {
+        "id": "pair-b-encryption-in-transit-clean",
+        "label": "pair-b-encryption-in-transit · clean: TLS application-protected record",
+        "hex": "e6d8e78845bfe6c96da1e03c080045000239e86f400040069130c0a8d7038efb9877da5001bb9e101b3565f087688018003fc14a00000101080add3b20c25909e6631603010200010001fc0303cceda1fc8599ee1947c7487b64fc593ec950cc03fe1c441fe7cc0b4ec659c89a205fa3e1575fb8ddfbf6ddd6d6e247437401e79ff97612428ad22d371de82d5e80003e130213031301c02cc030009fcca9cca8ccaac02bc02f009ec024c028006bc023c0270067c00ac0140039c009c0130033009d009c003d003c0035002f00ff0100017500000013001100000e7777772e676f6f676c652e636f6d000b000403000102000a00160014001d0017001e00190018010001010102010301040010000e000c02683208687474702f312e31001600000017000000310000000d002a0028040305030603080708080809080a080b080408050806040105010601030303010302040205020602002b00050403040303002d00020101003300260024001d00200953819e68c6ccba73b7b8b7f39202070fd40c4ecdc535d2475eb4d5860c846e001500b30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "linkType": "ethernet"
+      },
+      {
+        "id": "pair-b-encryption-in-transit-broken",
+        "label": "pair-b-encryption-in-transit · broken: cleartext HTTP GET on 80",
+        "hex": "e6d8e78845bf9e023667945f08004500007f93c6400040066ffac0a8d70322df7c2d84bc005031810322f6d4b4828018003f372a00000101080a366e3ea0d216c3f8474554202f20485454502f312e310d0a486f73743a206e6576657273736c2e636f6d0d0a557365722d4167656e743a206375726c2f382e352e300d0a4163636570743a202a2f2a0d0a0d0a",
+        "linkType": "ethernet"
+      },
+      {
+        "id": "pair-c-l2-trust-clean",
+        "label": "pair-c-l2-trust · clean: ARP request (who-has)",
+        "hex": "ffffffffffff9af44de26edf080600010800060400019af44de26edfc0a8d703000000000000c0a8d702",
+        "linkType": "ethernet"
+      },
+      {
+        "id": "pair-c-l2-trust-broken",
+        "label": "pair-c-l2-trust · broken: ARP reply with no paired request (gratuitous-shape)",
+        "hex": "9af44de26edfba73705c836f08060001080006040002ba73705c836fc0a8d7029af44de26edfc0a8d703",
+        "linkType": "ethernet"
+      }
+    ]
+  }
+}

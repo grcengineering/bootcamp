@@ -1,0 +1,63 @@
+{
+  "id": "net-diff-the-trace",
+  "kind": "pcap-frame-pairs",
+  "linktype": "ETHERNET (LINKTYPE_ETHERNET, encap_type 1)",
+  "description": "Three real clean/broken capture pairs for the EVALUATE-stage Diff-the-Trace assessment. The discriminating byte in each pair is the dissector's computed divergence over real bytes — never an answer key.",
+  "provenance": {
+    "captured_with": "tcpdump -i eth0 inside docker (ubuntu:24.04, --cap-add=NET_RAW): port-443 + port-80 legs driven by `curl https://www.google.com` and `curl http://neverssl.com`; ARP legs forced by flushing the neighbour cache and pinging in-subnet hosts.",
+    "captured_at": "2026-06-13T18:47Z",
+    "pcaps": "eth.pcap (clean 443/TLS), http.pcap (real cleartext :80 GET), arp.pcap (real request/reply)",
+    "cross_checked_against": "tshark 4.x: Pair A clean dst-port 443 / broken dst-port 80; Pair B clean TLS ContentType 0x17-class record / broken cleartext 'GET / HTTP/1.1' start-line on :80; Pair C clean ARP request (opcode 1) / broken ARP reply (opcode 2).",
+    "honesty_note": "Every leg is real bytes. The 'broken' legs are genuine instances: a real port-80 SYN, a real cleartext HTTP GET, a real ARP reply. Pair C's 'unsolicited' framing is the presentation scope (an opcode-2 reply shown without its paired request — exactly the on-wire shape of gratuitous ARP); the bytes are an unmodified real reply. The dissector computes the divergence; the puzzle is generated from it."
+  },
+  "pairs": [
+    {
+      "id": "pair-a-port-exposure",
+      "control_claim": "only 443 is exposed (CM-7 / SC-7)",
+      "framework_ref": "CM-7, SC-7",
+      "discriminating_field": "tcp.dst_port",
+      "clean": {
+        "label": "TLS to 443",
+        "hex_ref": "google-search-clienthello.json#hex",
+        "dst_port": 443
+      },
+      "broken": {
+        "label": "cleartext SYN to 80",
+        "hex": "e6d8e78845bf9e023667945f08004500003c93c0400040067043c0a8d70322df7c2d84bc00503181032100000000a002faf036e70000020405b40402080a366e2ac9000000000103030a",
+        "dst_port": 80
+      }
+    },
+    {
+      "id": "pair-b-encryption-in-transit",
+      "control_claim": "encrypted in transit (SC-8 / CC6.7)",
+      "framework_ref": "SC-8",
+      "discriminating_field": "tls.record.content_type vs cleartext http start-line",
+      "clean": {
+        "label": "TLS application-protected record",
+        "hex_ref": "google-search-clienthello.json#hex",
+        "note": "the TLS record byte 0 is a TLS ContentType (0x16 here; 0x17=application_data is the encrypted-payload class) — opaque on the wire"
+      },
+      "broken": {
+        "label": "cleartext HTTP GET on 80",
+        "hex": "e6d8e78845bf9e023667945f08004500007f93c6400040066ffac0a8d70322df7c2d84bc005031810322f6d4b4828018003f372a00000101080a366e3ea0d216c3f8474554202f20485454502f312e310d0a486f73743a206e6576657273736c2e636f6d0d0a557365722d4167656e743a206375726c2f382e352e300d0a4163636570743a202a2f2a0d0a0d0a",
+        "note": "the TCP payload starts 47 45 54 = 'GET' — a readable application start-line, the opposite of in-transit confidentiality"
+      }
+    },
+    {
+      "id": "pair-c-l2-trust",
+      "control_claim": "L2 trust assumption (SC-7)",
+      "framework_ref": "SC-7",
+      "discriminating_field": "arp.opcode",
+      "clean": {
+        "label": "ARP request (who-has)",
+        "hex": "ffffffffffff9af44de26edf080600010800060400019af44de26edfc0a8d703000000000000c0a8d702",
+        "opcode": 1
+      },
+      "broken": {
+        "label": "ARP reply with no paired request (gratuitous-shape)",
+        "hex": "9af44de26edfba73705c836f08060001080006040002ba73705c836fc0a8d7029af44de26edfc0a8d703",
+        "opcode": 2
+      }
+    }
+  ]
+}

@@ -158,6 +158,14 @@ seeds:
                                   # is seeded by the builder engine's capstone-seed.ts, drift-guarded byte-for-byte
                                   # against a real `bash labs/setup.sh` run via builder-captures.json m15.seed
                                   # (tests/builders-validators.test.ts). Builder capstone surface — no PATH tools.
+  mnet:
+    kind: visual                  # Wave-4 visual engine (module 16): no home tree, no PATH tools.
+                                  # The seeded state is REAL captured packet bytes committed under
+                                  # .ci/fixtures/assets/net/*.json (google-search-clienthello, tcp-handshake,
+                                  # diff-the-trace). The exercise spec's visual.artifact.from names which fixture
+                                  # the packet-dissector (oracle `pkt`) parses; sync-content + visual-seed.ts
+                                  # normalize it to the Inspect-&-Assemble panels. The parse tree over those real
+                                  # bytes IS the oracle (fidelity-checked vs tshark in web/tests/pkt-fidelity.test.ts).
 
 # Reusable hole definitions for booted structured captures (module 02 family): `find` is the
 # capture-time scrub regex (matches in captured streams are replaced with {{name}}), `pattern`

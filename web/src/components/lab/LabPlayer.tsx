@@ -16,7 +16,7 @@
  *  - Pedagogy (coach bubble, explains, hints) renders OUTSIDE the terminal stream (ISC-116).
  *  - No one-click "run this command" affordances — typing is the learning (ISC-118).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ExerciseSpec } from "../../lib/exercise-spec";
 import type {
   SeedSpec,
@@ -48,6 +48,7 @@ import { ApiLabSession, type ApiExchange } from "./sessions/api-exchange";
 import { GitTerminalSession, type GitSessionSnapshot } from "./sessions/git-session";
 import { ConsoleHost, type ConsoleSnapshot } from "./sessions/console-host";
 import { BuilderHost, type BuilderSnapshot } from "./sessions/builder-host";
+import { VisualHost, type VisualSnapshot, type VisualHostOptions } from "./sessions/visual-host";
 
 // Engines resolve lazily (none of them ship on reading pages — ISC-100); a glob that
 // resolves to {} keeps the page building while an engine package lands in parallel.
@@ -64,6 +65,10 @@ const GIT_MODULES = import.meta.glob<typeof import("../../engines/git")>(
 );
 const GIT_KEY = "../../engines/git/index.ts";
 
+// The visual surface (PEEL/TRACE/MAP island) is lazy-loaded so reading pages ship no
+// packet-dissector JS — it lands only on `engine: visual` lab pages (ISC-100 pattern).
+const VisualSurface = lazy(() => import("./VisualSurface"));
+
 interface LabPlayerProps {
   spec: ExerciseSpec;
   seed: SeedSpec;
@@ -75,6 +80,8 @@ interface LabPlayerProps {
   adminLab?: { password: string };
   /** Prompt hostname override (module 02: web-01). */
   host?: string;
+  /** Visual-engine seed (engine: visual bundles only) — the resolved real-bytes panels. */
+  visual?: VisualHostOptions;
 }
 
 interface SavedLab {
@@ -83,6 +90,7 @@ interface SavedLab {
   snapshot?: unknown;
   console?: ConsoleSnapshot;
   builder?: BuilderSnapshot;
+  visual?: VisualSnapshot;
   tasks: Record<string, TaskRecord>;
   hints: Record<string, number>; // rungs opened per task
   reflections: Record<string, string>;
@@ -92,7 +100,7 @@ interface SavedLab {
 type Phase = "intro" | "loading" | "running" | "engine-missing" | "engine-unsupported";
 
 /** Engine → surface dispatch (the heart of the spec.engine wiring). */
-type SurfaceKind = "terminal" | "console" | "builder" | "unsupported";
+type SurfaceKind = "terminal" | "console" | "builder" | "visual" | "unsupported";
 
 function surfaceKindOf(engine: ExerciseSpec["engine"]): SurfaceKind {
   switch (engine) {
@@ -109,6 +117,8 @@ function surfaceKindOf(engine: ExerciseSpec["engine"]): SurfaceKind {
       return "console";
     case "builder":
       return "builder";
+    case "visual":
+      return "visual";
     default:
       return "unsupported"; // "mixed" ships in a later wave
   }
@@ -158,7 +168,7 @@ const STORAGE_WARNINGS: Record<PersistFailure, string> = {
   unavailable: "Local storage isn't available in this browser — progress won't survive a reload.",
 };
 
-export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed, adminLab, host }: LabPlayerProps) {
+export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed, adminLab, host, visual }: LabPlayerProps) {
   const persistKey = `grcb.lab.${spec.id}`;
   const variant = VARIANTS[spec.engine] ?? null;
   const kind = surfaceKindOf(spec.engine);
@@ -187,6 +197,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
   const gitRef = useRef<GitTerminalSession | null>(null);
   const consoleRef = useRef<ConsoleHost | null>(null);
   const builderRef = useRef<BuilderHost | null>(null);
+  const visualRef = useRef<VisualHost | null>(null);
   /** Fresh-surface factory captured at start() — reset re-runs it (any engine class). */
   const recreateRef = useRef<(() => Promise<void> | void) | null>(null);
   const termRef = useRef<TerminalHandle>(null);
@@ -356,9 +367,27 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
     [seed, spec.builder, loadSaved, applySavedPlayerState],
   );
 
+  const startVisual = useCallback(
+    (resume: boolean) => {
+      const saved = resume ? loadSaved() : null;
+      const make = () => {
+        visualRef.current = new VisualHost(visual!);
+      };
+      make();
+      if (saved?.visual) visualRef.current!.restore(saved.visual);
+      recreateRef.current = make;
+      applySavedPlayerState(saved);
+    },
+    [visual, loadSaved, applySavedPlayerState],
+  );
+
   const start = useCallback(
     async (resume: boolean) => {
-      if (kind === "unsupported" || (kind === "builder" && !spec.builder)) {
+      if (
+        kind === "unsupported" ||
+        (kind === "builder" && !spec.builder) ||
+        (kind === "visual" && !visual)
+      ) {
         setPhase("engine-unsupported");
         return;
       }
@@ -366,7 +395,8 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
       try {
         if (kind === "terminal") await startTerminal(resume);
         else if (kind === "console") startConsole(resume);
-        else startBuilder(resume);
+        else if (kind === "builder") startBuilder(resume);
+        else startVisual(resume);
       } catch {
         setPhase("engine-missing");
         return;
@@ -376,7 +406,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
       setTermEpoch((n) => n + 1);
       setPhase("running");
     },
-    [kind, spec.builder, startTerminal, startConsole, startBuilder],
+    [kind, spec.builder, visual, startTerminal, startConsole, startBuilder, startVisual],
   );
 
   // ---- task verification (ISC-90) -------------------------------------------------
@@ -399,7 +429,9 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
         ? sessionRef.current
         : kind === "console"
           ? (consoleRef.current?.probeSession() ?? null)
-          : (builderRef.current?.probeSession() ?? null);
+          : kind === "builder"
+            ? (builderRef.current?.probeSession() ?? null)
+            : (visualRef.current?.probeSession() ?? null);
     if (!session) return;
     const extras: Omit<VerifyContext, "expectations" | "expectationKey"> = {
       engineResult: consoleRef.current?.lastResult() ?? null,
@@ -407,6 +439,10 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
       mappingScore: builderRef.current?.lastMappingScore() ?? null,
       apiExchanges: apiRef.current?.probes() ?? [],
       repoState: gitRef.current?.repoState() ?? null,
+      parseTree: visualRef.current?.parseTree() ?? null,
+      visual: visualRef.current?.visualAction() ?? null,
+      trace: visualRef.current?.traceProbe() ?? null,
+      map: visualRef.current?.mapProbe() ?? null,
     };
     setTaskRecords((prev) => {
       const next = { ...prev };
@@ -563,6 +599,7 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
         ...(kind === "terminal" && sessionRef.current ? { snapshot: sessionRef.current.snapshot() } : {}),
         ...(kind === "console" && consoleRef.current ? { console: consoleRef.current.snapshot() } : {}),
         ...(kind === "builder" && builderRef.current ? { builder: builderRef.current.snapshot() } : {}),
+        ...(kind === "visual" && visualRef.current ? { visual: visualRef.current.snapshot() } : {}),
         tasks: taskRecords,
         hints: hintsOpen,
         reflections,
@@ -901,7 +938,15 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
 
         {/* ---- terminal / editor ---- */}
         <section
-          aria-label={kind === "terminal" ? "Simulated terminal" : kind === "console" ? "Code console" : "Guided builder"}
+          aria-label={
+            kind === "terminal"
+              ? "Simulated terminal"
+              : kind === "console"
+                ? "Code console"
+                : kind === "builder"
+                  ? "Guided builder"
+                  : "Packet inspector"
+          }
           className="order-2 min-w-0"
         >
           {/* coach layer — OUTSIDE the terminal stream (ISC-115/116) */}
@@ -988,6 +1033,12 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
             <BuilderSurface key={termEpoch} host={builderRef.current} spec={spec} onChanged={onCommandComplete} />
           )}
 
+          {kind === "visual" && visualRef.current && (
+            <Suspense fallback={<p className="text-sm text-ink-dim">Loading the packet inspector…</p>}>
+              <VisualSurface key={termEpoch} host={visualRef.current} spec={spec} onChanged={onCommandComplete} />
+            </Suspense>
+          )}
+
           <p className="mt-3 text-xs text-ink-dim">
             {kind === "terminal" &&
               "This simulated machine runs the same seed files and tools the real capture container ran. Output is verified against reality, never invented. Paste works; there are no run-it-for-me buttons on purpose."}
@@ -995,6 +1046,8 @@ export default function LabPlayer({ spec, seed, epoch, expectations, windowsSeed
               "This is the real engine, compiled to WebAssembly and served from this site — your code genuinely runs. Output is the engine's own, never invented."}
             {kind === "builder" &&
               "Every verdict here comes from the module's own validator, ported byte-for-byte from the repo's lab checks — the UI never re-implements a check."}
+            {kind === "visual" &&
+              "Every region and value here is the packet dissector's output over real captured bytes — fidelity-checked against tshark. The parse tree is the oracle; nothing is invented."}
           </p>
         </section>
       </div>

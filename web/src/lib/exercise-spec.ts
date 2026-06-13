@@ -56,6 +56,29 @@ export const ConsoleSpecSchema = z.object({
   run_label: z.string().optional(),
 }).strict();
 
+/**
+ * Visual-surface seed (engine: visual) — the Inspect-&-Assemble island's payload
+ * (VISUAL-ENGINE-SPEC §1.1). The artifact names the REAL committed bytes the oracle parses;
+ * `oracle` names which ported engine produces the parse tree / state machine; `mode` selects
+ * the surface. The spec stays data — all parse/state-machine logic lives in engine code.
+ */
+export const VisualSpecSchema = z.object({
+  artifact: z.object({
+    /** What kind of real artifact the oracle parses (the canary uses `pcap`). */
+    kind: z.enum([
+      "pcap", "dns-msg", "doh-json", "pem-chain", "jwt", "saml-xml",
+      "oci-manifest", "syslog-5424", "set-cookie", "forwarded", "http-cache",
+      "openapi", "wsdl", "graphql-sdl", "proto", "grpc-http2", "json-store", "kv-store",
+    ]),
+    /** Provenance: the committed real fixture under .ci/fixtures/assets/. */
+    from: z.string(),
+  }),
+  /** Which ported oracle produces the parse tree / state machine (the canary uses `pkt`). */
+  oracle: z.enum(["pkt", "dns", "x509", "jwt", "xform", "tls13", "dnsres", "oauth", "hdr", "oas", "wsdl", "sdl", "proto", "pbwire", "gqlsim", "syslog", "oci", "saml"]),
+  /** Surface mode (PEEL fully implemented for the canary; TRACE/MAP stubbed for later waves). */
+  mode: z.enum(["peel", "trace", "map", "build-and-break", "diff-the-trace"]),
+}).strict();
+
 /** Builder-surface configuration (engine: builder) — names which widget model renders. */
 export const BuilderSpecSchema = z.object({
   surface: z.enum(["workspace", "mapping", "scoring-grid", "ccm", "capstone"]),
@@ -95,7 +118,7 @@ export const ExerciseSpecSchema = z.object({
   owner: z.string().min(1),
   volatility: z.enum(["A", "B", "C"]),
   review_due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  engine: z.enum(["shell-linux", "shell-macos", "powershell", "python", "sql", "policy", "jq", "api", "git", "builder", "mixed"]),
+  engine: z.enum(["shell-linux", "shell-macos", "powershell", "python", "sql", "policy", "jq", "api", "git", "builder", "visual", "mixed"]),
   claim_thread: z.string().optional(),
   payload_budget_bytes: z.number().int().min(0).default(0),
   desktop_recommended: z.boolean().default(false),
@@ -111,6 +134,8 @@ export const ExerciseSpecSchema = z.object({
   console: ConsoleSpecSchema.optional(),
   /** Builder-surface config (builder engine only) — optional, additive. */
   builder: BuilderSpecSchema.optional(),
+  /** Visual-surface config (visual engine only) — optional, additive (VISUAL-ENGINE-SPEC §1.1). */
+  visual: VisualSpecSchema.optional(),
   tasks: z.array(TaskSchema).min(1),
   completion: z.object({ evidence_pack: z.boolean().default(true) }).strict().default({ evidence_pack: true }),
 }).strict().superRefine((s, ctx) => {
@@ -125,6 +150,10 @@ export const ExerciseSpecSchema = z.object({
     ctx.addIssue({ code: "custom", message: "builder.surface: mapping requires builder.mapping config" });
   if (s.builder?.surface === "ccm" && !s.builder.ccm)
     ctx.addIssue({ code: "custom", message: "builder.surface: ccm requires builder.ccm config" });
+  if (s.engine === "visual" && !s.visual)
+    ctx.addIssue({ code: "custom", message: "engine: visual requires a visual: block (artifact + oracle + mode)" });
+  if (s.visual && s.engine !== "visual")
+    ctx.addIssue({ code: "custom", message: `visual: block is only valid with engine: visual (got ${s.engine})` });
 });
 
 export type ExerciseSpec = z.infer<typeof ExerciseSpecSchema>;

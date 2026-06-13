@@ -1,0 +1,5 @@
+{"anti_for": "t4", "fails_check": 1, "reason": "right-region/wrong-read near miss: selects the correct Destination Port region (region_labeled_correctly verify[0] passes) but mis-reads the value as 80 instead of 443 — field_value_is (verify[1]) catches the wrong decode. Prior tasks t1-t3 are completed correctly so the cheat reaches t4 (sticky near-miss)."}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "eth.ethertype", "layer": "L2", "read": "0x0800 = IPv4"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "ipv4.protocol", "layer": "L3", "read": "0x06 = 6 = TCP"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "ipv4.dst", "layer": "L3", "read": "142.251.152.119"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "tcp.dst_port", "layer": "L4", "read": "80"}}

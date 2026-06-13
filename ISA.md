@@ -172,8 +172,8 @@ Instantiate a living curriculum-as-code repository that produces and maintains 1
 
 ### Wave 4 — IT-foundations BUILD (added 2026-06-13; owner authorized + mandated per-module LOOK+FUNCTION testing)
 > Build all 10 IT-foundations modules (dirs 16–25, additive) with the new visual engine, real-artifact fixtures, exercises, and gates — AND the owner's explicit mandate: thoroughly test EACH module in real Chrome for LOOK and FUNCTION, fix every bug, re-verify until explicitly confirmed. Canary-first: networking proves the visual surface end-to-end before fan-out.
-- [ ] ISC-90: `visual` Lab Player surface (PEEL/TRACE/MAP + Build-and-Break + Diff-the-Trace) built, DOM-based + keyboard/SR-accessible, lazy-loaded, dispatched by `spec.engine: visual`; reading-page JS budget not regressed
-- [ ] ISC-91: the 6 new verifier primitives (region_labeled_correctly, field_value_is, decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct) added to the closed registry with Zod schemas, unit + mutation tests, and exercise-lint descriptors (each discriminates, not just accepts)
+- [x] ISC-90: `visual` Lab Player surface (PEEL/TRACE/MAP + Build-and-Break + Diff-the-Trace) built, DOM-based + keyboard/SR-accessible, lazy-loaded, dispatched by `spec.engine: visual`; reading-page JS budget not regressed
+- [x] ISC-91: the 6 new verifier primitives (region_labeled_correctly, field_value_is, decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct) added to the closed registry with Zod schemas, unit + mutation tests, and exercise-lint descriptors (each discriminates, not just accepts)
 - [ ] ISC-92: the new oracles/parsers built + fidelity-checked vs a reference (pkt, dns, x509, jwt, xform, tls13, dnsres, oauth, hdr, contracts, pbwire, gqlsim, syslog, oci, saml); each ships a committed fidelity-check fixture; coverage ≥95/95 on new engine files
 - [ ] ISC-93: real-artifact fixtures captured/sourced with provenance (tcpdump packet, dig DNS bytes, openssl cert chain, docker OCI manifest, real JWT/syslog/protobuf/contracts) — manifest-lint extended (new sources/match classes) and green
 - [ ] ISC-94: all 10 modules authored (16–25): module.md 9-section anatomy + meta.yaml + exercise.yaml + golden/anti transcripts; anatomy + originality + style + exercise lints green across all 26 modules
@@ -318,3 +318,12 @@ The original goal: "Create, test, refine, and finalize ALL explicitly proposed a
 - ISC-87: VISUAL-ENGINE-SPEC.md — new `visual` surface + a MINIMAL 6-primitive set (region_labeled_correctly, field_value_is, decoded_artifact_matches, sequence_matches, sim_alert_is, mapping_correct), each parser/oracle naming its ground-truth source; reuses wave-2 sql.js/jq/api/builder where the topic fits.
 - ISC-88: SEQUENCING.md — dependency-ordered placement + numbering recommendation (additive 16–25 now; 3-digit 1xx relabel as a deliberate later migration).
 - ISC-89 (Antecedent) OPEN — owner reviews enumeration + designs and authorizes the build wave; no module/exercise built yet.
+
+## Verification — Wave 4 canary (module 16 networking; 2026-06-13)
+
+- Visual surface (ISC-90) + 6 new primitives (ISC-91) built, independently audited (cross-agent review verdict PASS): fixtures decode RFC-true from REAL captured packet bytes (tcpdump curl→www.google.com), primitives discriminate near-misses (mutation tests), DOM/keyboard/SR-accessible (role=tree, roving tabindex), reduced-motion guarded.
+- Gates: web `bun test` 988 pass / 0 fail (40 files); build 40 pages incl. /labs/16; `astro check` 0 errors; exercise-lint 17/17; manifest-lint 273/273; curriculum lint pass.
+- **PRIMARY real-Chrome verification (owner mandate ISC-98/99 for module 16):**
+  - LOOK ✓ — screenshot (research/it-foundations/module-16-look.jpg): "Read the control on the wire", the real packet PEELed into a byte-region tree (Frame→Ethernet→Dst/Src MAC→EtherType), the Diff-the-Trace pairs (clean TLS-443 vs broken cleartext/port-80/ARP), task rail + hints, wave-2 design system.
+  - FUNCTION ✓ — drove the PEEL puzzle: selecting the EtherType region revealed the dissector's REAL decode `0x0800 = IPv4`; labeling it L2 auto-verified task 1 (flipped to "Completed task"); the NEGATIVE check held — mislabeling Destination MAC as L3 produced NO spurious completion (in-UI discrimination matches the mutation tests).
+  - Bug encountered + worked around: Interceptor PNG screenshot path hung on the mounted island; jpeg path succeeds — LOOK captured via `--format jpeg`. (Tooling limitation, not a module defect.)

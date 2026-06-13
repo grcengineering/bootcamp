@@ -1,0 +1,207 @@
+id: lab-16
+module: 16-it-networking-fundamentals
+title: Read the control on the wire
+owner: Justin Pagano
+volatility: B
+review_due: 2026-12-13
+engine: visual
+claim_thread: encrypted-in-transit
+payload_budget_bytes: 0
+desktop_recommended: false
+
+seed:
+  profile: mnet
+  home: /home/analyst
+  files: []
+  path_tools: []
+
+# The REAL artifact the oracle parses: the Diff-the-Trace fixture, whose clean Pair-A leg IS
+# the captured google.com ClientHello frame (fully PEELable) and whose broken legs are real
+# captures of the misconfigurations. Oracle `pkt` = the packet-dissector over the real bytes.
+visual:
+  artifact:
+    kind: pcap
+    from: assets/net/diff-the-trace.json
+  oracle: pkt
+  mode: diff-the-trace
+
+intro: |
+  You are handed real captured network traffic and asked to read three control claims directly
+  off the bytes — "only 443 is exposed," "encrypted in transit," "the L2 trust assumption holds" —
+  then diagnose the single byte where a real broken capture contradicts its claim.
+
+  This surface is the packet itself, rendered as nested byte-range regions. A layer stays closed
+  until you read the selector byte that justifies opening the next one. Every value you reveal is
+  the dissector's real decode of the real bytes — the same value tshark produces. Nothing is
+  invented; the packet is the answer key. Start on the clean capture (Pair A · clean).
+
+tasks:
+  - id: t1
+    type: action
+    objective: [1, 3]
+    instruction: |
+      On the clean capture, select the `EtherType` region (Ethernet bytes 12–13), label it with
+      its OSI layer, and read the value that tells the dissector the payload is IPv4.
+    verify:
+      - check: region_labeled_correctly
+        node_id: eth.ethertype
+        expect_layer: L2
+      - check: field_value_is
+        node_id: eth.ethertype
+        value: "0x0800"
+    hints:
+      - nudge: The frame begins with two MAC addresses (6 bytes each); the 2-byte type tag follows.
+      - concept: "§4.1 — the selector byte opens the next box; EtherType names the L3 payload"
+      - reveal: "Select bytes 12–13 (EtherType), label it L2; it reads 0x0800 = IPv4"
+    explain: |
+      You just read the first selector. `0x0800` is the byte that *chose* the IPv4 parser — the
+      same choice the network made. Ethernet is L2; reading its EtherType earned you the right to
+      open the box inside.
+
+  - id: t2
+    type: action
+    objective: [1, 3]
+    instruction: |
+      Descend into IPv4 (now unlocked). Select the `Protocol` field (IPv4 offset 9), label the
+      IPv4 region's layer, and read which L4 parser this byte selects.
+    verify:
+      - check: region_labeled_correctly
+        node_id: ipv4.protocol
+        expect_layer: L3
+      - check: field_value_is
+        node_id: ipv4.protocol
+        value: "TCP"
+    hints:
+      - nudge: RFC 791 fixes the IPv4 header; the L4 selector is one byte, nine in.
+      - concept: "§4.1 — Protocol field: 6=TCP, 17=UDP, 1=ICMP"
+      - reveal: "Select the Protocol byte (IPv4 offset 9), label it L3; it reads 0x06 = 6 = TCP"
+    explain: |
+      The second selector. `0x06` chose the TCP parser. IPv4 is L3 — the end-to-end layer. Notice
+      the TCP region stayed gated until you read this byte: you cannot peel a layer you have not
+      earned the selector for.
+
+  - id: t3
+    type: action
+    objective: [2, 4]
+    instruction: |
+      Select the IPv4 `Destination Address` region (L3) and read the end-to-end address. This —
+      not the MAC — is what attributes the host across a routed boundary.
+    verify:
+      - check: region_labeled_correctly
+        node_id: ipv4.dst
+        expect_layer: L3
+      - check: field_value_is
+        node_id: ipv4.dst
+        value: "142.251.152.119"
+    hints:
+      - nudge: The IPv4 destination address sits at IP offset 16–19 (four bytes).
+      - concept: "§4.2 — MAC is hop-truth (rewritten each hop); IP is end-to-end-truth (preserved)"
+      - reveal: "Select the Destination Address region (L3); it reads 142.251.152.119"
+    explain: |
+      A router rewrites the MAC at every hop, so a logged MAC names only the last forwarder. The IP
+      is preserved end-to-end — it is the address that attributes the originating host. Scope is
+      which bytes change when the packet moves.
+
+  - id: t4
+    type: action
+    objective: [2, 3, 5]
+    instruction: |
+      Descend into TCP. Select the `Destination Port` region and read it. This field decides the
+      "only 443 is exposed" claim (CM-7 / SC-7).
+    verify:
+      - check: region_labeled_correctly
+        node_id: tcp.dst_port
+        expect_layer: L4
+      - check: field_value_is
+        node_id: tcp.dst_port
+        value: "443"
+    hints:
+      - nudge: The TCP header opens with source then destination port (two bytes each).
+      - concept: "§4.3 — the 5-tuple is the firewall's whole worldview; dst-port is exposure"
+      - reveal: "Select the Destination Port region (L4); it reads 443"
+    explain: |
+      Destination port 443 satisfies "only 443 is exposed." A packet to 80 here would be the
+      finding. This is one of the five fields a firewall rule decides on — you can now read any
+      ACL as a predicate over them.
+
+  - id: t5
+    type: action
+    objective: [2, 3]
+    instruction: |
+      Descend to the TLS record and select the `ContentType` byte (the record's first byte). Label
+      its layer. This — not the port — is where "encrypted in transit" actually lives.
+    verify:
+      - check: region_labeled_correctly
+        node_id: tls.content_type
+        expect_layer: L6
+      - check: field_value_is
+        node_id: tls.content_type
+        value: "handshake"
+    hints:
+      - nudge: RFC 8446 puts the ContentType as the very first byte of every TLS record.
+      - concept: "§4.5 — 22=handshake (cleartext negotiation), 23=application_data (encrypted)"
+      - reveal: "Select the ContentType byte (TLS record byte 0), label it L6; 0x16 = 22 = handshake"
+    explain: |
+      The port was a promise; the ContentType is the proof, and it lives at a different layer (L6).
+      `0x16` is the still-cleartext handshake; `0x17` would be opaque application data. Reaching for
+      the port to prove encryption is the classic mistake — the ContentType is the fix.
+
+  - id: t6
+    type: action
+    objective: [4]
+    instruction: |
+      Select the TCP `Flags` region (offset 13) and read its decoded value. The connection's state
+      is literally readable in this one byte — contrast it with the handshake's SYN/SYN+ACK/ACK.
+    verify:
+      - check: region_labeled_correctly
+        node_id: tcp.flags
+        expect_layer: L4
+      - check: field_value_is
+        node_id: tcp.flags
+        value: "ACK"
+    hints:
+      - nudge: The eight TCP control flags share one byte at TCP offset 13.
+      - concept: "§4.4 — the flags ARE the state: SYN opens, SYN+ACK accepts, ACK confirms"
+      - reveal: "Select the Flags region (L4); this established-connection segment reads PSH+ACK"
+    explain: |
+      The flag bits carry the connection's state in one byte. The three-way handshake reads
+      0x02 (SYN) → 0x12 (SYN+ACK) → 0x10 (ACK); this mid-stream segment has ACK set. Read the byte,
+      read the state — and a real TCP counterpart answers a wrong order with a RST, not "try again."
+
+  - id: t7
+    type: action
+    objective: [6]
+    instruction: |
+      Switch to the broken Pair-A capture (the tab labelled "pair-a-port-exposure · broken"). Select
+      the single field where this real capture contradicts the "only 443 is exposed" claim.
+    verify:
+      - check: region_labeled_correctly
+        node_id: tcp.dst_port
+        expect_layer: L4
+      - check: field_value_is
+        node_id: tcp.dst_port
+        value: "80"
+    hints:
+      - nudge: Both captures are real and nearly identical — exactly one field carries the violation.
+      - concept: "§4.7 — a control is a predicate over bytes; exposure lives at the L4 dst-port"
+      - reveal: "On the broken tab, select the Destination Port (L4) — it reads 80, not 443"
+    explain: |
+      The discriminating byte is the dissector's computed divergence over two real captures, not
+      your opinion: destination port 80 where the claim says 443 breaks CM-7 / SC-7. Your Wire
+      Evidence Finding names the field, both values, the control, and the framework reference — and
+      anyone can re-derive it from the same bytes.
+
+  - id: t8
+    type: reflection
+    objective: [1, 2]
+    instruction: |
+      In 4–6 sentences, for a non-technical colleague: explain encapsulation as nested boxes and how
+      one selector byte opens the next; why "encrypted in transit" lives at the TLS ContentType and
+      not the port; and why the IP — not the MAC — attributes a host across a routed hop. Use the
+      §3 mailing-the-letter model, not jargon.
+    hints:
+      - nudge: "The §3 model: a crate inside a box inside a letter — each layer reads only its own label."
+      - concept: "§3 — The Mental Model"
+
+completion:
+  evidence_pack: true

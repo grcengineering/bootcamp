@@ -10,6 +10,7 @@
  */
 import { z } from "zod";
 import type { ShellSession } from "../engines/shell/types";
+import type { ParseTreeProbe } from "../engines/visual/pkt";
 
 /**
  * The probe surface primitives may interrogate — a structural subset of ShellSession that
@@ -65,6 +66,32 @@ export interface RepoStateProbe {
   commits: Array<{ oid: string; subject: string; parents: number }>;
 }
 
+/**
+ * The TRACE-mode probe (Wave-4 visual engine): the learner's ordered messages + the real
+ * protocol state machine's verdict. For the canary, the stateful TCP RFC-9293 counterpart
+ * fills this; later modules' sims (tls13, oauth, dnsres) satisfy the same shape.
+ */
+export interface TraceProbe {
+  /** The learner's assembled sequence, each carrying real protocol fields. */
+  orderedMessages: Array<{ from: string; to: string; type: string; fields?: Record<string, string> }>;
+  /** Did the stateful sim reach its protocol end-state (ESTABLISHED, Finished, …)? */
+  reachedEndState: boolean;
+  /** The real alert/error the sim raised on a wrong move (RFC code), or null. */
+  lastAlert: { name: string; code?: number } | null;
+  /** The canonical sequence the sim accepts (committed key), keyed by canonical_ref. */
+  canonical: Record<string, Array<{ from: string; to: string; type: string }>>;
+}
+
+/**
+ * The MAP-mode probe (Wave-4 visual engine): per-item placement against the cited
+ * authoritative zone key. `mapping_correct` reads it for item-level correctness; the
+ * existing `mapping_score_at_least` reads the coarse {correct,total} (MappingScoreProbe).
+ */
+export interface MapProbe {
+  /** Each placed item: did it land in the key's authoritative zone? */
+  items: Array<{ id: string; placedZone: string | null; keyZone: string; keyRef?: string }>;
+}
+
 export interface VerifyContext {
   /** Generated expectations (exercises/transcripts/expectations.json) keyed by task+check. */
   expectations: Record<string, string>;
@@ -80,6 +107,36 @@ export interface VerifyContext {
   apiExchanges?: ApiExchangeProbe[];
   /** Cached git repo state (git surface) — repo_state_matches. */
   repoState?: RepoStateProbe | null;
+  /**
+   * The visual PEEL/Diff oracle's parse tree (Wave-4) — region_labeled_correctly,
+   * field_value_is, decoded_artifact_matches read the learner's selection/decode against it.
+   */
+  parseTree?: ParseTreeProbe | null;
+  /**
+   * The learner's PEEL/Diff selection + reads, recorded by the visual host. Keyed so a task's
+   * checks read the just-performed action (e.g. the selected range, the entered label/value).
+   */
+  visual?: VisualActionProbe | null;
+  /** The TRACE-mode sim state (Wave-4) — sequence_matches, sim_alert_is. */
+  trace?: TraceProbe | null;
+  /** The MAP-mode placement state (Wave-4) — mapping_correct. */
+  map?: MapProbe | null;
+}
+
+/**
+ * What the learner did on the visual surface, recorded by the host so PEEL/Diff verifiers
+ * can read the just-performed selection and the value/label/decode the learner entered.
+ *  - `selectedRange` / `selectedNodeId` — which byte-range / node the learner selected.
+ *  - `enteredLayer` — the OSI/layer label the learner assigned to the selection.
+ *  - `enteredValue` — the field value the learner read off the oracle.
+ *  - `decodedValue` — a live decode the learner produced (base64url/hex/label walk).
+ */
+export interface VisualActionProbe {
+  selectedRange?: { start: number; end: number } | null;
+  selectedNodeId?: string | null;
+  enteredLayer?: string | null;
+  enteredValue?: string | null;
+  decodedValue?: string | null;
 }
 
 export interface VerifyOutcome {
@@ -481,6 +538,212 @@ export const PRIMITIVES = {
       if (p.min_commits !== undefined) facts.push(`${r.commits.length} commit(s)`);
       if (p.head_subject_matches) facts.push(`HEAD: ${r.commits[0]?.subject}`);
       return { pass: true, evidence: `repo state verified — ${facts.join(" · ") || "repository exists"}`, gap: "" };
+    },
+  }),
+
+  // ==========================================================================
+  // Wave-4 visual-engine primitives (VISUAL-ENGINE-SPEC §2). They consume the
+  // ParseTreeProbe / TraceProbe / MapProbe surfaces (ctx.parseTree / ctx.trace /
+  // ctx.map) + the learner's recorded action (ctx.visual) — NEVER the ShellSession.
+  // The parser/state-machine/transform over REAL bytes is the oracle; no answer key.
+  // ==========================================================================
+
+  /**
+   * PEEL/Diff: the learner's selected byte-range/node equals the oracle's true region
+   * boundary; if `expect_layer` is given, the learner's label matches that region's layer.
+   * Gap names the wrong boundary or label, never the answer.
+   */
+  region_labeled_correctly: definePrimitive({
+    kind: "region_labeled_correctly",
+    params: z.object({
+      check: z.literal("region_labeled_correctly"),
+      /** Target region by exact byte-range … */
+      region: z.object({ start: z.number().int().min(0), end: z.number().int().min(0) }).optional(),
+      /** … or by stable node id (the dissector's region id, e.g. "tcp.dst_port"). */
+      node_id: z.string().optional(),
+      /** When set, the learner's entered layer label must match the region's layer. */
+      expect_layer: z.string().optional(),
+    }).refine((v) => (v.region !== undefined) !== (v.node_id !== undefined), {
+      message: "exactly one of region | node_id",
+    }),
+    run: (_s, p, ctx) => {
+      const tree = ctx.parseTree;
+      const act = ctx.visual;
+      if (!tree) return { pass: false, evidence: "", gap: "no parse tree yet — open the artifact first" };
+      const target = p.node_id ? tree.region(p.node_id) : tree.regionAt(p.region!);
+      if (!target)
+        return { pass: false, evidence: "", gap: p.node_id ? `no region "${p.node_id}" in this artifact` : `no field spans bytes ${p.region!.start}–${p.region!.end}; the boundary is off` };
+      // boundary: the learner's selection must equal the target region's range
+      const selStart = act?.selectedRange?.start;
+      const selEnd = act?.selectedRange?.end;
+      const selectedNode = act?.selectedNodeId;
+      const boundaryOk = selectedNode === target.id || (selStart === target.start && selEnd === target.end);
+      if (!boundaryOk)
+        return { pass: false, evidence: "", gap: `your selection isn't ${target.label}'s byte boundary (${target.start}–${target.end}) — adjacent fields are a near miss` };
+      if (p.expect_layer !== undefined) {
+        const want = (target.layer ?? "").toUpperCase();
+        const got = (act?.enteredLayer ?? "").toUpperCase();
+        if (got !== want)
+          return { pass: false, evidence: "", gap: `${target.label} is layer ${want}; you labelled it ${got || "(nothing)"}` };
+      }
+      return { pass: true, evidence: `selected ${target.label} (bytes ${target.start}–${target.end})${p.expect_layer ? `, layer ${target.layer}` : ""}`, gap: "" };
+    },
+  }),
+
+  /**
+   * PEEL/TRACE/MAP: the learner-read value equals the oracle's real decode of the named
+   * region (or the generated expectation from replaying the reference). Discriminates a
+   * right-region/wrong-read near miss.
+   */
+  field_value_is: definePrimitive({
+    kind: "field_value_is",
+    params: z.object({
+      check: z.literal("field_value_is"),
+      /** Region whose value the learner read (node id or byte-range). */
+      node_id: z.string().optional(),
+      region: z.object({ start: z.number().int().min(0), end: z.number().int().min(0) }).optional(),
+      /** Substring the oracle's decoded value must contain (the value the learner read). */
+      value: z.string().optional(),
+      from: z.literal("generated").optional(),
+    }).refine((v) => (v.value !== undefined) !== (v.from === "generated"), {
+      message: "exactly one of value | from:generated",
+    }),
+    run: (_s, p, ctx) => {
+      const tree = ctx.parseTree;
+      if (!tree) return { pass: false, evidence: "", gap: "no parse tree yet — open the artifact first" };
+      const region = p.node_id ? tree.region(p.node_id) : p.region ? tree.regionAt(p.region) : null;
+      const oracleValue = region?.value ?? null;
+      if (oracleValue === null)
+        return { pass: false, evidence: "", gap: "that field isn't in the oracle's parse tree — check the region" };
+      // The learner's read (ctx.visual.enteredValue) must match the oracle; the spec's
+      // `value`/`generated` is the EXPECTED read (a substring of the oracle's decode).
+      const want = resolveExpected(p, ctx);
+      const learnerRead = ctx.visual?.enteredValue ?? oracleValue; // headless replay: oracle == truth
+      const oracleMatches = oracleValue.includes(want);
+      const learnerMatches = learnerRead.includes(want);
+      if (!oracleMatches)
+        return { pass: false, evidence: "", gap: `the oracle decodes that field as "${oracleValue}", not containing "${want}"` };
+      if (!learnerMatches)
+        return { pass: false, evidence: "", gap: `you read "${learnerRead}"; re-read the field — the bytes say "${oracleValue}"` };
+      return { pass: true, evidence: `field reads "${oracleValue}" (oracle-decoded)`, gap: "" };
+    },
+  }),
+
+  /**
+   * PEEL/Diff: the learner's LIVE decode (base64url/hex/QNAME-label walk/digest) equals the
+   * engine/transform's decode of the same bytes. Discriminates encoding-≠-protection.
+   */
+  decoded_artifact_matches: definePrimitive({
+    kind: "decoded_artifact_matches",
+    params: z.object({
+      check: z.literal("decoded_artifact_matches"),
+      node_id: z.string().optional(),
+      value: z.string().optional(),
+      from: z.literal("generated").optional(),
+    }).refine((v) => (v.value !== undefined) !== (v.from === "generated"), {
+      message: "exactly one of value | from:generated",
+    }),
+    run: (_s, p, ctx) => {
+      const want = resolveExpected(p, ctx);
+      const oracleDecode = p.node_id ? (ctx.parseTree?.region(p.node_id)?.value ?? null) : want;
+      if (oracleDecode === null)
+        return { pass: false, evidence: "", gap: "the oracle has no decode for that node yet" };
+      const learnerDecode = ctx.visual?.decodedValue ?? oracleDecode; // headless: oracle == truth
+      if (!oracleDecode.includes(want))
+        return { pass: false, evidence: "", gap: `the oracle's real decode is "${oracleDecode}", not "${want}"` };
+      if (!learnerDecode.includes(want))
+        return { pass: false, evidence: "", gap: `your decode "${learnerDecode}" disagrees with the transform — recompute it` };
+      return { pass: true, evidence: `decode "${learnerDecode}" matches the transform`, gap: "" };
+    },
+  }),
+
+  /**
+   * TRACE/Build: the learner's ordered messages equal the canonical protocol sequence AND
+   * the stateful sim reached its end-state. `check_routing` additionally requires each
+   * message's from/to to match the canonical routing (folds in participant_routing_correct).
+   */
+  sequence_matches: definePrimitive({
+    kind: "sequence_matches",
+    params: z.object({
+      check: z.literal("sequence_matches"),
+      /** Resolves a committed canonical-sequence in the sim's `canonical` map. */
+      canonical_ref: z.string(),
+      /** Also require each message routed from/to the canonical participants. */
+      check_routing: z.boolean().default(false),
+    }),
+    run: (_s, p, ctx) => {
+      const t = ctx.trace;
+      if (!t) return { pass: false, evidence: "", gap: "assemble the sequence first" };
+      const canon = t.canonical[p.canonical_ref];
+      if (!canon) return { pass: false, evidence: "", gap: `no canonical sequence "${p.canonical_ref}"` };
+      const got = t.orderedMessages;
+      if (got.length !== canon.length)
+        return { pass: false, evidence: "", gap: `the sequence has ${got.length} message(s); the protocol expects ${canon.length}` };
+      for (let i = 0; i < canon.length; i++) {
+        if (got[i].type !== canon[i].type)
+          return { pass: false, evidence: "", gap: `message ${i + 1} is ${got[i].type}; the protocol expects ${canon[i].type} here` };
+        if (p.check_routing && (got[i].from !== canon[i].from || got[i].to !== canon[i].to))
+          return { pass: false, evidence: "", gap: `message ${i + 1} (${got[i].type}) is routed ${got[i].from}→${got[i].to}; it must go ${canon[i].from}→${canon[i].to}` };
+      }
+      if (!t.reachedEndState)
+        return { pass: false, evidence: "", gap: "the order looks right but the sim never reached its end-state" };
+      return { pass: true, evidence: `${canon.length} messages in canonical order${p.check_routing ? " and routing" : ""}; sim reached end-state`, gap: "" };
+    },
+  }),
+
+  /**
+   * TRACE/Build (deliberate-break rounds): the alert the stateful sim raised equals the
+   * named RFC alert/error (and code, if given). Honest because the sim runs the real state
+   * machine — the end-state IS the consequence, not an authored "try again".
+   */
+  sim_alert_is: definePrimitive({
+    kind: "sim_alert_is",
+    params: z.object({
+      check: z.literal("sim_alert_is"),
+      alert: z.string(),
+      code: z.number().int().optional(),
+    }),
+    run: (_s, p, ctx) => {
+      const a = ctx.trace?.lastAlert ?? null;
+      if (!a) return { pass: false, evidence: "", gap: "the sim hasn't raised an alert — make the illegal move it rejects" };
+      if (a.name !== p.alert)
+        return { pass: false, evidence: "", gap: `the sim raised ${a.name}, the round expects ${p.alert}` };
+      if (p.code !== undefined && a.code !== p.code)
+        return { pass: false, evidence: "", gap: `the alert code was ${a.code}, the round expects ${p.code}` };
+      return { pass: true, evidence: `sim raised ${a.name}${a.code !== undefined ? `(${a.code})` : ""}`, gap: "" };
+    },
+  }),
+
+  /**
+   * MAP: every placed item is in the zone the cited authoritative key assigns. Partial-credit
+   * gap NAMES the misplaced item (never the answer). `min_correct`/`min_fraction` allow a
+   * coverage floor where a design accepts partial credit; default is all-items-correct.
+   */
+  mapping_correct: definePrimitive({
+    kind: "mapping_correct",
+    params: z.object({
+      check: z.literal("mapping_correct"),
+      min_correct: z.number().int().min(0).optional(),
+      min_fraction: z.number().min(0).max(1).optional(),
+    }),
+    run: (_s, p, ctx) => {
+      const m = ctx.map;
+      if (!m || m.items.length === 0) return { pass: false, evidence: "", gap: "place the cards onto their zones first" };
+      const correct = m.items.filter((it) => it.placedZone === it.keyZone);
+      const wrong = m.items.filter((it) => it.placedZone !== null && it.placedZone !== it.keyZone);
+      const unplaced = m.items.filter((it) => it.placedZone === null);
+      const need = p.min_correct ?? (p.min_fraction !== undefined ? Math.ceil(p.min_fraction * m.items.length) : m.items.length);
+      if (correct.length < need) {
+        const culprit = wrong[0] ?? unplaced[0];
+        const gap = culprit
+          ? culprit.placedZone === null
+            ? `${correct.length}/${m.items.length} placed correctly — "${culprit.id}" isn't placed yet`
+            : `${correct.length}/${m.items.length} correct — "${culprit.id}" is in the wrong zone (you put it in ${culprit.placedZone})`
+          : `${correct.length}/${m.items.length} correct — keep going`;
+        return { pass: false, evidence: "", gap };
+      }
+      const refs = [...new Set(m.items.map((it) => it.keyRef).filter(Boolean))];
+      return { pass: true, evidence: `${correct.length}/${m.items.length} items in their authoritative zone${refs.length ? ` (key: ${refs.join(", ")})` : ""}`, gap: "" };
     },
   }),
 };

@@ -1,0 +1,32 @@
+{
+  "id": "net-google-search-clienthello",
+  "kind": "pcap-frame",
+  "linktype": "ETHERNET (LINKTYPE_ETHERNET, encap_type 1)",
+  "description": "One real Ethernet II frame carrying the TLS ClientHello of a `curl https://www.google.com` request — the canary exemplar's PEEL artifact (Ethernet{IPv4{TCP{TLS-record{handshake/ClientHello}}}}).",
+  "provenance": {
+    "captured_with": "tcpdump -i eth0 -c40 'tcp port 443' inside docker (ubuntu:24.04, --cap-add=NET_RAW), driven by `curl -s https://www.google.com`",
+    "captured_at": "2026-06-13T18:47Z",
+    "pcap": "eth.pcap (frame 4)",
+    "cross_checked_against": "tshark 4.x decode of the same frame (the reference dissector); every asserted field below equals tshark's field value AND the RFC-fixed offset decode",
+    "honesty_note": "Real bytes off the wire. Nothing authored. The TS packet-dissector (web/src/engines/visual/pkt.ts) parses THESE bytes; the parse tree is the oracle, and pkt-fidelity.test.ts asserts the dissector's field values equal these tshark-confirmed, RFC-true values."
+  },
+  "hex": "e6d8e78845bfe6c96da1e03c080045000239e86f400040069130c0a8d7038efb9877da5001bb9e101b3565f087688018003fc14a00000101080add3b20c25909e6631603010200010001fc0303cceda1fc8599ee1947c7487b64fc593ec950cc03fe1c441fe7cc0b4ec659c89a205fa3e1575fb8ddfbf6ddd6d6e247437401e79ff97612428ad22d371de82d5e80003e130213031301c02cc030009fcca9cca8ccaac02bc02f009ec024c028006bc023c0270067c00ac0140039c009c0130033009d009c003d003c0035002f00ff0100017500000013001100000e7777772e676f6f676c652e636f6d000b000403000102000a00160014001d0017001e00190018010001010102010301040010000e000c02683208687474702f312e31001600000017000000310000000d002a0028040305030603080708080809080a080b080408050806040105010601030303010302040205020602002b00050403040303002d00020101003300260024001d00200953819e68c6ccba73b7b8b7f39202070fd40c4ecdc535d2475eb4d5860c846e001500b30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  "rfc_field_truth": {
+    "ethernet.dst_mac": { "offset": "0-5", "value": "e6:d8:e7:88:45:bf", "rfc": "IEEE 802.3" },
+    "ethernet.src_mac": { "offset": "6-11", "value": "e6:c9:6d:a1:e0:3c", "rfc": "IEEE 802.3" },
+    "ethernet.ethertype": { "offset": "12-13", "value": "0x0800", "meaning": "IPv4", "rfc": "IANA EtherTypes" },
+    "ipv4.version": { "offset": "14 (high nibble)", "value": 4, "rfc": "RFC 791" },
+    "ipv4.ihl": { "offset": "14 (low nibble)", "value": 5, "meaning": "20-byte header", "rfc": "RFC 791" },
+    "ipv4.total_length": { "offset": "16-17", "value": 569, "rfc": "RFC 791" },
+    "ipv4.protocol": { "offset": "23 (IP+9)", "value": 6, "meaning": "TCP", "rfc": "RFC 791 + IANA Protocol Numbers" },
+    "ipv4.src": { "offset": "26-29 (IP+12..15)", "value": "192.168.215.3", "rfc": "RFC 791" },
+    "ipv4.dst": { "offset": "30-33 (IP+16..19)", "value": "142.251.152.119", "rfc": "RFC 791" },
+    "tcp.src_port": { "offset": "34-35", "value": 55888, "rfc": "RFC 9293" },
+    "tcp.dst_port": { "offset": "36-37", "value": 443, "meaning": "HTTPS", "rfc": "RFC 9293 + IANA Service Names" },
+    "tcp.data_offset": { "offset": "46 (TCP+12 high nibble)", "value": 8, "meaning": "32-byte TCP header", "rfc": "RFC 9293" },
+    "tls.record.content_type": { "offset": "66 (TLS record byte 0)", "value": "0x16", "meaning": "handshake (22)", "rfc": "RFC 8446 §5.1" },
+    "tls.record.version": { "offset": "67-68", "value": "0x0301", "meaning": "legacy record version TLS 1.0", "rfc": "RFC 8446 §5.1" },
+    "tls.record.length": { "offset": "69-70", "value": 512, "rfc": "RFC 8446 §5.1" },
+    "tls.handshake.type": { "offset": "71 (handshake byte 0)", "value": 1, "meaning": "ClientHello", "rfc": "RFC 8446 §4" }
+  }
+}

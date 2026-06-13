@@ -6,12 +6,19 @@
  */
 import type { ExerciseSpec } from "./exercise-spec";
 import type { SeedSpec } from "../engines/shell/types";
+import type { VisualHostOptions } from "../components/lab/sessions/visual-host";
 
 export interface LabBundle {
   spec: ExerciseSpec;
   seed: SeedSpec;
   expectations: Record<string, string>;
   epoch: string;
+  /**
+   * Visual-surface seed (engine: visual only): the resolved Inspect-&-Assemble panels over
+   * the REAL committed fixture bytes (.ci/fixtures/assets/), normalized by lib/visual-seed.ts
+   * — the same panels the replay test builds. Absent for every other engine class.
+   */
+  visual?: VisualHostOptions;
   /**
    * PowerShell engine seed (engine: powershell only) — the manifest seed profile's typed
    * object stores (.ci/fixtures/seeds/m04/*.json with gpresultReportFile resolved), shaped
@@ -38,5 +45,6 @@ export const ENGINE_LABELS: Record<ExerciseSpec["engine"], string> = {
   api: "API lab",
   git: "Git",
   builder: "Guided builder",
+  visual: "Packet inspector",
   mixed: "Mixed engines",
 };

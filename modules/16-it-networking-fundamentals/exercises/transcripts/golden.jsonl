@@ -1,0 +1,7 @@
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "eth.ethertype", "layer": "L2", "read": "0x0800 = IPv4"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "ipv4.protocol", "layer": "L3", "read": "0x06 = 6 = TCP"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "ipv4.dst", "layer": "L3", "read": "142.251.152.119"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "tcp.dst_port", "layer": "L4", "read": "443"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "tls.content_type", "layer": "L6", "read": "0x16 = 22 = handshake"}}
+{"input": {"panel": "pair-a-port-exposure-clean", "select": "tcp.flags", "layer": "L4", "read": "0x18 = PSH+ACK"}}
+{"input": {"panel": "pair-a-port-exposure-broken", "select": "tcp.dst_port", "layer": "L4", "read": "80"}}
