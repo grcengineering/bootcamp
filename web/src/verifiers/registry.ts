@@ -523,13 +523,46 @@ export function runCheck(
   return prim.run(session, params as never, ctx);
 }
 
+/**
+ * Collect every top-level param key a primitive's schema can accept, unwrapping the two
+ * non-ZodObject shapes the registry actually uses:
+ *   - ZodEffects (`.refine(...)`)        — descend into `_def.schema`
+ *   - ZodIntersection (`a.and(b)`)        — MERGE the key sets of both sides (M3 fix:
+ *                                            file_content_equals / engine_result_equals
+ *                                            build params as `z.object(...).and(valueOrGenerated)`,
+ *                                            so neither side alone is the full surface).
+ * A bare ZodObject exposes `.shape` directly. Anything else yields no keys (the registry
+ * never uses such a shape at the top level; this stays a total function regardless).
+ */
+function schemaKeys(schema: z.ZodTypeAny): string[] {
+  const def = (schema as unknown as { _def?: Record<string, unknown> })._def ?? {};
+  const typeName = def["typeName"] as string | undefined;
+
+  // ZodEffects (refine/transform/preprocess) wraps the real schema under _def.schema.
+  if (typeName === "ZodEffects") {
+    return schemaKeys(def["schema"] as z.ZodTypeAny);
+  }
+
+  // ZodIntersection (.and) — union of both branches' keys, recursively unwrapped.
+  if (typeName === "ZodIntersection") {
+    const left = schemaKeys(def["left"] as z.ZodTypeAny);
+    const right = schemaKeys(def["right"] as z.ZodTypeAny);
+    return [...new Set([...left, ...right])];
+  }
+
+  // ZodObject (incl. the common case) exposes its shape directly.
+  const shape = (schema as unknown as { shape?: Record<string, unknown> }).shape;
+  return shape ? Object.keys(shape) : [];
+}
+
 /** Registry descriptor for exercise-lint (root ISA ISC-79) — serializable schema surface. */
 export function registryDescriptor(): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const [kind, prim] of Object.entries(PRIMITIVES)) {
-    // param key names for lint-side validation messages
-    const shape = (prim.params as unknown as { _def?: unknown });
-    out[kind] = Object.keys((shape as { shape?: Record<string, unknown> }).shape ?? {});
+    // param key names for lint-side validation messages — unwrap intersections/effects so
+    // every primitive yields a non-empty descriptor (M3: intersection-typed primitives
+    // file_content_equals / engine_result_equals previously returned []).
+    out[kind] = schemaKeys(prim.params as z.ZodTypeAny);
   }
   return out;
 }
