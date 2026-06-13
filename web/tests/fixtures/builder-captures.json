@@ -1,9 +1,9 @@
 {
   "meta": {
-    "captured_at": "2026-06-12T15:42:40.964Z",
+    "captured_at": "2026-06-13T12:54:56.437Z",
     "method": "web/scripts/capture-builder-fixtures.ts — real `bash`/`bun` runs of the committed lab validators",
     "sources": "modules/{00,08,10,11,12,13,14,15}-*/labs/",
-    "platform": "darwin bash=$(bash --version | head -1)"
+    "platform": "darwin bash=GNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)"
   },
   "m00": {
     "seed": {

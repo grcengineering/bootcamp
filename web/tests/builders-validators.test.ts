@@ -442,6 +442,20 @@ describe("module 15 — validate-capstone.sh port", () => {
     expect(got.stderr).toContain("usage: validate-capstone.sh <capstone-manifest.yaml>");
   });
 
+  test("L2 scope-boundary lock: no-arg path is OUR pinned behavior (exit 1, message on stderr) — not in m15 captures", () => {
+    // ISC-137 L2: the no-argument case has no byte-identical bash reference in the m15
+    // captures (which always pass a manifest path). The port defines exit 1 with the usage
+    // line on stderr and a clean stdout; this test LOCKS that choice so it can't silently
+    // drift. The scope note lives at validate-capstone.ts and in web/ISA.md ISC-137.
+    const got = validateCapstone([], fs);
+    expect(got.exit).toBe(1);
+    expect(got.stdout).toBe("");
+    expect(got.stderr).toBe("usage: validate-capstone.sh <capstone-manifest.yaml>\n");
+    // none of the m15 captured cases exercise the no-arg path — confirming this is unpinned
+    // by the fixtures and therefore our own definition.
+    expect((m15.cases as CapturedCase[]).some((c) => c.argv.length === 0)).toBe(false);
+  });
+
   test("mapped-but-missing artifact yields the artifact-not-found MISSING variant", () => {
     const manifest = m15.seed["capstone-manifest.yaml"].replace("QUERY:      collect.sh", "QUERY:      gone.sh");
     const world = fsFrom({ ...m15.seed, "capstone-manifest.yaml": manifest });

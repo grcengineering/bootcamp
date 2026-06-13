@@ -49,6 +49,24 @@ describe("encrypted sync envelope", () => {
     expect(a).not.toBe(b);
   });
 
+  test("AES-GCM IVs are unique across many exports of the same state (advisor IV: nonce reuse is catastrophic for GCM)", async () => {
+    // Differing ciphertext alone doesn't prove IV uniqueness — a fresh salt changes the
+    // derived key and thus the ciphertext even under a reused IV. Assert the IVs themselves
+    // are all distinct: GCM nonce reuse under the SAME key leaks the keystream (and the
+    // auth-key), so this is the property that actually matters.
+    const state = sampleState();
+    const N = 64;
+    const ivs: string[] = [];
+    for (let i = 0; i < N; i++) {
+      const blob = await exportEncrypted(state, "correct horse battery staple");
+      const envelope = JSON.parse(atob(blob.slice("GRCB-SYNC-v1.".length))) as { iv: string };
+      expect(typeof envelope.iv).toBe("string");
+      expect(envelope.iv.length).toBeGreaterThan(0);
+      ivs.push(envelope.iv);
+    }
+    expect(new Set(ivs).size).toBe(N); // every IV distinct — zero collisions across N exports
+  });
+
   test("garbage and wrong-header inputs produce friendly errors (ISC-146)", async () => {
     await expect(importEncrypted("not a blob", "x".repeat(10))).rejects.toThrow(/bad header/);
     await expect(importEncrypted("GRCB-SYNC-v1.%%%%", "x".repeat(10))).rejects.toThrow(/corrupted/);

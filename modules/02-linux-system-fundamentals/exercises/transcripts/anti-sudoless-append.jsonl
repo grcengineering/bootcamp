@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "root-owned config appended with a plain >> — the sim's VFS does not enforce the write-permission wall (declared divergence, web ISA), so the spec witnesses the pipe-into-elevated-tee idiom in history; this run never crossed the sudo gate to write /etc/ssh/sshd_config"}
+{"anti_for": "t4", "fails_check": 2, "reason": "root-owned config appended with a plain >> — the sim's VFS does not enforce the write-permission wall (declared divergence, web ISA), so the spec witnesses the pipe-into-elevated-tee idiom in history; this run never crossed the sudo gate to write /etc/ssh/sshd_config. history_contains '| sudo tee -a /etc/ssh/sshd_config' (verify[2]) is the elevated-write witness the plain >> never produces"}
 {"input": "mkdir evidence"}
 {"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' >> /etc/ssh/sshd_config"}
 {"input": "sudo systemctl reload ssh\nlabpass"}

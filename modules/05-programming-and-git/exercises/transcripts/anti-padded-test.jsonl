@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "coverage-padding cheat — the malformed-handling 'test' calls validate_dir and asserts NOTHING: the line is exercised, the behavior is never checked; exactly the assertion-free padding §4.6 forbids"}
+{"anti_for": "t5", "fails_check": 1, "reason": "coverage-padding cheat — the malformed-handling 'test' calls validate_dir and asserts NOTHING: the line is exercised, the behavior is never checked; exactly the assertion-free padding §4.6 forbids. file_content_matches 'assert .*[\"errors\"]' (verify[1]) is the meaningful-assertion check: the padded test has no assert on the errors result"}
 {"input": "pwd"}
 {"input": "cd lab05"}
 {"input": "bash labs/setup.sh evidence/"}

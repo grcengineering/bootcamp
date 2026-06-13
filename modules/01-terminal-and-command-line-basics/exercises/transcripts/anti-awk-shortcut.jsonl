@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "awk all-in-one produces both artifacts but skips the taught composition"}
+{"anti_for": "t5", "fails_check": 1, "reason": "awk all-in-one produces both artifacts but skips the taught composition — artifact_produced_by (verify[1]) forbids awk and requires the parse-access-export pipeline"}
 {"input": "lab-setup 01"}
 {"input": "cd lab01"}
 {"input": "awk -F, 'NF != 2 { print \"WARN: malformed row: \" $0 > \"collection-errors.log\"; next } NR == 1 { next } $2 ~ /admin/ { c++ } END { print c+0 }' access-export.csv > evidence-admin-count.txt"}

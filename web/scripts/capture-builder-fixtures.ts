@@ -63,12 +63,24 @@ function snapshotDir(dir: string): Record<string, string> {
   return out;
 }
 
+/**
+ * Real bash version banner (L1 fix): the provenance line used to be the JS template literal
+ * `${process.platform} bash=$(bash --version | head -1)`, which records the LITERAL string
+ * "$(bash --version | head -1)" — JS does not run command substitution. Actually invoke bash
+ * and capture its first version line so the recorded provenance is the truth.
+ */
+function bashVersionLine(): string {
+  const p = Bun.spawnSync(["bash", "--version"], { stdout: "pipe", stderr: "pipe" });
+  if (p.exitCode !== 0) return "unknown (bash --version failed)";
+  return new TextDecoder().decode(p.stdout).split("\n")[0]?.trim() || "unknown";
+}
+
 const captures: Record<string, unknown> = {
   meta: {
     captured_at: new Date().toISOString(),
     method: "web/scripts/capture-builder-fixtures.ts — real `bash`/`bun` runs of the committed lab validators",
     sources: "modules/{00,08,10,11,12,13,14,15}-*/labs/",
-    platform: `${process.platform} bash=$(bash --version | head -1)`,
+    platform: `${process.platform} bash=${bashVersionLine()}`,
   },
 };
 

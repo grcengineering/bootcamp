@@ -1,4 +1,4 @@
-{"anti_for": "t7", "reason": "a date-contaminated script passes a naive same-session double-run but is NOT reproducible (RedTeam finding 8)"}
+{"anti_for": "t7", "fails_check": 3, "reason": "a date-contaminated script passes a naive same-session double-run but is NOT reproducible (RedTeam finding 8); script_reproducible (verify[3]) re-runs with a perturbed clock and the two runs disagree"}
 {"input": "lab-setup 01"}
 {"input": "cd lab01"}
 {"input": "cat > check-admin-access.sh << 'EOF'\n#!/usr/bin/env bash\nparse-access-export \"$1\" 2> collection-errors.log | grep admin | wc -l\ndate\nEOF"}

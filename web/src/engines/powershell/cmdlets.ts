@@ -6,9 +6,13 @@
  * here — only objects; the formatter renders them, which is what makes any learner
  * property-selection render correctly (DESIGN-INPUTS risk 1 mitigation).
  *
- * Error strings: where a real, documented message exists it is used verbatim
- * (citations in the m04 fixture files); where the boundary is the SIM's (not Windows'),
- * the message says so honestly instead of inventing Windows-flavored text.
+ * Error strings: where a real, documented message exists it is used verbatim. Each such
+ * string is locked to a doc-cited fixture — .ci/fixtures/captured/m04-err-*.json (source
+ * pwsh-authored, match authored-with-citation) carries the Microsoft Learn citation and
+ * powershell-fidelity.test.ts byte-asserts the engine against it, so the FIXTURE is the
+ * source of truth and the manifest-lint citation gate covers the provenance (not just a
+ * code comment). Where the boundary is the SIM's (not Windows'), the message says so
+ * honestly instead of inventing Windows-flavored text.
  */
 import type { Arg, Expr } from "./parser";
 import {
@@ -71,10 +75,12 @@ function readArgs(cmd: string, args: Arg[], spec: ArgSpec): ReadArgs {
       if (switchParams.includes(lower)) { out.sw.add(lower); continue; }
       if (!valueParams.includes(lower)) {
         // Real PS 5.1 parameter-binder message (Microsoft Learn, ParameterBindingException).
+        // Locked by fixture m04-err-param-notfound (citation + byte-assert).
         throw new CmdletError(`${cmd} : A parameter cannot be found that matches parameter name '${a.name}'.`);
       }
       const next = args[i + 1];
       if (!next || next.kind !== "val") {
+        // Locked by fixture m04-err-param-missingarg (citation + byte-assert).
         throw new CmdletError(`${cmd} : Missing an argument for parameter '${a.name}'.`);
       }
       out.named.set(lower, next.value);
@@ -132,6 +138,7 @@ const getBitLockerVolume: Cmdlet = (ctx, args, input) => {
   );
   if (!hit) {
     // Win32 ERROR_INVALID_DRIVE text (Microsoft Learn, system error codes).
+    // Locked by fixture m04-err-bitlocker-baddrive (citation + byte-assert).
     throw new CmdletError("Get-BitLockerVolume : The system cannot find the drive specified.");
   }
   return { values: [toObj(hit)], collection: false };
@@ -170,6 +177,7 @@ const getWinEvent: Cmdlet = (ctx, args, input) => {
   }
   if (asText(logName).toLowerCase() !== "security") {
     // Real Get-WinEvent message shape (Microsoft Learn, Get-WinEvent reference).
+    // Locked by fixture m04-err-winevent-nolog (citation + byte-assert).
     throw new CmdletError(`Get-WinEvent : There is not an event log on the localhost computer that matches "${asText(logName)}".`);
   }
   const idFilter = hashGet(fh, "Id");
@@ -216,6 +224,7 @@ const getLocalGroupMember: Cmdlet = (ctx, args, input) => {
   const key = Object.keys(ctx.host.seed.localGroups).find((k) => k.toLowerCase() === gname.toLowerCase());
   if (key === undefined) {
     // Real message shape (Microsoft Learn, Get-LocalGroupMember reference).
+    // Locked by fixture m04-err-localgroup-nogroup (citation + byte-assert).
     throw new CmdletError(`Get-LocalGroupMember : Group ${gname} was not found.`);
   }
   return {
@@ -246,6 +255,7 @@ const getItemProperty: Cmdlet = (ctx, args, input) => {
   const key = Object.keys(ctx.host.seed.registry).find((k) => k.toLowerCase() === path.toLowerCase());
   if (key === undefined) {
     // Real provider message shape (Microsoft Learn, Get-ItemProperty reference).
+    // Locked by fixture m04-err-itemproperty-nopath (citation + byte-assert).
     throw new CmdletError(`Get-ItemProperty : Cannot find path '${path}' because it does not exist.`);
   }
   const values = ctx.host.seed.registry[key];
@@ -267,6 +277,7 @@ const getItemProperty: Cmdlet = (ctx, args, input) => {
     const hit = Object.keys(values).find((k) => k.toLowerCase() === want.toLowerCase());
     if (hit === undefined) {
       // Real provider message shape (Microsoft Learn, registry provider errors).
+      // Locked by fixture m04-err-itemproperty-noprop (citation + byte-assert).
       throw new CmdletError(`Get-ItemProperty : Property ${want} does not exist at path ${expanded}.`);
     }
     picked = [[hit, seedValue(values[hit])]];
@@ -450,6 +461,7 @@ const getContent: Cmdlet = (ctx, args, input) => {
   const content = ctx.host.vfs.read(path, ctx.host.cwd);
   if (content === null) {
     // Real provider message shape (Microsoft Learn, Get-Content reference).
+    // Locked by fixture m04-err-getcontent-nopath (citation + byte-assert).
     throw new CmdletError(`Get-Content : Cannot find path '${winNormalize(path, ctx.host.cwd)}' because it does not exist.`);
   }
   const lines = content.split(/\r?\n/);

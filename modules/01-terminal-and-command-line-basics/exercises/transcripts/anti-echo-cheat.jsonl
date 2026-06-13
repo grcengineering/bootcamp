@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "right content, wrong provenance — echo 3 is not a composed evidence pipeline"}
+{"anti_for": "t4", "fails_check": 1, "reason": "right content, wrong provenance — echo 3 is not a composed evidence pipeline; artifact_produced_by (verify[1]) demands >=2 pipes and forbids echo"}
 {"input": "lab-setup 01"}
 {"input": "cd lab01"}
 {"input": "echo 3 > evidence-admin-count.txt"}

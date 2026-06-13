@@ -19,7 +19,8 @@ import type { SeedSpec } from "../src/engines/shell/types";
 import { GitEngineAdapter } from "../src/engines/git";
 import { GitTerminalSession } from "../src/components/lab/sessions/git-session";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const MODULE_DIR = join(ROOT, "modules/05-programming-and-git");
@@ -84,22 +85,25 @@ const expectations: Record<string, string> = JSON.parse(
   readFileSync(join(T_DIR, "expectations.json"), "utf8"),
 );
 
+/** Per-index verify outcomes for one task against the CURRENT engine state (H1 discrimination). */
+function outcomesFor(session: GitTerminalSession, taskId: string): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    runCheck(session, chk as AnyCheckParams, {
+      expectations,
+      expectationKey: `${taskId}:${i}`,
+      repoState: session.repoState(),
+    } as VerifyContext),
+  );
+}
+
 function verifyAll(session: GitTerminalSession) {
   const results: Record<string, { pass: boolean; gaps: string[] }> = {};
   for (const task of spec.tasks) {
     if (task.type !== "action") continue;
-    const gaps: string[] = [];
-    let pass = true;
-    task.verify.forEach((chk, i) => {
-      const ctx: VerifyContext = {
-        expectations,
-        expectationKey: `${task.id}:${i}`,
-        repoState: session.repoState(),
-      };
-      const out = runCheck(session, chk as AnyCheckParams, ctx);
-      if (!out.pass) { pass = false; gaps.push(out.gap); }
-    });
-    results[task.id] = { pass, gaps };
+    const outs = outcomesFor(session, task.id);
+    const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+    results[task.id] = { pass: gaps.length === 0, gaps };
   }
   return results;
 }
@@ -141,7 +145,7 @@ describe("module-05 exercise replay (engine: git — golden passes, antis fail t
   });
 
   for (const anti of antis) {
-    test(`${anti} fails its targeted task`, async () => {
+    test(`${anti} fails its targeted task at the named check`, async () => {
       const { header, inputs } = loadTranscript(join(T_DIR, anti));
       expect(header?.anti_for).toBeTruthy();
       const session = newSession();
@@ -151,6 +155,14 @@ describe("module-05 exercise replay (engine: git — golden passes, antis fail t
       expect(target).toBeDefined();
       expect(target!.pass).toBe(false);
       expect(target!.gaps.join("")).not.toBe("");
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(session, header!.anti_for!),
+        targetCompleted: target!.pass,
+        priorActionMode: "independent",
+      });
     });
   }
 });

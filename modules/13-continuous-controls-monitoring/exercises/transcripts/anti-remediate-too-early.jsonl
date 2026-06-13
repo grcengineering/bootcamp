@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "near-miss — drift is induced and caught, but the learner remediates immediately and skips the held-still week: the determinism task's red week never happens (latest verdict is rc=0)"}
+{"anti_for": "t4", "fails_check": 0, "reason": "near-miss — drift is induced and caught, but the learner remediates immediately and skips the held-still week: the determinism task's red week never happens (latest verdict is rc=0). validator_passes 'rc=1 alert=...' (verify[0]) is the held-still red-week check: remediating before the week means the latest verdict is rc=0, so no sustained rc=1 alert exists"}
 {"input": "ccm-tick 1"}
 {"input": "ccm-tick 30"}
 {"input": "inject-drift"}

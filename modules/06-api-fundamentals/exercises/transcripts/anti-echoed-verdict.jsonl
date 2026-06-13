@@ -1,4 +1,4 @@
-{"anti_for": "t12", "reason": "verdict without verification \u2014 'identical' echoed by hand instead of produced by diff; reproducibility was asserted, never tested"}
+{"anti_for": "t12", "fails_check": 1, "reason": "verdict without verification \u2014 'identical' echoed by hand instead of produced by diff; reproducibility was asserted, never tested. artifact_produced_by repro-verdict.txt requiring diff (verify[1]) is the provenance seam: a hand-echoed verdict was never produced by a diff run"}
 {"input": "cd lab06"}
 {"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-1.json"}
 {"input": "aggregate-mfa fixtures/users-page-1.json fixtures/users-page-2.json > report-run-2.json"}

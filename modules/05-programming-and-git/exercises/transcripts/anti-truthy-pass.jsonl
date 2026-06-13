@@ -1,4 +1,4 @@
-{"anti_for": "t3", "reason": "near-miss — evaluate() judges by truthiness instead of `is True`: a record with \"encrypted\": \"yes\" (or any non-empty junk) would PASS; the §5.4 booby trap the module's is-True form exists to prevent"}
+{"anti_for": "t3", "fails_check": 1, "reason": "near-miss — evaluate() judges by truthiness instead of `is True`: a record with \"encrypted\": \"yes\" (or any non-empty junk) would PASS; the §5.4 booby trap the module's is-True form exists to prevent. file_content_matches 'is True' in validator.py (verify[1]) is the identity-comparison check the truthy form omits"}
 {"input": "pwd"}
 {"input": "cd lab05"}
 {"input": "bash labs/setup.sh evidence/"}

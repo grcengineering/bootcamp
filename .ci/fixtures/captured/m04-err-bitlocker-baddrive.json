@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-bitlocker-baddrive",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-BitLockerVolume -MountPoint Z:",
+  "tty_equiv": null,
+  "citation": "Win32 ERROR_INVALID_DRIVE (system error code 15) surfaced verbatim — Microsoft Learn \"System Error Codes (0-499)\" (https://learn.microsoft.com/windows/win32/debug/system-error-codes--0-499-): \"The system cannot find the drive specified.\"; Get-BitLockerVolume -MountPoint surface per Microsoft Learn Get-BitLockerVolume (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume)",
+  "notes": "Error-path fixture: querying a drive absent from the WIN-LAB04 seed. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-BitLockerVolume : The system cannot find the drive specified.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-BitLockerVolume : The system cannot find the drive specified.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn System Error Codes — ERROR_INVALID_DRIVE (15); doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

@@ -524,33 +524,37 @@ export function runCheck(
 }
 
 /**
- * Collect every top-level param key a primitive's schema can accept, unwrapping the two
- * non-ZodObject shapes the registry actually uses:
- *   - ZodEffects (`.refine(...)`)        — descend into `_def.schema`
- *   - ZodIntersection (`a.and(b)`)        — MERGE the key sets of both sides (M3 fix:
- *                                            file_content_equals / engine_result_equals
- *                                            build params as `z.object(...).and(valueOrGenerated)`,
- *                                            so neither side alone is the full surface).
- * A bare ZodObject exposes `.shape` directly. Anything else yields no keys (the registry
- * never uses such a shape at the top level; this stays a total function regardless).
+ * Collect every top-level param key a primitive's schema can accept, unwrapping the
+ * non-plain-object shapes the registry uses. Discriminated on `_def.type` (Zod's internal
+ * type tag — "object" | "intersection" | "pipe"/"effects" depending on version):
+ *   - intersection (`a.and(b)`) — MERGE the key sets of both branches (M3 fix:
+ *     file_content_equals / engine_result_equals build params as
+ *     `z.object(...).and(valueOrGenerated)`, so neither branch alone is the full surface —
+ *     left has check/path|stream/exit, right has value/from).
+ *   - effects/pipe (`.refine(...)`/`.transform(...)` in versions that wrap) — descend into
+ *     the inner schema (`_def.schema` or `_def.in`).
+ *   - object (incl. `.refine()` on an object, which stays a ZodObject) — read `.shape`.
+ * Recursion handles nested intersections. Total function: unknown shapes yield [].
  */
 function schemaKeys(schema: z.ZodTypeAny): string[] {
   const def = (schema as unknown as { _def?: Record<string, unknown> })._def ?? {};
-  const typeName = def["typeName"] as string | undefined;
+  const type = def["type"] as string | undefined;
 
-  // ZodEffects (refine/transform/preprocess) wraps the real schema under _def.schema.
-  if (typeName === "ZodEffects") {
-    return schemaKeys(def["schema"] as z.ZodTypeAny);
-  }
-
-  // ZodIntersection (.and) — union of both branches' keys, recursively unwrapped.
-  if (typeName === "ZodIntersection") {
+  // Intersection (.and) — union of both branches' keys, recursively unwrapped.
+  if (type === "intersection") {
     const left = schemaKeys(def["left"] as z.ZodTypeAny);
     const right = schemaKeys(def["right"] as z.ZodTypeAny);
     return [...new Set([...left, ...right])];
   }
 
-  // ZodObject (incl. the common case) exposes its shape directly.
+  // Effects/pipe wrappers (refine/transform/preprocess) carry the real schema underneath.
+  if (type === "effects" || type === "pipe") {
+    const inner = (def["schema"] ?? def["in"]) as z.ZodTypeAny | undefined;
+    if (inner) return schemaKeys(inner);
+  }
+
+  // ZodObject exposes its shape directly (this also covers `.refine()` on an object, which
+  // does not change the underlying type in current Zod).
   const shape = (schema as unknown as { shape?: Record<string, unknown> }).shape;
   return shape ? Object.keys(shape) : [];
 }

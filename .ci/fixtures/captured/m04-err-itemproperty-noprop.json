@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-itemproperty-noprop",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name Frobnicate",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-ItemProperty (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty) over the PowerShell Registry provider (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_registry_provider) — PSArgumentException for a missing -Name surfaces as \"Property <name> does not exist at path <expanded-path>.\" with the hive abbreviation expanded (HKCU -> HKEY_CURRENT_USER)",
+  "notes": "Error-path fixture: an absent property on an existing registry key; note the expanded HKEY_CURRENT_USER hive in the message. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-ItemProperty : Property Frobnicate does not exist at path HKEY_CURRENT_USER\\Control Panel\\Desktop.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-ItemProperty : Property Frobnicate does not exist at path HKEY_CURRENT_USER\\Control Panel\\Desktop.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn Registry-provider PSArgumentException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

@@ -25,7 +25,8 @@ import { join, dirname, relative } from "node:path";
 import { parse } from "yaml";
 import { BuilderHost } from "../src/components/lab/sessions/builder-host";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const EX = join(ROOT, "modules/08-iac-and-scanning-in-ci/exercises");
@@ -139,6 +140,19 @@ function gapsFor(host: BuilderHost, taskId: string): string[] {
   return gaps;
 }
 
+/** Per-index verify outcomes for one task against the CURRENT state (H1 discrimination). */
+function outcomesFor(host: BuilderHost, taskId: string): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  const session = host.probeSession();
+  return task.verify.map((chk, i) => {
+    try {
+      return runCheck(session, chk as AnyCheckParams, ctxFor(host, taskId, i));
+    } catch (e) {
+      return { pass: false, evidence: "", gap: String(e) };
+    }
+  });
+}
+
 function loadTranscript(path: string): {
   header: { anti_for?: string; reason?: string } | null;
   inputs: string[];
@@ -217,7 +231,7 @@ describe("module 08 exercise replay (builder engine — golden passes, anti fail
   });
 
   for (const anti of readdirSync(TDIR).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} fails its targeted task`, () => {
+    test(`${anti} fails its targeted task at the named check`, () => {
       const { header, inputs } = loadTranscript(join(TDIR, anti));
       expect(header?.anti_for).toBeTruthy();
       const target = header!.anti_for!;
@@ -233,6 +247,18 @@ describe("module 08 exercise replay (builder engine — golden passes, anti fail
       const gaps = gapsFor(host, target);
       expect(gaps.length).toBeGreaterThan(0);
       expect(gaps.join("")).not.toBe("");
+      // H1 discrimination: the named cheat (verify[fails_check]) is the check that failed —
+      // not collateral damage. (The prior-action precision guard above already enforces the
+      // near-miss/no-syntax-bomb property; "sticky" mode re-checks it for symmetry.)
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(host, target),
+        targetCompleted: completed.has(target),
+        priorActionMode: "sticky",
+        isCompleted: (id) => completed.has(id),
+      });
     });
   }
 

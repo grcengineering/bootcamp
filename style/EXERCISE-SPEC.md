@@ -79,7 +79,9 @@ completion:
    at least one check per action task is stateful).
 9. **Golden + anti-transcripts** — `exercises/transcripts/golden.jsonl` and
    `exercises/transcripts/anti-*.jsonl` exist; `bun test` replays them through the Lab Player
-   verifier: golden passes all action tasks, each anti fails its targeted task (root ISC-73).
+   verifier: golden passes all action tasks, each anti fails its targeted task — and fails it AT
+   the `fails_check` index its header names (the H1 discrimination contract; see the Transcript
+   format section), so an anti can never pass the gate for the wrong reason (root ISC-73).
 10. **Generated expectations** — `from: generated` values come from
     `exercises/transcripts/expectations.json`, produced by replaying the golden transcript
     against the seed; literals for capturable check types are rejected (root ISC-60).
@@ -88,7 +90,47 @@ completion:
 
 One JSON object per line: `{"input": "cat access-export.csv | grep admin | wc -l"}` — exactly what
 a learner would type, in order. The replay harness feeds each line to the engine and then runs the
-spec's verifiers. Anti-transcripts carry a header line `{"anti_for": "t3", "reason": "echo-cheat"}`.
+spec's verifiers.
+
+### Anti-transcript header (the discrimination contract)
+
+Every `anti-*.jsonl` begins with a header line that pins the cheat to the *exact* check it must
+trip:
+
+```json
+{"anti_for": "t3", "fails_check": 1, "reason": "echo-cheat: right bytes, no pipeline — artifact_produced_by (verify[1]) catches it"}
+```
+
+- **`anti_for`** (required, string) — the action task this anti targets. Replaying the anti must
+  leave this task FAILING.
+- **`fails_check`** (required, integer) — the index into the targeted task's `verify[]` array of
+  the check that *encodes the cheat*. This is the heart of the H1 fix: it is **not enough** for an
+  anti to leave its target failing with a non-empty gap — an anti can fail for the WRONG reason (a
+  syntax error in an earlier step, an answer-key mismatch, a typo) while the cheat it names goes
+  uncaught. `fails_check` names the specific verifier the cheat must defeat — pick the check that
+  discriminates the *concept*, not an incidental side effect:
+  - `artifact_produced_by` for echo/awk/printf fabrication (right bytes, wrong provenance);
+  - `stream_separated` for evidence/error stream contamination;
+  - `script_reproducible` for date- or clock-contaminated evidence (two clean runs disagree);
+  - `validator_passes` (exit 0 or exit 1) for a forged/never-earned gate verdict;
+  - `api_pull_complete` for incomplete pagination;
+  - the per-row `file_content_matches` regex that excludes the dishonest label / wrong control for
+    honest-label and orphan-resolution near-misses (the *semantic* gate, not an answer-key);
+  - `file_not_matches` for a forbidden anti-pattern (mutating cmdlet, decoy line, reference banner).
+- **`full_cheat`** (optional, boolean) — set `true` only when the cheat removes the ENTIRE control
+  the target exercises, so EVERY check of the target legitimately fails (e.g. committing straight to
+  `main` removes the whole branch→merge change-management control). This is an *audited* exception to
+  the surgical-near-miss guard; always pair it with a `reason` that explains why every check fails.
+- **`reason`** (required, string) — a sentence naming the cheat AND the discriminating check.
+
+The replay suites (`web/tests/exercise-replay*.test.ts`, via `tests/_anti-discriminate.ts`) enforce,
+for every anti: (1) `fails_check` is a valid index; (2) `verify[fails_check]` returned `pass:false`
+on the post-replay state (the named cheat is what failed); (3) the target task overall still fails;
+and (4) the anti is a near-miss, not a syntax bomb — for full-flow antis every action task before the
+target latched; for scoped antis a non-targeted check of the target still passes (unless
+`full_cheat`). `.ci/exercise-lint.ts` independently gates (1) at CI time. Set
+`ANTI_DISCRIMINATE_DEBUG=1` when authoring a new anti to print the per-index pass/fail vector and
+read off the right `fails_check`.
 
 ## Fidelity manifest cross-reference
 

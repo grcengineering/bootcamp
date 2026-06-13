@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-getcontent-nopath",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-Content nope.json",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-Content (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-content) over the FileSystem provider (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_filesystem_provider) — ItemNotFoundException surfaces as \"Cannot find path '<resolved-path>' because it does not exist.\" with the relative path resolved against the current location",
+  "notes": "Error-path fixture: reading a file absent from the session VFS; note the path is resolved against cwd C:\\Users\\labuser. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-Content : Cannot find path 'C:\\Users\\labuser\\nope.json' because it does not exist.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-Content : Cannot find path 'C:\\Users\\labuser\\nope.json' because it does not exist.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn FileSystem-provider ItemNotFoundException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

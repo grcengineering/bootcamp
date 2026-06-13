@@ -1,4 +1,4 @@
-{"anti_for": "t2", "reason": "reference-copy cheat: cats the staged reference policy files into my-policy.* instead of authoring the statements \u2014 caught by the reference header tripwire"}
+{"anti_for": "t2", "fails_check": 3, "reason": "reference-copy cheat: cats the staged reference policy files into my-policy.* instead of authoring the statements \u2014 caught by the reference header tripwire file_not_matches '^// Control AC-6' (verify[3], the .cedar copy's banner)"}
 {"input": "bash labs/setup.sh ./lab09"}
 {"input": "cd lab09"}
 {"input": "cat policy.cedar > my-policy.cedar"}

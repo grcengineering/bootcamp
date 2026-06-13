@@ -24,7 +24,8 @@ import { parse as parseYaml } from "yaml";
 import { createPowerShellEngine } from "../src/engines/powershell";
 import type { ExecResult, PowerShellSession, WindowsSeed } from "../src/engines/powershell/types";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const MODULES = join(ROOT, "modules");
@@ -79,24 +80,28 @@ function replayInput(session: PowerShellSession, input: string): void {
   if (r.state === "pending") session.eof();
 }
 
+/** Per-index verify outcomes for one task against the CURRENT state (H1 discrimination). */
+function outcomesFor(
+  spec: ExerciseSpec,
+  taskId: string,
+  session: PowerShellSession,
+  expectations: Record<string, string>,
+): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    runCheck(session, chk as AnyCheckParams, { expectations, expectationKey: `${taskId}:${i}` } as VerifyContext),
+  );
+}
+
 function taskOutcome(
   spec: ExerciseSpec,
   taskId: string,
   session: PowerShellSession,
   expectations: Record<string, string>,
 ): { pass: boolean; gaps: string[] } {
-  const task = spec.tasks.find((t) => t.id === taskId)!;
-  const gaps: string[] = [];
-  let pass = true;
-  task.verify.forEach((chk, i) => {
-    const ctx: VerifyContext = { expectations, expectationKey: `${taskId}:${i}` };
-    const out = runCheck(session, chk as AnyCheckParams, ctx);
-    if (!out.pass) {
-      pass = false;
-      gaps.push(out.gap);
-    }
-  });
-  return { pass, gaps };
+  const outs = outcomesFor(spec, taskId, session, expectations);
+  const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+  return { pass: gaps.length === 0, gaps };
 }
 
 /** Replay a transcript with Lab-Player-style latching; returns the latched task-id set. */
@@ -165,7 +170,7 @@ describe("module 04 exercise replay (powershell engine)", () => {
   });
 
   for (const anti of readdirSync(join(exDir, "transcripts")).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} never satisfies its targeted task and names a gap`, () => {
+    test(`${anti} never satisfies its targeted task and fails at the named check`, () => {
       const { header, entries } = loadTranscript(join(exDir, "transcripts", anti));
       expect(header?.anti_for).toBeTruthy();
       const session = newSession(spec);
@@ -174,6 +179,17 @@ describe("module 04 exercise replay (powershell engine)", () => {
       const final = taskOutcome(spec, header!.anti_for!, session, expectations);
       expect(final.pass).toBe(false);
       expect(final.gaps.join("")).not.toBe("");
+      // H1 discrimination: the named cheat (verify[fails_check]) is what failed. These antis
+      // are scoped to the target (they do not replay the full prior-task flow), so the
+      // near-miss guard is "independent": a non-targeted check of the target still passes.
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(spec, header!.anti_for!, session, expectations),
+        targetCompleted: latched.has(header!.anti_for!),
+        priorActionMode: "independent",
+      });
     });
   }
 });

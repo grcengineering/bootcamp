@@ -18,7 +18,8 @@ import { join, dirname } from "node:path";
 import { parse } from "yaml";
 import { createShellEngine } from "../src/engines/shell";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 import type { ShellSession } from "../src/engines/shell/types";
 import { SqlEngineAdapter } from "../src/engines/sql";
 import { CsvSqlConsoleHost, csvToSeedSql, SEED_SQL_NAME } from "../src/components/lab/sessions/sql-lab";
@@ -108,30 +109,38 @@ async function replay(surfaces: Surfaces, lines: Line[]) {
   }
 }
 
-function verifyAll(surfaces: Surfaces) {
+function loadExpectations(): Record<string, string> {
   const expectations: Record<string, string> = {};
   for (const [k, v] of Object.entries(
     JSON.parse(readFileSync(join(MODULE_DIR, "exercises/transcripts/expectations.json"), "utf8")) as Record<string, string>,
   )) {
     if (!k.startsWith("_")) expectations[k] = v;
   }
+  return expectations;
+}
+
+/** Per-index verify outcomes for one task against the CURRENT engine state (H1 discrimination). */
+function outcomesFor(surfaces: Surfaces, taskId: string): VerifyOutcome[] {
+  const expectations = loadExpectations();
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    // Same probe split LabPlayer.verifyTasks uses: the terminal session is the probe,
+    // the SQL host's last real-engine result rides VerifyContext.engineResult.
+    runCheck(surfaces.shell, chk as never, {
+      expectations,
+      expectationKey: `${taskId}:${i}`,
+      engineResult: surfaces.sql.lastResult(),
+    } as VerifyContext),
+  );
+}
+
+function verifyAll(surfaces: Surfaces) {
   const results: Record<string, { pass: boolean; gaps: string[] }> = {};
   for (const task of spec.tasks) {
     if (task.type !== "action") continue;
-    const gaps: string[] = [];
-    let pass = true;
-    task.verify.forEach((chk, i) => {
-      // Same probe split LabPlayer.verifyTasks uses: the terminal session is the probe,
-      // the SQL host's last real-engine result rides VerifyContext.engineResult.
-      const ctx: VerifyContext = {
-        expectations,
-        expectationKey: `${task.id}:${i}`,
-        engineResult: surfaces.sql.lastResult(),
-      };
-      const out = runCheck(surfaces.shell, chk as never, ctx);
-      if (!out.pass) { pass = false; gaps.push(out.gap); }
-    });
-    results[task.id] = { pass, gaps };
+    const outs = outcomesFor(surfaces, task.id);
+    const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+    results[task.id] = { pass: gaps.length === 0, gaps };
   }
   return results;
 }
@@ -166,7 +175,7 @@ describe("module-07 mixed-engine replay (golden passes, anti fails its target)",
   });
 
   for (const anti of readdirSync(tDir).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} fails its targeted task`, async () => {
+    test(`${anti} fails its targeted task at the named check`, async () => {
       const { header, lines } = loadTranscript(join(tDir, anti));
       expect(header?.anti_for).toBeTruthy();
       const surfaces = newSurfaces();
@@ -176,6 +185,14 @@ describe("module-07 mixed-engine replay (golden passes, anti fails its target)",
       expect(target).toBeDefined();
       expect(target.pass).toBe(false);
       expect(target.gaps.join("")).not.toBe("");
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(surfaces, header!.anti_for!),
+        targetCompleted: target.pass,
+        priorActionMode: "independent",
+      });
     });
   }
 });

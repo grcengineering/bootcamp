@@ -1,0 +1,19 @@
+{
+  "id": "m06-err-unsupportedgrant-400",
+  "module": "06",
+  "source": "authored",
+  "match": "authored-with-citation",
+  "host": "acme.example",
+  "status": 400,
+  "error_code": "unsupported_grant_type",
+  "citation": "400 unsupported_grant_type at the token endpoint — RFC 6749 §5.2 (unsupported_grant_type error code) and §4.4 (client_credentials grant); module 06 §4.3/§5.2; { error, message } shape (§5.1).",
+  "notes": "OAuth2 token endpoint: grant_type other than client_credentials.",
+  "body": "{\n  \"error\": \"unsupported_grant_type\",\n  \"message\": \"grant_type must be client_credentials\"\n}\n",
+  "provenance": {
+    "contract": "authored",
+    "environment": "acme.example is wholly fictional (module 06 §5 canon) — no real host exists to capture; the vendor is authored in web/src/engines/api/acme.ts and served by router.ts",
+    "authored_in": "web/src/engines/api/acme.ts (ERRORS)",
+    "canon": "HTTP status semantics (RFC 9110) + OAuth2/Bearer (RFC 6749/6750/6585) + module 06 §4/§5; doc/RFC-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: auth-ladder + error bodies lifted from code comments into doc/RFC-cited fixtures, locked by api-lab.test.ts)"
+  }
+}

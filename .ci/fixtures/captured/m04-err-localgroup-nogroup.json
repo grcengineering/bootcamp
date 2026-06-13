@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-localgroup-nogroup",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-LocalGroupMember -Group Wheel",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-LocalGroupMember (https://learn.microsoft.com/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember) — documented GroupNotFoundException surfaces as \"Group <name> was not found.\" when the named local group does not exist",
+  "notes": "Error-path fixture: a local group absent from the WIN-LAB04 seed. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-LocalGroupMember : Group Wheel was not found.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-LocalGroupMember : Group Wheel was not found.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn Get-LocalGroupMember GroupNotFoundException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

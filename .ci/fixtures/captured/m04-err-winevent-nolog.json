@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-winevent-nolog",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-WinEvent -FilterHashtable @{ LogName='Application'; Id=4625 } -MaxEvents 20",
+  "tty_equiv": null,
+  "citation": "Microsoft Learn Get-WinEvent (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent) — documented EventLogNotFoundException message \"There is not an event log on the localhost computer that matches \\\"<name>\\\".\" raised when -FilterHashtable names a LogName the simulated box does not expose (the lab's taught subset pins LogName='Security')",
+  "notes": "Error-path fixture: a LogName outside the taught Security log. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-WinEvent : There is not an event log on the localhost computer that matches \"Application\".\n",
+  "exit": 1,
+  "stderr_interactive": "Get-WinEvent : There is not an event log on the localhost computer that matches \"Application\".\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn Get-WinEvent EventLogNotFoundException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

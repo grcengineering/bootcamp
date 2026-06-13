@@ -1,0 +1,19 @@
+{
+  "id": "m06-err-invalidclient-401",
+  "module": "06",
+  "source": "authored",
+  "match": "authored-with-citation",
+  "host": "acme.example",
+  "status": 401,
+  "error_code": "invalid_client",
+  "citation": "401 invalid_client at the token endpoint — RFC 6749 §5.2 (invalid_client: \"Client authentication failed\", MAY return 401); module 06 §4.3/§5.2; { error, message } shape (§5.1).",
+  "notes": "OAuth2 token endpoint: unknown client_id or wrong client_secret.",
+  "body": "{\n  \"error\": \"invalid_client\",\n  \"message\": \"unknown client_id or bad client_secret\"\n}\n",
+  "provenance": {
+    "contract": "authored",
+    "environment": "acme.example is wholly fictional (module 06 §5 canon) — no real host exists to capture; the vendor is authored in web/src/engines/api/acme.ts and served by router.ts",
+    "authored_in": "web/src/engines/api/acme.ts (ERRORS)",
+    "canon": "HTTP status semantics (RFC 9110) + OAuth2/Bearer (RFC 6749/6750/6585) + module 06 §4/§5; doc/RFC-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: auth-ladder + error bodies lifted from code comments into doc/RFC-cited fixtures, locked by api-lab.test.ts)"
+  }
+}

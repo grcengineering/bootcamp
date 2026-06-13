@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "near miss — a failure COUNT is not a failure RATE: the §4.5 question is what fraction of in-scope resources fail, and the count-only result set is rejected by the real engine comparison"}
+{"anti_for": "t5", "fails_check": 0, "reason": "near miss — a failure COUNT is not a failure RATE: the §4.5 question is what fraction of in-scope resources fail, and the count-only result set is rejected by the real engine comparison. engine_result_equals from generated (verify[0]) is that real-engine comparison: the count-only result set does not equal the rate the engine produces"}
 {"input": "cd lab07"}
 {"input": "bash labs/setup.sh"}
 {"input": "awk -F, '$1 == \"encryption\" && $2 == \"FAIL\" { f++ } END { print f }' fixtures/evidence.csv"}

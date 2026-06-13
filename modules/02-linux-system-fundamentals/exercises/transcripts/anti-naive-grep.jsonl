@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "the §5.3 trap — a naive grep ships the commented decoy as evidence; sshd's parse rules (comments stripped, last directive wins) were never applied"}
+{"anti_for": "t5", "fails_check": 0, "reason": "the §5.3 trap — a naive grep ships the commented decoy as evidence; sshd's parse rules (comments stripped, last directive wins) were never applied. file_content_equals effective-passwordauth.txt (verify[0]) is the concept check: the naive grep's output is the multi-line raw match, not the single effective directive, so the content differs from the generated answer"}
 {"input": "mkdir evidence"}
 {"input": "sudo true\nlabpass"}
 {"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}

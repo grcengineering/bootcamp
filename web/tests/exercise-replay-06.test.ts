@@ -17,7 +17,8 @@ import { join, dirname } from "node:path";
 import { parse } from "yaml";
 import { createShellEngine } from "../src/engines/shell";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 import type { SeedSpec, ShellSession } from "../src/engines/shell/types";
 import { ApiLabSession } from "../src/components/lab/sessions/api-exchange";
 
@@ -94,22 +95,25 @@ const expectations: Record<string, string> = existsSync(expectationsPath)
   ? JSON.parse(readFileSync(expectationsPath, "utf8"))
   : {};
 
+/** Per-index verify outcomes for one task against the CURRENT engine state (H1 discrimination). */
+function outcomesFor(api: ApiLabSession, taskId: string): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    runCheck(api, chk as AnyCheckParams, {
+      expectations,
+      expectationKey: `${taskId}:${i}`,
+      apiExchanges: api.probes(),
+    } as VerifyContext),
+  );
+}
+
 function verifyAll(api: ApiLabSession) {
   const results: Record<string, { pass: boolean; gaps: string[] }> = {};
   for (const task of spec.tasks) {
     if (task.type !== "action") continue;
-    const gaps: string[] = [];
-    let pass = true;
-    task.verify.forEach((chk, i) => {
-      const ctx: VerifyContext = {
-        expectations,
-        expectationKey: `${task.id}:${i}`,
-        apiExchanges: api.probes(),
-      };
-      const out = runCheck(api, chk as AnyCheckParams, ctx);
-      if (!out.pass) { pass = false; gaps.push(out.gap); }
-    });
-    results[task.id] = { pass, gaps };
+    const outs = outcomesFor(api, task.id);
+    const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+    results[task.id] = { pass: gaps.length === 0, gaps };
   }
   return results;
 }
@@ -144,7 +148,7 @@ describe("module 06 exercise replay (api engine: shell + acme router + exchange 
 
   const tDir = join(EXERCISES, "transcripts");
   for (const anti of readdirSync(tDir).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} fails its targeted task`, () => {
+    test(`${anti} fails its targeted task at the named check`, () => {
       const { header, inputs } = loadTranscript(join(tDir, anti));
       expect(header?.anti_for).toBeTruthy();
       const { shell, api } = newSession();
@@ -154,6 +158,14 @@ describe("module 06 exercise replay (api engine: shell + acme router + exchange 
       expect(target).toBeDefined();
       expect(target!.pass).toBe(false);
       expect(target!.gaps.join("")).not.toBe("");
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(api, header!.anti_for!),
+        targetCompleted: target!.pass,
+        priorActionMode: "independent",
+      });
     });
   }
 

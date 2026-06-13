@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "near miss — filtered on the privilege grant alone: the in-hours 14:02 grant stays in the evidence file, so the timing claim was never evaluated and the violation count would read 2"}
+{"anti_for": "t4", "fails_check": 2, "reason": "near miss — filtered on the privilege grant alone: the in-hours 14:02 grant stays in the evidence file, so the timing claim was never evaluated and the violation count would read 2. file_not_matches 'GetObject|T14:02' (verify[2]) is the timing-evaluation check: the in-hours 14:02 decoy must not survive into the evidence"}
 {"input": "cd lab07"}
 {"input": "bash labs/setup.sh"}
 {"input": "cat fixtures/audit-events.json"}

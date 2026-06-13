@@ -1,4 +1,4 @@
-{"anti_for": "t7", "reason": "change-management cheat — the malformed-handling work is committed straight to main: no feature branch, no review point, no merge; the code is fine but the control is absent"}
+{"anti_for": "t7", "fails_check": 2, "full_cheat": true, "reason": "change-management cheat — the malformed-handling work is committed straight to main: no feature branch, no review point, no merge; the code is fine but the control is absent. repo_state_matches branches_include [handle-malformed] (verify[2]) is the real repo-state ground truth (ISC-66): a direct-to-main commit means the feature branch never exists. full_cheat: committing to main removes the ENTIRE branch->commit->merge control, so all three of t7's change-management checks (switch -c, merge, repo-state) legitimately fail — this is a complete-omission cheat, not a syntax bomb"}
 {"input": "pwd"}
 {"input": "cd lab05"}
 {"input": "bash labs/setup.sh evidence/"}

@@ -12,8 +12,9 @@ import { join, dirname } from "node:path";
 import { parse } from "yaml";
 import { createShellEngine } from "../src/engines/shell";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
 import type { ShellSession } from "../src/engines/shell/types";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const MODULES = join(ROOT, "modules");
@@ -72,20 +73,27 @@ function loadTranscript(path: string): { header: { anti_for?: string; reason?: s
   return { header, inputs: lines.filter((l) => l.input !== undefined).map((l) => l.input) };
 }
 
-function verifyAll(spec: ExerciseSpec, session: ShellSession) {
+/** Per-index verify outcomes for one action task against the current session state. */
+function outcomesFor(spec: ExerciseSpec, taskId: string, session: ShellSession, expectations: Record<string, string>): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    runCheck(session, chk as never, { expectations, expectationKey: `${taskId}:${i}` } as VerifyContext),
+  );
+}
+
+function loadExpectations(spec: ExerciseSpec): Record<string, string> {
   const expectationsPath = join(MODULES, spec.module, "exercises/transcripts/expectations.json");
-  const expectations = existsSync(expectationsPath) ? JSON.parse(readFileSync(expectationsPath, "utf8")) : {};
+  return existsSync(expectationsPath) ? JSON.parse(readFileSync(expectationsPath, "utf8")) : {};
+}
+
+function verifyAll(spec: ExerciseSpec, session: ShellSession) {
+  const expectations = loadExpectations(spec);
   const results: Record<string, { pass: boolean; gaps: string[] }> = {};
   for (const task of spec.tasks) {
     if (task.type !== "action") continue;
-    const gaps: string[] = [];
-    let pass = true;
-    task.verify.forEach((chk, i) => {
-      const ctx: VerifyContext = { expectations, expectationKey: `${task.id}:${i}` };
-      const out = runCheck(session, chk as never, ctx);
-      if (!out.pass) { pass = false; gaps.push(out.gap); }
-    });
-    results[task.id] = { pass, gaps };
+    const outs = outcomesFor(spec, task.id, session, expectations);
+    const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+    results[task.id] = { pass: gaps.length === 0, gaps };
   }
   return results;
 }
@@ -114,7 +122,7 @@ describe("exercise transcript replay (golden passes, anti fails its target)", ()
 
     const tDir = join(MODULES, dir, "exercises/transcripts");
     for (const anti of readdirSync(tDir).filter((f) => f.startsWith("anti-"))) {
-      test(`${dir}: ${anti} fails its targeted task`, () => {
+      test(`${dir}: ${anti} fails its targeted task at the named check`, () => {
         const { header, inputs } = loadTranscript(join(tDir, anti));
         expect(header?.anti_for).toBeTruthy();
         const session = newSession(spec);
@@ -124,6 +132,17 @@ describe("exercise transcript replay (golden passes, anti fails its target)", ()
         expect(target).toBeDefined();
         expect(target.pass).toBe(false);
         expect(target.gaps.join("")).not.toBe("");
+        // H1 discrimination: the named cheat (verify[fails_check]) is what failed, and every
+        // action task before the target is intact (near-miss, not an upstream syntax bomb).
+        const expectations = loadExpectations(spec);
+        assertAntiDiscriminates({
+          anti,
+          header,
+          tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+          targetOutcomes: outcomesFor(spec, header!.anti_for!, session, expectations),
+          targetCompleted: target.pass,
+          priorActionMode: "independent",
+        });
       });
     }
   }

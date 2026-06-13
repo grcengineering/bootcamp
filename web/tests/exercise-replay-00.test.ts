@@ -29,7 +29,8 @@ import { join, dirname, relative } from "node:path";
 import { parse } from "yaml";
 import { BuilderHost } from "../src/components/lab/sessions/builder-host";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type AnyCheckParams, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type AnyCheckParams, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const MODULE_DIR = join(ROOT, "modules/00-what-grc-engineering-is");
@@ -120,7 +121,7 @@ function loadTranscript(path: string): { header: { anti_for?: string; reason?: s
   return { header, inputs: lines.filter((l) => l.input !== undefined).map((l) => l.input) };
 }
 
-function replay(path: string): { header: { anti_for?: string } | null; state: ReplayResult } {
+function replay(path: string): { header: { anti_for?: string; fails_check?: number } | null; state: ReplayResult; host: BuilderHost } {
   const host = newHost();
   const { header, inputs } = loadTranscript(path);
   const state: ReplayResult = { recorded: new Set(), gaps: {} };
@@ -128,7 +129,26 @@ function replay(path: string): { header: { anti_for?: string } | null; state: Re
     replayInput(host, input);
     verifySweep(host, state);
   }
-  return { header, state };
+  return { header, state, host };
+}
+
+/** Per-index verify outcomes for one task against the CURRENT state (H1 discrimination). */
+function outcomesFor(host: BuilderHost, taskId: string): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  const session = host.probeSession();
+  return task.verify.map((chk, i) => {
+    try {
+      const ctx: VerifyContext = {
+        expectations: {},
+        expectationKey: `${taskId}:${i}`,
+        validatorRun: host.lastValidatorRun(),
+        mappingScore: host.lastMappingScore(),
+      };
+      return runCheck(session, chk as AnyCheckParams, ctx);
+    } catch (e) {
+      return { pass: false, evidence: "", gap: String(e) };
+    }
+  });
 }
 
 describe("module 00 exercise replay (builder engine)", () => {
@@ -142,14 +162,25 @@ describe("module 00 exercise replay (builder engine)", () => {
   });
 
   for (const anti of readdirSync(TRANSCRIPTS).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} fails its targeted task`, () => {
-      const { header, state } = replay(join(TRANSCRIPTS, anti));
+    test(`${anti} fails its targeted task at the named check`, () => {
+      const { header, state, host } = replay(join(TRANSCRIPTS, anti));
       expect(header?.anti_for).toBeTruthy();
       const target = spec.tasks.find((t) => t.id === header!.anti_for);
       expect(target).toBeDefined();
       expect(state.recorded.has(header!.anti_for!)).toBe(false);
       // The player surfaced a named gap for the target (it was reached and rejected).
       expect(state.gaps[header!.anti_for!] ?? "").not.toBe("");
+      // H1 discrimination: the named cheat (verify[fails_check]) is what failed, and (sticky
+      // Lab-Player semantics) every action task before the target is recorded.
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(host, header!.anti_for!),
+        targetCompleted: state.recorded.has(header!.anti_for!),
+        priorActionMode: "sticky",
+        isCompleted: (id) => state.recorded.has(id),
+      });
     });
   }
 });

@@ -6,8 +6,13 @@
  *     (modules/06-api-fundamentals/labs/fixtures/users-page-{1,2}.json, themselves the
  *     heredoc bytes of labs/setup.sh). A bun test byte-diffs these against the committed
  *     files — drift there is a build failure, not silent rot.
- *   - error bodies: authored to the module-documented shape `{ "error": "...", "message": "..." }`
- *     (module 06 §5.1 "Error shape"); messages are original prose.
+ *   - error bodies (the ERRORS table): authored to the module-documented shape
+ *     `{ "error": "...", "message": "..." }` (module 06 §5.1 "Error shape"); messages are
+ *     original prose. Each body is LOCKED to a doc/RFC-cited fixture —
+ *     .ci/fixtures/captured/m06-err-*.json (source authored, match authored-with-citation),
+ *     carrying the HTTP/OAuth2 RFC + module-06 § citation — and api-error-fixtures.test.ts
+ *     byte-asserts both this table and the live router against it. The FIXTURE is the source
+ *     of truth (the manifest-lint citation gate covers the provenance), not this comment.
  *   - DEVICES_PAGE_1: authored extension for the users/devices surface (web ISA ISC-74),
  *     carrying the curriculum's laptop-encryption claim thread (`disk_encrypted`).
  *   - credentials: fictional, deterministic. The API key starts "9f8c" because module 06

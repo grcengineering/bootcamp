@@ -56,6 +56,11 @@ export function validateCapstone(argv: string[], fs: ReadonlyFs): ValidatorRun {
     if (!manifestPath) {
       // bash `${1:?usage…}` — the message is what's pinned; bash's `line N` prefix is
       // invocation-dependent and deliberately not reproduced.
+      // SCOPE BOUNDARY (ISC-137, L2): the no-argument case is NOT among the m15 captured
+      // fixtures (which always pass a manifest path), so there is no byte-identical bash
+      // reference for it. We pin exit 1 here as the chosen behavior and lock it with a
+      // builder test (tests/builders-validators.test.ts) — the equivalence claim is scoped
+      // to the seeded inputs (see web/ISA.md ISC-137); this path is our own definition.
       io.error("usage: validate-capstone.sh <capstone-manifest.yaml>");
       throw new ExitSignal(1);
     }

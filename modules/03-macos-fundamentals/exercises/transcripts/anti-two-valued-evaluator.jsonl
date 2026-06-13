@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "the §4.8 trap exactly — known-good else FAIL; every other vector passes, but a check that could not run is silently scored as a clean FAIL"}
+{"anti_for": "t4", "fails_check": 3, "reason": "the §4.8 trap exactly — known-good else FAIL; every other vector passes, but a check that could not run is silently scored as a clean FAIL. script_reproducible (verify[3], empty/no-data input) demands UNKNOWN; the two-valued evaluator returns FAIL instead"}
 {"input": "bash labs/setup.sh ./lab03"}
 {"input": "cd lab03"}
 {"input": "cat > evaluate.sh << 'EOF'\n#!/usr/bin/env bash\nraw=\"$1\"\ngood=\"$2\"\nbad=\"$3\"\nif printf '%s' \"$raw\" | grep -Eqi -- \"$good\"; then\n  echo \"PASS\"\nelse\n  echo \"FAIL\"\nfi\nEOF"}

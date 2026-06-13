@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "right-looking packet, wrong provenance — a plausible collector script is authored for show but never run; the packet lines are hand-echoed, so ONLY artifact_produced_by can catch it (content, stream separation, and the script's text all pass)"}
+{"anti_for": "t5", "fails_check": 8, "reason": "right-looking packet, wrong provenance — a plausible collector script is authored for show but never run; the packet lines are hand-echoed, so ONLY artifact_produced_by (verify[8], required_commands ./collect-endpoint-evidence.sh) can catch it (content, stream separation, and the script's text all pass)"}
 {"input": "bash labs/setup.sh ./lab03"}
 {"input": "cd lab03"}
 {"input": "mkdir evidence"}

@@ -4,7 +4,7 @@
  * that merely accept are theater.
  */
 import { describe, expect, test } from "bun:test";
-import { PRIMITIVES, runCheck, type VerifyContext } from "../src/verifiers/registry";
+import { PRIMITIVES, registryDescriptor, runCheck, type VerifyContext } from "../src/verifiers/registry";
 import type { ShellSession, ExecResult, RunCleanResult } from "../src/engines/shell/types";
 
 /** Probe-API fake: a tiny world the verifiers can interrogate. */
@@ -122,6 +122,23 @@ describe("verifier primitives — pass case + one-token mutation rejection", () 
     const s = fakeSession({ files: { "~/x": "hi\n" } });
     const out = runCheck(s, { check: "file_exists", path: "~/x" }, ctx);
     expect(out.evidence.length).toBeGreaterThan(0);
+  });
+
+  test("registryDescriptor exposes a non-empty param surface for EVERY primitive (M3: ZodIntersection unwrap)", () => {
+    const desc = registryDescriptor();
+    // every registered primitive has a descriptor entry
+    expect(Object.keys(desc).sort()).toEqual(Object.keys(PRIMITIVES).sort());
+    // no primitive yields an empty descriptor — exercise-lint relies on these names for
+    // its spec↔registry param messages, and intersection-typed primitives
+    // (file_content_equals, engine_result_equals via `.and(valueOrGenerated)`) used to
+    // return [] because ZodIntersection has no `.shape`.
+    for (const [kind, keys] of Object.entries(desc)) {
+      expect(keys.length, `${kind} must yield a non-empty descriptor`).toBeGreaterThan(0);
+      expect(keys).toContain("check");
+    }
+    // the two intersection primitives surface BOTH branches' keys (left object + valueOrGenerated)
+    expect(desc.file_content_equals).toEqual(expect.arrayContaining(["check", "path", "value", "from"]));
+    expect(desc.engine_result_equals).toEqual(expect.arrayContaining(["check", "stream", "exit", "value", "from"]));
   });
 });
 

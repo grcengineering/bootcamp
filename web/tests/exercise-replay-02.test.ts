@@ -14,9 +14,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { parse } from "yaml";
 import { ExerciseSpecSchema, type ExerciseSpec } from "../src/lib/exercise-spec";
-import { runCheck, type VerifyContext } from "../src/verifiers/registry";
+import { runCheck, type VerifyContext, type VerifyOutcome } from "../src/verifiers/registry";
 import type { ShellSession } from "../src/engines/shell/types";
 import { createM02Session } from "./helpers-m02";
+import { assertAntiDiscriminates } from "./_anti-discriminate";
 
 const ROOT = join(dirname(new URL(import.meta.url).pathname), "../..");
 const EXERCISES = join(ROOT, "modules/02-linux-system-fundamentals/exercises");
@@ -49,18 +50,21 @@ function loadTranscript(path: string): { header: { anti_for?: string; reason?: s
   return { header, inputs: lines.filter((l) => l.input !== undefined).map((l) => l.input) };
 }
 
+/** Per-index verify outcomes for one action task against the current session state. */
+function outcomesFor(taskId: string, session: ShellSession): VerifyOutcome[] {
+  const task = spec.tasks.find((t) => t.id === taskId)!;
+  return task.verify.map((chk, i) =>
+    runCheck(session, chk as never, { expectations, expectationKey: `${taskId}:${i}` } as VerifyContext),
+  );
+}
+
 function verifyAll(session: ShellSession) {
   const results: Record<string, { pass: boolean; gaps: string[] }> = {};
   for (const task of spec.tasks) {
     if (task.type !== "action") continue;
-    const gaps: string[] = [];
-    let pass = true;
-    task.verify.forEach((chk, i) => {
-      const ctx: VerifyContext = { expectations, expectationKey: `${task.id}:${i}` };
-      const out = runCheck(session, chk as never, ctx);
-      if (!out.pass) { pass = false; gaps.push(out.gap); }
-    });
-    results[task.id] = { pass, gaps };
+    const outs = outcomesFor(task.id, session);
+    const gaps = outs.filter((o) => !o.pass).map((o) => o.gap);
+    results[task.id] = { pass: gaps.length === 0, gaps };
   }
   return results;
 }
@@ -101,7 +105,7 @@ describe("module-02 exercise replay (golden passes, anti fails its target)", () 
   });
 
   for (const anti of readdirSync(TRANSCRIPTS).filter((f) => f.startsWith("anti-"))) {
-    test(`${anti} fails its targeted task`, () => {
+    test(`${anti} fails its targeted task at the named check`, () => {
       const { header, inputs } = loadTranscript(join(TRANSCRIPTS, anti));
       expect(header?.anti_for).toBeTruthy();
       const session = createM02Session();
@@ -111,6 +115,14 @@ describe("module-02 exercise replay (golden passes, anti fails its target)", () 
       expect(target).toBeDefined();
       expect(target.pass).toBe(false);
       expect(target.gaps.join("")).not.toBe("");
+      assertAntiDiscriminates({
+        anti,
+        header,
+        tasks: spec.tasks.map((t) => ({ id: t.id, type: t.type, verifyLength: t.verify?.length ?? 0 })),
+        targetOutcomes: outcomesFor(header!.anti_for!, session),
+        targetCompleted: target.pass,
+        priorActionMode: "independent",
+      });
     });
   }
 

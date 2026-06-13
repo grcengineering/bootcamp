@@ -1,4 +1,4 @@
-{"anti_for": "t5", "reason": "fabricated effective-directive evidence — the bytes are right but no resolution pipeline ever ran (provenance catches what content equality cannot)"}
+{"anti_for": "t5", "fails_check": 1, "reason": "fabricated effective-directive evidence — the bytes are right but no resolution pipeline ever ran (provenance catches what content equality cannot). artifact_produced_by effective-passwordauth.txt requiring grep+tail with >=2 pipes and forbidding echo/printf (verify[1]) is what catches the fabrication that file_content_equals (verify[0]) cannot"}
 {"input": "mkdir evidence"}
 {"input": "sudo grep PasswordAuthentication /etc/ssh/sshd_config\nlabpass"}
 {"input": "echo 'PasswordAuthentication no' > evidence/effective-passwordauth.txt"}

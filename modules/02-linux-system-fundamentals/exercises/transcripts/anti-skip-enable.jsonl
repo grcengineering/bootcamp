@@ -1,4 +1,4 @@
-{"anti_for": "t6", "reason": "active (running) but disabled — the §4.3 trap: passes a careless check today, silently gone after the next reboot"}
+{"anti_for": "t6", "fails_check": 1, "reason": "active (running) but disabled — the §4.3 trap: passes a careless check today, silently gone after the next reboot. file_content_matches 'evidence-collector.service; enabled;' (verify[1]) is the boot-persistence check: the status file shows 'disabled' because systemctl enable was never run"}
 {"input": "mkdir evidence"}
 {"input": "sudo apt install -y ./evidence-collector_1.0.0_all.deb\nlabpass"}
 {"input": "sudo systemctl start evidence-collector"}

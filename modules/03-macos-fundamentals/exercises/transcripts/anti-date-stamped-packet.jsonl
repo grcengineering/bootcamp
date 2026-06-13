@@ -1,4 +1,4 @@
-{"anti_for": "t6", "reason": "a date-stamped packet passes a naive same-session double-run diff but is NOT re-runnable evidence — clock-skewed clean runs disagree (web ISA ISC-127)"}
+{"anti_for": "t6", "fails_check": 0, "reason": "a date-stamped packet passes a naive same-session double-run diff but is NOT re-runnable evidence — clock-skewed clean runs disagree (web ISA ISC-127); script_reproducible (verify[0]) is the check that re-runs under a perturbed clock"}
 {"input": "bash labs/setup.sh ./lab03"}
 {"input": "cd lab03"}
 {"input": "mkdir evidence"}

@@ -970,6 +970,86 @@ entries:
     cmd: Get-WinEvent -FilterHashtable @{ LogName='Security'; Id=9999 } -MaxEvents 20
     citation: Microsoft Learn Get-WinEvent reference (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent) — documented "No events were found that match the specified selection criteria." non-terminating error
 
+  # ---- module 04 — engine-emitted ERROR paths (web ISA ISC-63/64; engine-honesty pass
+  # ---- 2026-06-13). Every authored error string in src/engines/powershell/cmdlets.ts that
+  # ---- previously carried its citation only in a CODE COMMENT now has a doc-cited fixture
+  # ---- (.ci/fixtures/captured/m04-err-*.json) the manifest-lint citation gate covers and
+  # ---- powershell-fidelity.test.ts byte-asserts the engine against — fixture is the source
+  # ---- of truth, not the code. Citations: Microsoft Learn message shapes (ParameterBinding-
+  # ---- Exception, Win32 ERROR_INVALID_DRIVE, provider ItemNotFound, EventLogNotFound). ----
+  - id: m04-err-bitlocker-baddrive
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-BitLockerVolume -MountPoint Z:"
+    citation: "Win32 ERROR_INVALID_DRIVE (15) — Microsoft Learn System Error Codes 0-499 (https://learn.microsoft.com/windows/win32/debug/system-error-codes--0-499-): \"The system cannot find the drive specified.\"; Get-BitLockerVolume -MountPoint surface per Microsoft Learn (https://learn.microsoft.com/powershell/module/bitlocker/get-bitlockervolume)"
+    notes: error path for a drive absent from the seed; fixture is the byte source of truth
+  - id: m04-err-param-notfound
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-BitLockerVolume -Frobnicate C:"
+    citation: "Windows PowerShell 5.1 ParameterBindingException — Microsoft Learn about_Parameters (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_parameters): \"A parameter cannot be found that matches parameter name '<name>'.\""
+    notes: unknown-parameter path; fixture is the byte source of truth
+  - id: m04-err-param-missingarg
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-BitLockerVolume -MountPoint"
+    citation: "Windows PowerShell 5.1 ParameterBindingException — Microsoft Learn about_Parameters (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_parameters): \"Missing an argument for parameter '<name>'.\""
+    notes: value-parameter-without-argument path; fixture is the byte source of truth
+  - id: m04-err-localgroup-nogroup
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-LocalGroupMember -Group Wheel"
+    citation: "Microsoft Learn Get-LocalGroupMember (https://learn.microsoft.com/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember) — GroupNotFoundException: \"Group <name> was not found.\""
+    notes: absent-group path; fixture is the byte source of truth
+  - id: m04-err-itemproperty-nopath
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-ItemProperty 'HKCU:\\Nope\\Nowhere'"
+    citation: "Microsoft Learn Get-ItemProperty (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty) over the Registry provider (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_registry_provider) — ItemNotFoundException: \"Cannot find path '<path>' because it does not exist.\""
+    notes: absent-registry-key path; fixture is the byte source of truth
+  - id: m04-err-itemproperty-noprop
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name Frobnicate"
+    citation: "Microsoft Learn Get-ItemProperty (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-itemproperty) over the Registry provider (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_registry_provider) — PSArgumentException: \"Property <name> does not exist at path <expanded-path>.\" (hive abbreviation expanded)"
+    notes: absent-property path; expanded HKEY_CURRENT_USER in message; fixture is the byte source of truth
+  - id: m04-err-winevent-nolog
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-WinEvent -FilterHashtable @{ LogName='Application'; Id=4625 } -MaxEvents 20"
+    citation: "Microsoft Learn Get-WinEvent (https://learn.microsoft.com/powershell/module/microsoft.powershell.diagnostics/get-winevent) — EventLogNotFoundException: \"There is not an event log on the localhost computer that matches \\\"<name>\\\".\""
+    notes: LogName outside the taught Security log; fixture is the byte source of truth
+  - id: m04-err-getcontent-nopath
+    module: "04"
+    source: pwsh-authored
+    match: authored-with-citation
+    seed: m04
+    cwd: C:\Users\labuser
+    cmd: "Get-Content nope.json"
+    citation: "Microsoft Learn Get-Content (https://learn.microsoft.com/powershell/module/microsoft.powershell.management/get-content) over the FileSystem provider (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_filesystem_provider) — ItemNotFoundException: \"Cannot find path '<resolved-path>' because it does not exist.\""
+    notes: absent-file path; relative path resolved against cwd; fixture is the byte source of truth
+
   # ---- module 02 — booted captures (systemd as PID 1; web ISA ISC-60) -------------------
   # All entries: source docker-linux-booted, seed m02 (apply-seed.sh overlays the scenario
   # world), session user grcops (uid 1001) unless `user:` overrides, cwd /home/grcops.
@@ -2189,6 +2269,159 @@ entries:
       The lab box has no real network; only the attached fictional vendor resolves.
       "curl: (6) Could not resolve host" + exit 6 authored from curl's documented
       behavior (man curl, EXIT CODES: 6 = could not resolve host).
+
+  # ---- module 06 — acme.example AUTH-LADDER + ERROR bodies (web ISA ISC-74..78;
+  # ---- engine-honesty pass 2026-06-13). acme.example is wholly fictional — no real host
+  # ---- to capture — so every error body is authored once in src/engines/api/acme.ts
+  # ---- (ERRORS). Previously the provenance lived only in that file's header COMMENT and
+  # ---- no fixture existed, while the Integration Matrix / web ISA claimed module 06 was
+  # ---- "byte-identical to committed fixtures". These entries close that gap: each error
+  # ---- body now has a doc/RFC-cited fixture (.ci/fixtures/captured/m06-err-*.json) the
+  # ---- manifest-lint citation gate covers and api-lab.test.ts byte-asserts the router
+  # ---- against — fixture is the source of truth, not the code. (Data-payload bytes —
+  # ---- users/devices pages — stay byte-identical to the committed module fixtures; the
+  # ---- m06-curl-* entries above cover the happy-path surface.) Citations: HTTP status
+  # ---- semantics (RFC 9110), OAuth2/Bearer (RFC 6749/6750), 429+Retry-After (RFC 6585),
+  # ---- and module 06 §4/§5 canon. The shape is { "error", "message" } (§5.1). ----
+  - id: m06-err-unauth-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (no Authorization header)"
+    citation: >
+      401 for a request with no Authorization header — RFC 9110 §15.5.2 + RFC 7235 §3.1;
+      module 06 §4.2/§5.1 auth-ladder canon; body = the module-documented { error, message }
+      shape (§5.1). Fixture is the byte source of truth (ERRORS.noAuth).
+  - id: m06-err-badscheme-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (Authorization: Basic …)"
+    citation: >
+      401 for an authorization scheme the vendor does not accept — RFC 9110 §15.5.2 +
+      RFC 7235 §2.1 (auth-scheme token); module 06 §4.2/§4.3 (only Api-Key and Bearer are
+      taught); { error, message } shape (§5.1). Fixture is the byte source of truth
+      (ERRORS.badScheme).
+  - id: m06-err-badapikey-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (Authorization: Api-Key <unknown>)"
+    citation: >
+      401 for a valid-shape but unknown Api-Key — RFC 9110 §15.5.2; module 06 §4.3 Api-Key
+      rung; { error, message } shape (§5.1). Fixture is the byte source of truth
+      (ERRORS.badApiKey).
+  - id: m06-err-unknowntoken-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (Authorization: Bearer <never issued>)"
+    citation: >
+      401 for a Bearer token the vendor never issued — RFC 6750 §3.1 (invalid_token) +
+      RFC 9110 §15.5.2; module 06 §4.3 Bearer rung; { error, message } shape (§5.1).
+      Fixture is the byte source of truth (ERRORS.unknownToken).
+  - id: m06-err-expiredtoken-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (Authorization: Bearer <expired>)"
+    citation: >
+      401 for a Bearer token past its expires_in lifetime — RFC 6750 §3.1 (expired) +
+      RFC 6749 §4.4.3/§5.1 (expires_in); module 06 §4.3/§5.2 (re-exchange after expiry);
+      { error, message } shape (§5.1). Fixture is the byte source of truth
+      (ERRORS.expiredToken).
+  - id: m06-err-insufficientscope-403
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (Bearer token lacking users:read)"
+    citation: >
+      403 for a token that authenticated but lacks the required scope — RFC 6750 §3.1
+      (insufficient_scope) + RFC 9110 §15.5.4; module 06 §4.2/§4.3 authn-vs-authz
+      distinction; { error, message } shape (§5.1). Fixture is the byte source of truth
+      (ERRORS.insufficientScope).
+  - id: m06-err-notfound-404
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/user (unknown path)"
+    citation: >
+      404 for an unknown endpoint path — RFC 9110 §15.5.5; module 06 §5.1; { error, message }
+      shape echoing method + path (§5.1). Fixture is the byte source of truth
+      (ERRORS.notFound).
+  - id: m06-err-methodnotallowed-405
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "POST /api/v2/users (GET-only collection)"
+    citation: >
+      405 for an unsupported method — RFC 9110 §15.5.6 (response MUST carry Allow); module
+      06 §5.1; { error, message } shape echoing method + path (§5.1). Router pairs the body
+      with an Allow header. Fixture is the byte source of truth (ERRORS.methodNotAllowed).
+  - id: m06-err-ratelimited-429
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (past the sliding-window limit)"
+    citation: >
+      429 over the rate limit — RFC 6585 §4 (429; MAY include Retry-After) + RFC 9110
+      §10.2.3 (Retry-After delta-seconds); module 06 §4.5/§5.1 documented 600/min; { error,
+      message } shape (§5.1). Router pairs the body with a Retry-After header. Fixture is
+      the byte source of truth (ERRORS.rateLimited).
+  - id: m06-err-invalidcursor-400
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users?cursor=<unknown> "
+    citation: >
+      400 for a pagination cursor the vendor did not issue — RFC 9110 §15.5.1; module 06
+      §4.4 cursor pagination; { error, message } shape echoing the bad cursor (§5.1).
+      Fixture is the byte source of truth (ERRORS.invalidCursor).
+  - id: m06-err-servererror-503
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "GET /api/v2/users (injected upstream outage)"
+    citation: >
+      503 transient outage — RFC 9110 §15.6.4 (Service Unavailable, retry-safe); module 06
+      §4.5/§5.1 (retry the 5xx with backoff); { error, message } shape (§5.1). Fixture is
+      the byte source of truth (ERRORS.serverError).
+  - id: m06-err-unsupportedgrant-400
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "POST /oauth/token (grant_type != client_credentials)"
+    citation: >
+      400 unsupported_grant_type — RFC 6749 §5.2 (error code) + §4.4 (client_credentials);
+      module 06 §4.3/§5.2; { error, message } shape (§5.1). Fixture is the byte source of
+      truth (ERRORS.unsupportedGrant).
+  - id: m06-err-invalidclient-401
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "POST /oauth/token (unknown client_id or bad secret)"
+    citation: >
+      401 invalid_client — RFC 6749 §5.2 (client authentication failed, MAY return 401);
+      module 06 §4.3/§5.2; { error, message } shape (§5.1). Fixture is the byte source of
+      truth (ERRORS.invalidClient).
+  - id: m06-err-invalidscope-400
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "POST /oauth/token (scope=admin:write, not granted)"
+    citation: >
+      400 invalid_scope — RFC 6749 §5.2 (requested scope exceeds grant); module 06 §5.2
+      (client granted users:read / devices:read); { error, message } shape echoing the
+      rejected scope (§5.1). Fixture is the byte source of truth (ERRORS.invalidScope).
+  - id: m06-err-missingcredentials-400
+    module: "06"
+    source: authored
+    match: authored-with-citation
+    cmd: "POST /oauth/token (client_id or client_secret absent)"
+    citation: >
+      400 invalid_request — RFC 6749 §5.2 (required parameter missing) + §4.4.2 (client_id/
+      client_secret); module 06 §4.3/§5.2; { error, message } shape (§5.1). Fixture is the
+      byte source of truth (ERRORS.missingCredentials).
 
   # ---- module 09 — policy-as-code lab (exercise lab-09, web ISA Wave 2). The lab is
   #      deliberately engine-agnostic (bash + coreutils + awk only — module §6 note), so the

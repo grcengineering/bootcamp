@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "config edited but the daemon never reloaded — the running sshd still offers password auth: the probe answers (publickey,password), not (publickey)"}
+{"anti_for": "t4", "fails_check": 3, "reason": "config edited but the daemon never reloaded — the running sshd still offers password auth: the probe answers (publickey,password), not (publickey). history_contains 'sudo systemctl (reload|restart) ssh' (verify[3]) is the reload step the cheat skips; without it the downstream password-refusal evidence (verify[5]) also never materializes"}
 {"input": "mkdir evidence"}
 {"input": "sudo true\nlabpass"}
 {"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}

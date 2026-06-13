@@ -1,0 +1,19 @@
+{
+  "id": "m06-err-invalidcursor-400",
+  "module": "06",
+  "source": "authored",
+  "match": "authored-with-citation",
+  "host": "acme.example",
+  "status": 400,
+  "error_code": "invalid_cursor",
+  "citation": "400 for a pagination cursor the vendor did not issue — RFC 9110 §15.5.1 (400); module 06 §4.4 cursor pagination (follow next_cursor until null); { error, message } shape echoing the bad cursor (§5.1).",
+  "notes": "Pagination: a cursor not present in the collection's page set.",
+  "body": "{\n  \"error\": \"invalid_cursor\",\n  \"message\": \"unknown cursor: bm9wZQ==\"\n}\n",
+  "provenance": {
+    "contract": "authored",
+    "environment": "acme.example is wholly fictional (module 06 §5 canon) — no real host exists to capture; the vendor is authored in web/src/engines/api/acme.ts and served by router.ts",
+    "authored_in": "web/src/engines/api/acme.ts (ERRORS)",
+    "canon": "HTTP status semantics (RFC 9110) + OAuth2/Bearer (RFC 6749/6750/6585) + module 06 §4/§5; doc/RFC-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: auth-ladder + error bodies lifted from code comments into doc/RFC-cited fixtures, locked by api-lab.test.ts)"
+  }
+}

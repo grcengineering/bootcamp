@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-param-notfound",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-BitLockerVolume -Frobnicate C:",
+  "tty_equiv": null,
+  "citation": "Windows PowerShell 5.1 ParameterBindingException — documented message \"A parameter cannot be found that matches parameter name '<name>'.\" per Microsoft Learn about_CommandSyntax / cmdlet parameter binding (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_parameters) and the ParameterBindingException reference (https://learn.microsoft.com/dotnet/api/system.management.automation.parameterbindingexception)",
+  "notes": "Error-path fixture: an unknown parameter on a taught cmdlet. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-BitLockerVolume : A parameter cannot be found that matches parameter name 'Frobnicate'.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-BitLockerVolume : A parameter cannot be found that matches parameter name 'Frobnicate'.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn ParameterBindingException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

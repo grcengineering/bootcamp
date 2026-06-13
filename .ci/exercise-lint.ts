@@ -128,6 +128,37 @@ for (const dir of moduleDirs) {
     const needsGenerated = spec.tasks.some((t) => t.verify.some((c) => (c as { from?: string }).from === "generated"));
     if (needsGenerated && !existsSync(join(tDir, "expectations.json")))
       problems.push("spec uses from:generated but transcripts/expectations.json is missing (ISC-60)");
+
+    // 7b. anti-transcript discrimination header (web ISA — cross-family audit finding H1):
+    // every anti-*.jsonl MUST carry {"anti_for":"tN","fails_check":<int>}, where fails_check
+    // is a valid index into task tN's verify[] (the check that encodes the cheat). This pins
+    // the anti to the exact verifier it must trip so it can never fail for the wrong reason.
+    for (const anti of antis) {
+      let header: { anti_for?: unknown; fails_check?: unknown } | null = null;
+      try {
+        header = JSON.parse(readFileSync(join(tDir, anti), "utf8").split("\n")[0] ?? "{}");
+      } catch {
+        problems.push(`${anti}: first line is not valid JSON (ISC-73)`);
+        continue;
+      }
+      const tgt = header?.anti_for;
+      if (typeof tgt !== "string") {
+        problems.push(`${anti}: header missing "anti_for" (ISC-73)`);
+        continue;
+      }
+      const task = spec.tasks.find((t) => t.id === tgt);
+      if (!task) {
+        problems.push(`${anti}: anti_for="${tgt}" names no task (ISC-73)`);
+        continue;
+      }
+      if (task.type !== "action")
+        problems.push(`${anti}: anti_for="${tgt}" is a ${task.type} task — antis target action tasks (ISC-73)`);
+      const fc = header?.fails_check;
+      if (typeof fc !== "number" || !Number.isInteger(fc))
+        problems.push(`${anti}: header missing integer "fails_check" (H1 discrimination)`);
+      else if (fc < 0 || fc >= task.verify.length)
+        problems.push(`${anti}: fails_check=${fc} out of range for ${tgt}.verify[0,${task.verify.length}) (H1)`);
+    }
   }
 
   if (problems.length) {

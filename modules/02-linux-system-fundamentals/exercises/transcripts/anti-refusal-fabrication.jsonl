@@ -1,4 +1,4 @@
-{"anti_for": "t4", "reason": "fabricated password-refusal evidence — config hardened and reloaded, but the refusal line was typed with echo and no password-only probe ever ran (provenance catches what content matching cannot)"}
+{"anti_for": "t4", "fails_check": 6, "reason": "fabricated password-refusal evidence — config hardened and reloaded, but the refusal line was typed with echo and no password-only probe ever ran (provenance catches what content matching cannot). artifact_produced_by ssh-password-refused.txt requiring ssh and forbidding echo/printf/nano (verify[6]) is the only check that distinguishes a real refused probe from a hand-typed line"}
 {"input": "mkdir evidence"}
 {"input": "sudo true\nlabpass"}
 {"input": "printf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee -a /etc/ssh/sshd_config"}

@@ -84,7 +84,12 @@ export function evaluateControl(stateJson: string): ValidatorRun {
     return io.result(0);
   }
   io.log(`FAIL control=${CCM_CONTROL_ID} evaluated=${total} noncompliant=${noncompliant.length}`);
-  // printf 'NONCOMPLIANT %s\n' $noncompliant — one line per (whitespace-free) bucket name.
+  // SCOPE BOUNDARY (ISC-137, M4): the bash original is `printf 'NONCOMPLIANT %s\n' $noncompliant`
+  // with `$noncompliant` UNQUOTED — bash word-splits it on IFS, so a bucket name containing
+  // whitespace would print across multiple NONCOMPLIANT lines. This port emits exactly one
+  // line per name and deliberately does NOT reproduce that word-splitting. The equivalence is
+  // therefore byte-identical only for the SEEDED inputs, whose bucket names are whitespace-free
+  // (see web/ISA.md ISC-137). Not a defect — the captured fixture surface is the contract.
   for (const name of noncompliant) io.log(`NONCOMPLIANT ${name}`);
   return io.result(1);
 }

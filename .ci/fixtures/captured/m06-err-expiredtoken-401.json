@@ -1,0 +1,19 @@
+{
+  "id": "m06-err-expiredtoken-401",
+  "module": "06",
+  "source": "authored",
+  "match": "authored-with-citation",
+  "host": "acme.example",
+  "status": 401,
+  "error_code": "unauthorized",
+  "citation": "401 for a Bearer token past its expires_in lifetime — RFC 6750 §3.1 (\"The access token provided ... has expired\") and RFC 6749 §4.4.3/§5.1 (expires_in); module 06 §4.3/§5.2 (re-exchange after expiry); { error, message } shape (§5.1).",
+  "notes": "Auth ladder: Bearer rung, token expired against the sim clock (TTL 3600s).",
+  "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"access token expired\"\n}\n",
+  "provenance": {
+    "contract": "authored",
+    "environment": "acme.example is wholly fictional (module 06 §5 canon) — no real host exists to capture; the vendor is authored in web/src/engines/api/acme.ts and served by router.ts",
+    "authored_in": "web/src/engines/api/acme.ts (ERRORS)",
+    "canon": "HTTP status semantics (RFC 9110) + OAuth2/Bearer (RFC 6749/6750/6585) + module 06 §4/§5; doc/RFC-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: auth-ladder + error bodies lifted from code comments into doc/RFC-cited fixtures, locked by api-lab.test.ts)"
+  }
+}

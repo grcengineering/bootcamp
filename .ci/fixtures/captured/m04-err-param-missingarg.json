@@ -1,0 +1,25 @@
+{
+  "id": "m04-err-param-missingarg",
+  "module": "04",
+  "source": "pwsh-authored",
+  "match": "authored-with-citation",
+  "seed": "m04",
+  "cwd": "C:\\Users\\labuser",
+  "pre": [],
+  "cmd": "Get-BitLockerVolume -MountPoint",
+  "tty_equiv": null,
+  "citation": "Windows PowerShell 5.1 ParameterBindingException — documented message \"Missing an argument for parameter '<name>'.\" per Microsoft Learn about_Parameters (https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_parameters) and the ParameterBindingException reference (https://learn.microsoft.com/dotnet/api/system.management.automation.parameterbindingexception)",
+  "notes": "Error-path fixture: a value parameter named without its argument. The fixture string is the source of truth; powershell-fidelity.test.ts asserts the engine emits exactly this.",
+  "stdout": "",
+  "stderr": "Get-BitLockerVolume : Missing an argument for parameter 'MountPoint'.\n",
+  "exit": 1,
+  "stderr_interactive": "Get-BitLockerVolume : Missing an argument for parameter 'MountPoint'.\n",
+  "post": [],
+  "provenance": {
+    "contract": "pwsh-authored",
+    "environment": "Windows PowerShell 5.1 (pinned), culture en-US, simulated box WIN-LAB04, user labuser, elevated session",
+    "seed": ".ci/fixtures/seeds/m04/win-lab04.json",
+    "canon": "Microsoft Learn ParameterBindingException message shape; doc-sourced, not box-captured",
+    "captured_with": "authored 2026-06-13 (engine-honesty pass: error strings lifted from code comments into doc-cited fixtures, locked by the fidelity suite)"
+  }
+}

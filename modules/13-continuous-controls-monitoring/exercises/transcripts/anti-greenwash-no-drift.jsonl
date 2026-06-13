@@ -1,4 +1,4 @@
-{"anti_for": "t3", "reason": "the cheat — claim the loop catches drift without ever inducing it: an all-green schedule never produces an rc=1 run or an alert, so the drift task cannot be satisfied by ticking alone"}
+{"anti_for": "t3", "fails_check": 0, "reason": "the cheat — claim the loop catches drift without ever inducing it: an all-green schedule never produces an rc=1 run or an alert, so the drift task cannot be satisfied by ticking alone. validator_passes 'rc=1 alert=...' (verify[0]) is the drift-caught check: with no drift there is no rc=1 alert run to verify"}
 {"input": "ccm-tick 1"}
 {"input": "ccm-tick 30"}
 {"input": "ccm-tick 1"}
