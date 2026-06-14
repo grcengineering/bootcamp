@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Astro 6 requires Node >=22.12; the `astro` bin runs under the runner's system Node.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
