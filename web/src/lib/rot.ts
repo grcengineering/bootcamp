@@ -18,9 +18,10 @@ export function rotStatus(reviewDue: string | undefined, asOf: Date): RotStatus 
   return { level: "green", icon: "heroicons:check-circle-solid", label: `ok ${days}d` };
 }
 
+// DS status tokens (flip per theme): pass=green, risk=amber, fail=red. Orange is brand, not a status.
 export const ROT_COLOR: Record<RotLevel, string> = {
-  green: "text-emerald-400",
-  amber: "text-amber-400",
-  red: "text-rose-400",
+  green: "text-[color:var(--status-pass-fg)]",
+  amber: "text-[color:var(--status-risk-fg)]",
+  red: "text-[color:var(--status-fail-fg)]",
   unknown: "text-ink-dim",
 };

@@ -15,9 +15,9 @@ const TIER_LABEL: Record<number, string> = {
   4: "Tier 4 · GRC-as-Product",
 };
 const VOL: Record<string, { label: string; cls: string }> = {
-  A: { label: "A · stable", cls: "bg-emerald-400/10 text-emerald-300 border-emerald-400/25" },
-  B: { label: "B · semi-stable", cls: "bg-amber-400/10 text-amber-300 border-amber-400/25" },
-  C: { label: "C · volatile", cls: "bg-rose-400/10 text-rose-300 border-rose-400/25" },
+  A: { label: "A · stable", cls: "bg-[color:var(--status-pass-bg)] text-[color:var(--status-pass-fg)] border-[color:var(--hairline)]" },
+  B: { label: "B · semi-stable", cls: "bg-[color:var(--status-risk-bg)] text-[color:var(--status-risk-fg)] border-[color:var(--hairline)]" },
+  C: { label: "C · volatile", cls: "bg-[color:var(--status-fail-bg)] text-[color:var(--status-fail-fg)] border-[color:var(--hairline)]" },
 };
 
 const tiers = [0, 1, 2, 3, 4];

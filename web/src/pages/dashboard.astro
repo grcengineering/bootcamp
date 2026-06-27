@@ -22,7 +22,7 @@ const num = (id: string) => id.split("-")[0];
 
 <Layout title="Dashboard — GRC Engineering Bootcamp">
   <div class="flex items-center gap-3">
-    <span class="grid place-items-center w-10 h-10 rounded-xl bg-gradient-brand-soft border border-white/10">
+    <span class="grid place-items-center w-10 h-10 rounded-xl bg-gradient-brand-soft border border-[color:var(--hairline)]">
       <Icon name="heroicons:chart-bar-solid" class="w-5 h-5 text-orange" />
     </span>
     <h1 class="text-3xl font-bold text-ink tracking-tight">Curriculum Dashboard</h1>
@@ -48,9 +48,9 @@ const num = (id: string) => id.split("-")[0];
 
   <section class="mt-8">
     <div class="flex items-center gap-5 mb-3 text-sm font-medium">
-      <span class="flex items-center gap-1.5 text-emerald-400"><Icon name="heroicons:check-circle-solid" class="w-4 h-4" /> {c.green} green</span>
-      <span class="flex items-center gap-1.5 text-amber-400"><Icon name="heroicons:clock-solid" class="w-4 h-4" /> {c.amber} amber</span>
-      <span class="flex items-center gap-1.5 text-rose-400"><Icon name="heroicons:exclamation-triangle-solid" class="w-4 h-4" /> {c.red} red</span>
+      <span class="flex items-center gap-1.5 text-[color:var(--status-pass-fg)]"><Icon name="heroicons:check-circle-solid" class="w-4 h-4" /> {c.green} green</span>
+      <span class="flex items-center gap-1.5 text-[color:var(--status-risk-fg)]"><Icon name="heroicons:clock-solid" class="w-4 h-4" /> {c.amber} amber</span>
+      <span class="flex items-center gap-1.5 text-[color:var(--status-fail-fg)]"><Icon name="heroicons:exclamation-triangle-solid" class="w-4 h-4" /> {c.red} red</span>
       <span class="text-ink-dim">· {rows.length} modules</span>
     </div>
     <div class="glass rounded-xl overflow-hidden">

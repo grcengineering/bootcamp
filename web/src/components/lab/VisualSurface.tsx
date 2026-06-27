@@ -521,12 +521,12 @@ function TraceSurface({ host, onChanged }: { host: VisualHost; onChanged: () => 
               <p className="mt-1 text-sm text-ink-dim">Assemble the sequence to run the real protocol state machine.</p>
             )}
             {probe && probe.reachedEndState && (
-              <p className="mt-1 text-sm text-emerald-400" data-testid="visual-trace-endstate">
+              <p className="mt-1 text-sm text-[color:var(--status-pass-fg)]" data-testid="visual-trace-endstate">
                 ✓ The sequence reached the protocol end-state — the sim accepted every message in order.
               </p>
             )}
             {probe && !probe.reachedEndState && probe.lastAlert && (
-              <p className="mt-1 text-sm text-rose-400" data-testid="visual-trace-alert">
+              <p className="mt-1 text-sm text-[color:var(--status-fail-fg)]" data-testid="visual-trace-alert">
                 The sim raised <span className="font-mono font-semibold">{probe.lastAlert.name}
                 {probe.lastAlert.code !== undefined ? `(${probe.lastAlert.code})` : ""}</span> — a real protocol
                 consequence of an out-of-order or mis-routed message, not a hint.
