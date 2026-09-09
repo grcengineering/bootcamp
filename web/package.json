@@ -16,7 +16,7 @@
     "@cedar-policy/cedar-wasm": "4.11.1",
     "@iconify-json/heroicons": "^1.2.3",
     "@open-policy-agent/opa-wasm": "1.10.0",
-    "astro": "^6.1.10",
+    "astro": "^7.3.2",
     "astro-icon": "^1.1.5",
     "isomorphic-git": "1.38.4",
     "jq-wasm": "1.1.0-jq-1.8.1",
