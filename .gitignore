@@ -7,3 +7,9 @@ research/job-market/
 
 # Dependencies
 node_modules/
+
+# sscsb: generated output (SBOMs, receipts, VEX), not policy
+.sscsb/out/
+
+# Local agent tooling state (Serena) — never publish
+.serena/

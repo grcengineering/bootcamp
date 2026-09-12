@@ -1,0 +1,55 @@
+# Trivy scan scope for the GRC Engineering Bootcamp.
+#
+# sscsb detects this file and discloses it in `sscsb verify` output, so nothing
+# below is a silent exclusion — it is a declared, auditable scope.
+#
+# Two rules govern this file:
+#   1. Vulnerability (CVE) scanning is NEVER narrowed. Every path skipped below
+#      was checked for dependency manifests (package.json / *.lock / go.mod /
+#      requirements.txt / Cargo.toml / pom.xml / Gemfile) and contains NONE, so
+#      skipping them removes zero CVE coverage. Re-verify with:
+#        find .ci/fixtures modules -name package.json -o -name '*.lock'
+#   2. Nothing that ships to learners as running code is skipped. `web/src`,
+#      `.ci/*.ts`, `dashboard/` and every curriculum markdown file stay in scope.
+#
+# The skips fall into exactly two classes.
+scan:
+  skip-dirs:
+    # ── Class 1: not repository content ──────────────────────────────────────
+    # Third-party packages and generated build output. All are gitignored and
+    # absent from a fresh clone, so findings here describe other people's code
+    # or artifacts regenerated on every build — not anything a reviewer can fix
+    # in this repo. (Upstream dev-container Dockerfiles in sql.js and
+    # yaml-language-server were the actual source of these.)
+    - "**/node_modules"
+    - "web/dist"
+    - "web/.astro"
+    - "web/public/engines"
+
+    # ── Class 2: scanner specimens — files whose PURPOSE is to fail a scan ────
+    # This repo teaches security scanning, so it ships deliberately-flawed
+    # artifacts as lesson input. Module 08 ("IaC and scanning in CI") hands
+    # learners main-noncompliant.tf precisely so they can run a scanner and
+    # watch it fail; a clean result there would break the lesson. The paired
+    # main-compliant.tf is compliant against checkov's ruleset — the ruleset the
+    # module teaches — and its expected checkov output is captured byte-exact,
+    # so editing it to satisfy Trivy's additional rules (public-access-block,
+    # CMK) would invalidate the captured fixtures the tests assert on.
+    #
+    # These files are lesson text. They are never applied, deployed, or built
+    # into the published site. The SSH key and JWTs under .ci/fixtures are
+    # throwaway lab material for a fictional `grcops@web-01` container persona;
+    # TruffleHog (this repo's verified-secret scanner) reports ZERO findings at
+    # --results=verified,unknown across the entire git history, confirming none
+    # is a live credential.
+    - ".ci/fixtures"
+    - "modules/*/labs/fixtures"
+    # The generated projection of the two specimen trees above. sync-content.ts
+    # compiles .ci/fixtures into one JSON bundle per module so the in-browser
+    # terminal can replay the captured transcripts; the lab for module 02 lets a
+    # learner `cat ~/.ssh/id_ed25519` and see realistic output, and modules
+    # 18/19/22/23 hand out sample JWTs to decode. These files are checked in
+    # (the site builds without re-running capture), but every byte in them comes
+    # from .ci/fixtures — scoping the source while scanning its own generated
+    # copy would just relocate the same findings.
+    - "web/src/content/labs"
