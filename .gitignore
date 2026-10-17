@@ -13,3 +13,7 @@ node_modules/
 
 # Local agent tooling state (Serena) — never publish
 .serena/
+
+# Local Codex configuration and Impeccable consent
+.codex/
+.impeccable/config.local.json
